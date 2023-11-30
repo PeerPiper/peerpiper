@@ -1,0 +1,14 @@
+[workspace]
+members = [
+  "crates/*"
+]
+resolver = "2"
+
+[workspace.dependencies]
+peerpiper-native = { path = "crates/peerpiper-native" }
+futures = "0.3.29"
+rand = "0.8"
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+libp2p = { git = "https://github.com/libp2p/rust-libp2p.git" }
+libp2p-webrtc = { git = "https://github.com/libp2p/rust-libp2p.git", features = ["tokio"] }

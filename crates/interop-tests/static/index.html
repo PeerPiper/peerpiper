@@ -1,0 +1,18 @@
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+  </head>
+
+  <body>
+    <div id="wrapper">
+      <h1>PeerPiper Interop tests</h1>
+    </div>
+
+    <script type="module" defer>
+      import init, { run } from "./peerpiper_interop_tests.js";
+
+      await init();
+      run("__LIBP2P_ENDPOINT__"); // This placeholder will be replaced by the server at runtime with the actual listening address.
+    </script>
+  </body>
+</html>
