@@ -1,3 +1,4 @@
 mod error;
-#[cfg(target_arch = "wasm32")]
-pub mod wasm;
+mod wasm;
+
+pub use wasm::start;

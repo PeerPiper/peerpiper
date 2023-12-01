@@ -1,31 +1,21 @@
 use futures::{channel::mpsc, SinkExt};
 use libp2p::{
-    core::muxing::StreamMuxerBox,
-    core::Transport,
     futures::StreamExt,
     multiaddr::{Multiaddr, Protocol},
-    ping::{self, Event},
     swarm::SwarmEvent,
 };
-use rand::thread_rng;
 use std::net::Ipv4Addr;
-use std::time::Duration;
+
+use peerpiper_core::error::Error;
+use peerpiper_core::libp2p::{
+    behaviour::{self, BehaviourEvent},
+    swarm,
+};
 
 pub async fn start(
-    mut tx: mpsc::Sender<SwarmEvent<Event>>,
+    mut tx: mpsc::Sender<SwarmEvent<BehaviourEvent>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut swarm = libp2p::SwarmBuilder::with_new_identity()
-        .with_tokio()
-        .with_other_transport(|id_keys| {
-            Ok(libp2p_webrtc::tokio::Transport::new(
-                id_keys.clone(),
-                libp2p_webrtc::tokio::Certificate::generate(&mut thread_rng())?,
-            )
-            .map(|(peer_id, conn), _| (peer_id, StreamMuxerBox::new(conn))))
-        })?
-        .with_behaviour(|_| ping::Behaviour::default())?
-        .with_swarm_config(|cfg| cfg.with_idle_connection_timeout(Duration::from_secs(u64::MAX)))
-        .build();
+    let mut swarm = swarm::create(behaviour::build).map_err(Error::CreateSwarm)?;
 
     let address_webrtc = Multiaddr::from(Ipv4Addr::UNSPECIFIED)
         .with(Protocol::Udp(0))
@@ -75,12 +65,4 @@ pub async fn start(
     });
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    // use super::*;
-
-    #[test]
-    fn it_works() {}
 }

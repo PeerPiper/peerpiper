@@ -5,6 +5,8 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
+peerpiper = { path = "crates/peerpiper" }
+peerpiper-core = { path = "crates/peerpiper-core" }
 peerpiper-native = { path = "crates/peerpiper-native" }
 peerpiper-browser = { path = "crates/peerpiper-browser" }
 futures = "0.3.29"

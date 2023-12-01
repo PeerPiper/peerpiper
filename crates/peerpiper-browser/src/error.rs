@@ -2,8 +2,6 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("An error occured: {0}")]
-    Other(String),
     /// From<Infallible>
     #[error("Infallible")]
     Infallible(#[from] std::convert::Infallible),

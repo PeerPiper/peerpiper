@@ -3,16 +3,16 @@ use axum::extract::{Path, State};
 use axum::http::header::CONTENT_TYPE;
 use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse};
-use axum::routing::post;
+// use axum::routing::post;
 use axum::{http::Method, routing::get};
-use axum::{Json, Router};
+// use axum::{Json};
+use axum::Router;
 use futures::channel::mpsc;
 use futures::{SinkExt, StreamExt};
 use libp2p::{
     multiaddr::{Multiaddr, Protocol},
     swarm::SwarmEvent,
 };
-use peerpiper_native::start;
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
 
@@ -20,7 +20,6 @@ use std::process::Stdio;
 use thirtyfour::prelude::*;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Child;
-use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 const MAX_CHANNELS: usize = 16;
 
@@ -35,7 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Starting peerpiper-native TESTS");
 
     let (tx, mut rx) = mpsc::channel(MAX_CHANNELS);
-    start(tx).await?;
+    peerpiper::start_native(tx).await?;
 
     let address = loop {
         if let SwarmEvent::NewListenAddr { address, .. } = rx.next().await.unwrap() {

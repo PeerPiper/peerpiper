@@ -1,0 +1,34 @@
+[package]
+name = "peerpiper"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]    
+# default = ["libp2p"]
+## NETWORKS
+# libp2p = ["dep:libp2p", "libp2p-webrtc-websys", "dep:libp2p-webrtc"]
+# nostr
+# swarm
+
+## RUNTIMES
+# tokio
+# wasm-bindgen
+
+[dependencies]
+cfg-if = "1"
+futures = "0.3.29"
+rand = "0.8"
+thiserror = "1"
+tracing = "0.1.37"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+peerpiper-browser = { workspace = true }
+# libp2p = { workspace = true, optional = true, features = [ "ed25519", "macros", "ping", "wasm-bindgen"] }
+# libp2p-webrtc-websys = { git = "https://github.com/libp2p/rust-libp2p.git", optional = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+peerpiper-native = { workspace = true }
+# libp2p = { workspace = true, optional = true, features = [ "ed25519", "macros", "ping", "quic", "tokio"]}
+# libp2p-webrtc = { git = "https://github.com/libp2p/rust-libp2p.git", optional = true }
