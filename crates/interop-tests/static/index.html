@@ -9,10 +9,10 @@
     </div>
 
     <script type="module" defer>
-      import init, { run } from "./peerpiper_interop_tests.js";
+      import init, { run_test_wasm } from "./peerpiper_interop_tests.js";
 
       await init();
-      run("__LIBP2P_ENDPOINT__"); // This placeholder will be replaced by the server at runtime with the actual listening address.
+      run_test_wasm("__LIBP2P_ENDPOINT__"); // This placeholder will be replaced by the server at runtime with the actual listening address.
     </script>
   </body>
 </html>
