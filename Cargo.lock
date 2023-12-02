@@ -2314,6 +2314,7 @@ dependencies = [
  "cfg-if",
  "futures",
  "peerpiper-browser",
+ "peerpiper-core",
  "peerpiper-native",
  "rand",
  "thiserror",
@@ -2343,6 +2344,8 @@ dependencies = [
 name = "peerpiper-core"
 version = "0.1.0"
 dependencies = [
+ "futures",
+ "futures-timer",
  "libp2p",
  "libp2p-webrtc",
  "libp2p-webrtc-websys",
