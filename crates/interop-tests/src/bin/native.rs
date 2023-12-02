@@ -8,18 +8,17 @@ use axum::{http::Method, routing::get};
 // use axum::{Json};
 use axum::Router;
 use futures::channel::mpsc;
-use futures::{SinkExt, StreamExt};
-use libp2p::{
-    multiaddr::{Multiaddr, Protocol},
-    swarm::SwarmEvent,
-};
+use futures::StreamExt;
+use libp2p::multiaddr::{Multiaddr, Protocol};
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
 
-use std::process::Stdio;
-use thirtyfour::prelude::*;
-use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::process::Child;
+// use std::process::Stdio;
+// use thirtyfour::prelude::*;
+// use tokio::io::{AsyncBufReadExt, BufReader};
+// use tokio::process::Child;
+
+use peerpiper::core::events::NetworkEvent;
 
 const MAX_CHANNELS: usize = 16;
 
@@ -34,10 +33,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Starting peerpiper-native TESTS");
 
     let (tx, mut rx) = mpsc::channel(MAX_CHANNELS);
-    peerpiper::start_native(tx).await?;
+    // spawn peerpiper::start_native(tx).await?;
+    let tx_clone = tx.clone();
+    tokio::spawn(async move {
+        peerpiper::start_native(tx_clone).await.unwrap();
+    });
+
+    tracing::info!("Started.");
 
     let address = loop {
-        if let SwarmEvent::NewListenAddr { address, .. } = rx.next().await.unwrap() {
+        if let NetworkEvent::ListenAddr { address, .. } = rx.next().await.unwrap() {
+            tracing::info!(%address, "RXD Address");
             break address;
         }
     };
@@ -147,11 +153,11 @@ pub struct Report {
     ping_rtt_millis: f32,
 }
 
-#[derive(Clone)]
-struct TestState {
-    // config: config::Config,
-    results_tx: mpsc::Sender<Result<Report, String>>,
-}
+// #[derive(Clone)]
+// struct TestState {
+//     // config: config::Config,
+//     results_tx: mpsc::Sender<Result<Report, String>>,
+// }
 
 // /// Receive test results
 // async fn post_results(
@@ -164,39 +170,39 @@ struct TestState {
 //     })
 // }
 
-async fn open_in_browser(addr: &str) -> Result<(Child, WebDriver)> {
-    // start a webdriver process
-    tracing::info!("Starting chromedriver");
-    // currently only the chromedriver is supported as firefox doesn't
-    // have support yet for the certhashes
-    let chromedriver = if cfg!(windows) {
-        "chromedriver.cmd"
-    } else {
-        "chromedriver"
-    };
-    let mut chrome = tokio::process::Command::new(chromedriver)
-        .arg("--port=45782")
-        .stdout(Stdio::piped())
-        .spawn()?;
-    // read driver's stdout
-    let driver_out = chrome
-        .stdout
-        .take()
-        .context("No stdout found for webdriver")?;
-    // wait for the 'ready' message
-    let mut reader = BufReader::new(driver_out).lines();
-    while let Some(line) = reader.next_line().await? {
-        if line.contains("ChromeDriver was started successfully.") {
-            break;
-        }
-    }
-
-    // run a webdriver client
-    let mut caps = DesiredCapabilities::chrome();
-    // caps.set_headless()?;
-    let driver = WebDriver::new("http://localhost:45782", caps).await?;
-    // go to the wasm test service
-    driver.goto(format!("http://{addr}")).await?;
-
-    Ok((chrome, driver))
-}
+// async fn open_in_browser(addr: &str) -> Result<(Child, WebDriver)> {
+//     // start a webdriver process
+//     tracing::info!("Starting chromedriver");
+//     // currently only the chromedriver is supported as firefox doesn't
+//     // have support yet for the certhashes
+//     let chromedriver = if cfg!(windows) {
+//         "chromedriver.cmd"
+//     } else {
+//         "chromedriver"
+//     };
+//     let mut chrome = tokio::process::Command::new(chromedriver)
+//         .arg("--port=45782")
+//         .stdout(Stdio::piped())
+//         .spawn()?;
+//     // read driver's stdout
+//     let driver_out = chrome
+//         .stdout
+//         .take()
+//         .context("No stdout found for webdriver")?;
+//     // wait for the 'ready' message
+//     let mut reader = BufReader::new(driver_out).lines();
+//     while let Some(line) = reader.next_line().await? {
+//         if line.contains("ChromeDriver was started successfully.") {
+//             break;
+//         }
+//     }
+//
+//     // run a webdriver client
+//     let mut caps = DesiredCapabilities::chrome();
+//     // caps.set_headless()?;
+//     let driver = WebDriver::new("http://localhost:45782", caps).await?;
+//     // go to the wasm test service
+//     driver.goto(format!("http://{addr}")).await?;
+//
+//     Ok((chrome, driver))
+// }

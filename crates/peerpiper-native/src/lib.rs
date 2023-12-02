@@ -2,31 +2,44 @@ use futures::{channel::mpsc, SinkExt};
 use libp2p::{
     futures::StreamExt,
     multiaddr::{Multiaddr, Protocol},
-    swarm::SwarmEvent,
 };
 use std::net::Ipv4Addr;
 
-use peerpiper_core::error::Error;
-use peerpiper_core::libp2p::{
-    behaviour::{self, BehaviourEvent},
-    swarm,
+use peerpiper_core::{
+    error::Error,
+    events::{Network, NetworkEvent},
+    libp2p::{api, behaviour, swarm},
 };
 
-pub async fn start(
-    mut tx: mpsc::Sender<SwarmEvent<BehaviourEvent>>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut swarm = swarm::create(behaviour::build).map_err(Error::CreateSwarm)?;
+pub async fn start(mut tx: mpsc::Sender<NetworkEvent>) -> Result<(), Box<dyn std::error::Error>> {
+    let swarm = swarm::create(behaviour::build).map_err(Error::CreateSwarm)?;
+
+    let peer_id = *swarm.local_peer_id();
+    tracing::info!("Local peer id: {:?}", peer_id);
+
+    let (mut network_client, mut network_events, network_event_loop) = api::new(swarm).await?;
+
+    // We need to start the network event loop first in order to listen for our address
+    let network_handle = tokio::spawn(async move { network_event_loop.run().await });
 
     let address_webrtc = Multiaddr::from(Ipv4Addr::UNSPECIFIED)
         .with(Protocol::Udp(0))
         .with(Protocol::WebRTCDirect);
 
-    let listener_id = swarm.listen_on(address_webrtc.clone())?;
+    for addr in [
+        address_webrtc,
+        // address_quic, address_tcp
+    ] {
+        tracing::info!("Listening on {:?}", addr.clone());
+        network_client
+            .start_listening(addr)
+            .await
+            .expect("Listening not to fail.");
+    }
 
-    tracing::info!("Listening on {:?}", address_webrtc);
-
+    // The first event we should receive is the address we're listening on
     let address = loop {
-        if let SwarmEvent::NewListenAddr { address, .. } = swarm.select_next_some().await {
+        if let NetworkEvent::ListenAddr { address, .. } = network_events.select_next_some().await {
             if address
                 .iter()
                 .any(|e| e == Protocol::Ip4(Ipv4Addr::LOCALHOST))
@@ -41,28 +54,27 @@ pub async fn start(
         }
     };
 
-    let addr = address.with(Protocol::P2p(*swarm.local_peer_id()));
+    let addr = address.with(Protocol::P2p(peer_id));
 
-    // send the addr via message using tx
-    tx.send(SwarmEvent::NewListenAddr {
-        address: addr.clone(),
-        listener_id,
-    })
-    .await?;
+    // // send the addr via message using tx
+    // tx.send(NetworkEvent::ListenAddr {
+    //     address: addr.clone(),
+    //     network: Network::Libp2p,
+    // })
+    // .await?;
 
-    tracing::info!("Local peer id: {:?}", swarm.local_peer_id());
-    println!("External address: {}", addr);
-
-    // Communicate any network events
     tokio::spawn(async move {
         loop {
-            let swarm_event = swarm.select_next_some().await;
-            if let Err(swarm_event) = tx.send(swarm_event).await {
+            let event = network_events.select_next_some().await;
+            tracing::debug!("Network event: {:?}", event);
+            if let Err(swarm_event) = tx.send(event).await {
                 tracing::error!("Failed to send swarm event: {:?}", swarm_event);
                 break;
             }
         }
     });
+
+    network_handle.await?;
 
     Ok(())
 }

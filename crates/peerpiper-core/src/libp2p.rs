@@ -1,12 +1,8 @@
+/// API to interface to Network Events and Network Commands
+pub mod api;
+/// Behaviour for the libp2p swarm
 pub mod behaviour;
+/// Create a libp2p swarm
 pub mod swarm;
 
-// use crate::error::Error;
-
-// pub async fn spawn_swarm(libp2p_endpoint: String) -> Result<(), Error> {
-//     tracing::info!("Spawning swarm. Using multiaddr {:?}", libp2p_endpoint);
-//
-//     let mut swarm = swarm::create(behaviour::build).map_err(|e| Error::String(e.to_string()))?;
-//
-//     Ok(())
-// }
+mod delay;
