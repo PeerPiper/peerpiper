@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite PeerPiper Example</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="importmap">
+      {
+        "imports": {
+          "@bytecodealliance/preview2-shim/cli": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/cli.js",
+          "@bytecodealliance/preview2-shim/clocks": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/clocks.js",
+          "@bytecodealliance/preview2-shim/filesystem": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/filesystem.js",
+          "@bytecodealliance/preview2-shim/http": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/http.js",
+          "@bytecodealliance/preview2-shim/io": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/io.js",
+          "@bytecodealliance/preview2-shim/logging": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/logging.js",
+          "@bytecodealliance/preview2-shim/poll": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/poll.js",
+          "@bytecodealliance/preview2-shim/random": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/random.js",
+          "@bytecodealliance/preview2-shim/sockets": "./node_modules/@bytecodealliance/preview2-shim/lib/browser/sockets.js",
+          "jco": "../../../../clones/jco/src/browser.js",
+          "peerpiper:pinger/imports": "./importables.js"
+        }
+      }
+    </script>
+    <!-- <script type="module"> -->
+    <!--   import { transpile } from "../../../../clones/jco/src/browser.js"; -->
+    <!--   // const componentUrl = new URL("./lists.component.wasm", import.meta.url); // works -->
+    <!--   const componentUrl = new URL("./pinger.component.wasm", import.meta.url); // works -->
+    <!--   // import componentUrl from "../../target/wasm32-wasi/debug/pinger.core.wasm?raw"; -->
+    <!--   // make it a blob url -->
+    <!--   let wasmBlobUrl = URL.createObjectURL( -->
+    <!--     // type is raw bytes -->
+    <!--     new Blob([componentUrl], { type: "application/wasm" }), -->
+    <!--   ); -->
+    <!---->
+    <!--   console.log({ wasmBlobUrl }); -->
+    <!--   document.body.innerHTML = "<h1>Generating...</h1>"; -->
+    <!--   const component = await (await fetch(componentUrl)).arrayBuffer(); -->
+    <!--   const output = await transpile(component, { -->
+    <!--     name: "pinger", -->
+    <!--     noTypescript: true, -->
+    <!--     noNodejsCompat: true, -->
+    <!--     // instantiation: true, -->
+    <!--     // force baseurls -->
+    <!--     // todo: support a hook for inline blob url construction -->
+    <!--     base64Cutoff: 1000000, -->
+    <!--     map: [ -->
+    <!--       ["wasi:cli/*", "@bytecodealliance/preview2-shim/cli#*"], -->
+    <!--       ["wasi:clocks/*", "@bytecodealliance/preview2-shim/clocks#*"], -->
+    <!--       ["wasi:filesystem/*", "@bytecodealliance/preview2-shim/filesystem#*"], -->
+    <!--       ["wasi:http/*", "@bytecodealliance/preview2-shim/http#*"], -->
+    <!--       ["wasi:io/*", "@bytecodealliance/preview2-shim/io#*"], -->
+    <!--       ["wasi:logging/*", "@bytecodealliance/preview2-shim/logging#*"], -->
+    <!--       ["wasi:poll/*", "@bytecodealliance/preview2-shim/poll#*"], -->
+    <!--       ["wasi:random/*", "@bytecodealliance/preview2-shim/random#*"], -->
+    <!--       ["wasi:sockets/*", "@bytecodealliance/preview2-shim/sockets#*"], -->
+    <!--     ], -->
+    <!--   }); -->
+    <!--   console.log({ output }); -->
+    <!--   const source = output.files[1][1]; -->
+    <!--   const url = URL.createObjectURL( -->
+    <!--     new Blob([source], { type: "text/javascript" }), -->
+    <!--   ); -->
+    <!--   console.log({ url }); -->
+    <!--   const mod = await import(/* @vite-ignore */ url); -->
+    <!--   console.log({ mod }); -->
+    <!--   document.body.innerHTML = "<h1>OK</h1>"; -->
+    <!-- </script> -->
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
