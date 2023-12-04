@@ -1,15 +1,13 @@
-# PeerPiper Rust Workspace
+# PeerPiper Workspace Monorepo
 
-The core Rust library for the PeerPiper project. Holds the peer-to-peer networking logic and the core data structures.
-
-This core functionality is intended to run locally, on a server, or embedded into another application.
+The core Rust libraryies and Front-end examples for the PeerPiper project. Mainly holds the peer-to-peer networking logic, the core data structures, and how to use them.
 
 # Goals
 
-- [ ] [Peer-to-peer](https://en.wikipedia.org/wiki/Peer-to-peer) networking via [libp2p](https://libp2p.io/)
+- [ ] [Peer-to-peer](https://en.wikipedia.org/wiki/Peer-to-peer) networking via [rust-libp2p](https://libp2p.io/)
 - [ ] [Peer discovery](https://en.wikipedia.org/wiki/Peer_discovery) via [Delanocreds](https://github.com/DougAnderson444/delanocreds)
 - [ ] Light p2p sharing of discovery data (Cred Proofs)
-- [ ] {Stretch) Eventual SUITable app sharing
+- [ ] (Stretch) Eventual SUITable app sharing
 
 # Deployment
 
