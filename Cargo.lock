@@ -375,6 +375,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2bd12c1caf447e69cd4528f47f94d203fd2582878ecb9e9465484c4148a8223"
 
 [[package]]
+name = "cargo-component-bindings"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab3cf2350ce4e1aaf711114952eb135081d936b76da37f3fe09e87f0a28cabfa"
+dependencies = [
+ "cargo-component-macro",
+ "wit-bindgen",
+]
+
+[[package]]
+name = "cargo-component-macro"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9149c8ce53e8348be7b673f09a89503077721e9ff6321761d3bba40abefd7b2"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.39",
+]
+
+[[package]]
 name = "cbc"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2457,6 +2478,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
+name = "pinger"
+version = "0.1.0"
+dependencies = [
+ "cargo-component-bindings",
+]
+
+[[package]]
 name = "pkcs8"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4400,6 +4428,15 @@ checksum = "524e57b2c537c0f9b1e69f1965311ec12182b4122e45035b1508cd24d2adadb1"
 dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "wit-bindgen"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0205c6e67438f9d657318e0d7ee407a8017cd7bc5f1636cd4a280d4ccbc8d4a0"
+dependencies = [
+ "bitflags 2.4.1",
 ]
 
 [[package]]
