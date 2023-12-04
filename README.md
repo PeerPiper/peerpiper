@@ -9,12 +9,14 @@ This core functionality is intended to run locally, on a server, or embedded int
 - [ ] [Peer-to-peer](https://en.wikipedia.org/wiki/Peer-to-peer) networking via [libp2p](https://libp2p.io/)
 - [ ] [Peer discovery](https://en.wikipedia.org/wiki/Peer_discovery) via [Delanocreds](https://github.com/DougAnderson444/delanocreds)
 - [ ] Light p2p sharing of discovery data (Cred Proofs)
+- [ ] {Stretch) Eventual SUITable app sharing
 
 # Deployment
 
 The core library should include wrappers so that it can be deployed to various infrastructure providers:
 
 - [ ] Browser via [WebAssembly](https://en.wikipedia.org/wiki/WebAssembly)
+- [ ] Browser via [Vite](https://vitejs.dev/) and [`wasm-bindgen`](https://rustwasm.github.io/docs/wasm-bindgen/)
 - [ ] [Command Line Application](https://en.wikipedia.org/wiki/Command-line_interface) via Rust
 - [ ] [Tauri](https://tauri.studio/) home, mobile, and desktop
 - [ ] [Shuttle](https://shuttle.dev/) via Rust
