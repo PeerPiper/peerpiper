@@ -1,6 +1,8 @@
 # PeerPiper Workspace Monorepo
 
-The core Rust libraryies and Front-end examples for the PeerPiper project. Mainly holds the peer-to-peer networking logic, the core data structures, and how to use them.
+The core Rust libraries and Front-end examples for the PeerPiper project. Mainly holds the peer-to-peer networking logic, the core data structures, and how to use them.
+
+The idea is to put all the reusable code in this repo so it can be linked and tested in its entirety.
 
 # Goals
 
