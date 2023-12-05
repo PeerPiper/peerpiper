@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "rollup-plugin-wit-component": "^0.0.7",
-    "vite": "^4.0.0"
+    "rollup-plugin-wit-component": "^0.0.8",
+    "vite": "^5.0.0"
   }
 }
