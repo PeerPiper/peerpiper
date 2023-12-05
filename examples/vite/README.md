@@ -6,8 +6,11 @@ Uses `jco` to run a WIT Component that calls handles to the PeerPiper API.
 
 ```bash
 npm install
-npm run dev
+npm run build
+npm run preview
 ```
+
+Note that due to the way Vite handles dependencies, currently you cannot use `npm run dev` to run this example.
 
 ## Howto
 
