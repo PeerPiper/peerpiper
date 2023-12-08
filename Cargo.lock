@@ -2078,6 +2078,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "nanoid"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ffa00dec017b5b1a8b7cf5e2c008bfda1aa7e0697ac1508b491fdf2622fb4d8"
+dependencies = [
+ "rand",
+]
+
+[[package]]
 name = "netlink-packet-core"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2482,6 +2491,8 @@ name = "pinger"
 version = "0.1.0"
 dependencies = [
  "cargo-component-bindings",
+ "render",
+ "wurbo",
 ]
 
 [[package]]
@@ -2804,6 +2815,26 @@ name = "regex-syntax"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
+
+[[package]]
+name = "render"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07528d0483b1b4727b1419c82ed4be46926971b08af764d9d2ef0ac04a47e202"
+dependencies = [
+ "render_macros",
+]
+
+[[package]]
+name = "render_macros"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6eec48d491a1f66f67c50545566b74a8c8435fe4b7dbf163d15a1e391aa4a2a7"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
 
 [[package]]
 name = "resolv-conf"
@@ -4437,6 +4468,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0205c6e67438f9d657318e0d7ee407a8017cd7bc5f1636cd4a280d4ccbc8d4a0"
 dependencies = [
  "bitflags 2.4.1",
+]
+
+[[package]]
+name = "wurbo"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "954248f13a9c787e4bb0431b5d28f1e94c764ca5f70389a8ec68f8edd9b90dae"
+dependencies = [
+ "lazy_static",
+ "nanoid",
+ "render",
 ]
 
 [[package]]
