@@ -1,5 +1,3 @@
-export const cargoCompImports = {
-	prnt(string) {
-		console.log('from importables.js: ', string);
-	}
-};
+export function prnt(string) {
+	console.log(string);
+}

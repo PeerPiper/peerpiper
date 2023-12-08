@@ -1,13 +1,42 @@
 package peerpiper:pinger;
 
+interface types {
+
+  // Details required in order to add an event listener to an element
+  record listen-details {
+    selector: string,
+    ty: string,
+    value: string
+  }
+
+}
+
 interface imports {
   prnt: func(msg: string);
+}
+
+interface eventerface {
+
+  use types.{listen-details};
+
+  // Add an event listener to the given element
+  addeventlistener: func(details: listen-details);
+}
+
+interface reactivity {
+  // renders the initial Web component with the given data
+  render: func(name: string) -> string;
+
+  // activate listening 
+  activate: func(); 
 }
 
 /// An example world for the component to target.
 world example {
 
-    import imports;
+  import imports;
+  import eventerface;
 
-    export hello-world: func() -> string;
+  export hello-world: func() -> string;
+  export reactivity;
 }
