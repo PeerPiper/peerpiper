@@ -1,3 +1,4 @@
+mod bindgen;
 mod error;
 mod wasm;
 
