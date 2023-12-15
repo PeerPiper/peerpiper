@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use axum::extract::{Path, State};
 use axum::http::header::CONTENT_TYPE;
 use axum::http::StatusCode;
@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // spawn peerpiper::start_native(tx).await?;
     let tx_clone = tx.clone();
     tokio::spawn(async move {
-        peerpiper::start_native(tx_clone).await.unwrap();
+        peerpiper::start(tx_clone).await.unwrap();
     });
 
     tracing::info!("Started.");
