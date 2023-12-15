@@ -1999,6 +1999,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "minijinja"
+version = "1.0.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "208758577ef2c86cf5dd3e85730d161413ec3284e2d73b2ef65d9a24d9971bcb"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "minimal-lexical"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2368,6 +2377,8 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "tracing-wasm",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -2396,8 +2407,6 @@ dependencies = [
  "libp2p",
  "mime_guess",
  "peerpiper",
- "peerpiper-browser",
- "peerpiper-native",
  "rand",
  "rust-embed",
  "serde",
@@ -2427,6 +2436,14 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "peerpiper-wurbo-pinger"
+version = "0.1.0"
+dependencies = [
+ "cargo-component-bindings",
+ "wurbo",
 ]
 
 [[package]]
@@ -4472,13 +4489,17 @@ dependencies = [
 
 [[package]]
 name = "wurbo"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "954248f13a9c787e4bb0431b5d28f1e94c764ca5f70389a8ec68f8edd9b90dae"
+checksum = "fd8d0adf15bbaa5ac2fac39044ec3b500823023dc48bac55a3d2db7fecc48903"
 dependencies = [
  "lazy_static",
+ "minijinja",
  "nanoid",
  "render",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
