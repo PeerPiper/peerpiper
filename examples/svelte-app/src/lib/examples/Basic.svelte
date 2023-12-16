@@ -2,9 +2,6 @@
 	// A basic call to the peerpiper wasm-bindgen API to ping and show pings.
 	import peerpiper from '../../../../../crates/peerpiper-browser/Cargo.toml';
 
-	let addr =
-		'/ip4/10.0.0.140/udp/54417/webrtc-direct/certhash/uEiC475YhqnPWLCICwineVXbCsKnFNvswSo8yfY3v_x6M9g/p2p/12D3KooWRtoqvhY4Q4g7qDx5oLc3CPZwj88mJSQmuw6ebBiez8SS';
-
 	async function loadWasm() {
 		if (!import.meta.env.SSR) {
 			// This code will only run in the browser
@@ -13,7 +10,15 @@
 			// Use functions which were exported from Rust...
 			console.log({ exports });
 
-			exports.start_peerpiper(addr);
+			// Start peerpiper-server to get a local Multiaddr at port 8080:
+			const res = await fetch('http://localhost:8080/');
+			const addr = await res.text();
+
+			let onping = (ping) => {
+				console.log({ ping });
+			};
+
+			exports.connect(addr);
 		}
 	}
 
