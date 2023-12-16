@@ -12,9 +12,9 @@ use libp2p::core::transport::ListenerId;
 use libp2p::core::ConnectedPoint;
 use libp2p::multiaddr::Protocol;
 use libp2p::swarm::{Swarm, SwarmEvent};
-use libp2p::{Multiaddr, PeerId};
+use libp2p::{ping, Multiaddr};
 use std::error::Error;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use super::delay;
 
@@ -24,19 +24,17 @@ const TICK_INTERVAL: Duration = Duration::from_secs(15);
 ///
 /// - Network Client: Interact with the netowrk by sending
 /// - Network Event Loop: Start the network event loop
-pub async fn new(
-    swarm: Swarm<Behaviour>,
-) -> Result<(Client, Receiver<NetworkEvent>, EventLoop), Box<dyn Error>> {
+pub async fn new(swarm: Swarm<Behaviour>) -> (Client, Receiver<NetworkEvent>, EventLoop) {
     let (command_sender, command_receiver) = mpsc::channel(8);
     let (event_sender, event_receiver) = mpsc::channel(8);
 
-    Ok((
+    (
         Client {
             sender: command_sender,
         },
         event_receiver,
         EventLoop::new(swarm, command_receiver, event_sender),
-    ))
+    )
 }
 
 #[derive(Clone)]
@@ -104,16 +102,12 @@ enum Command {
 pub struct EventLoop {
     /// A future that fires at a regular interval and drives the behaviour of the network.
     tick: delay::Delay,
-    /// The instant at which the last `tick` has fired.
-    now: Instant,
     /// The libp2p Swarm that handles all the network logic for us.
     swarm: Swarm<Behaviour>,
     /// Channel to send commands to the network event loop.
     command_receiver: mpsc::Receiver<Command>,
     /// Channel to send events from the network event loop to the user.
     event_sender: mpsc::Sender<NetworkEvent>,
-    /// A counter for peers that have been warned about being unIdentifiable.
-    warning_counters: std::collections::HashMap<PeerId, u8>,
 }
 
 impl EventLoop {
@@ -125,18 +119,14 @@ impl EventLoop {
     ) -> Self {
         Self {
             tick: delay::Delay::new(TICK_INTERVAL),
-            now: Instant::now(),
             swarm,
             command_receiver,
             event_sender,
-            warning_counters: std::collections::HashMap::new(),
         }
     }
 
     /// Runs the network event loop.
     pub async fn run(mut self) {
-        self.now = Instant::now();
-
         loop {
             futures::select! {
                 event = self.swarm.next() => self.handle_event(event.expect("Swarm stream to be infinite.")).await,
@@ -152,7 +142,7 @@ impl EventLoop {
 
     /// Handles a tick of the `tick` future.
     async fn handle_tick(&mut self) {
-        eprintln!("🕒 Ticking at {:?}", self.now.elapsed().as_secs());
+        tracing::info!("🕒 Tick");
         self.tick.reset(TICK_INTERVAL);
 
         // if let Some(Err(e)) = self
@@ -165,10 +155,7 @@ impl EventLoop {
         //     tracing::debug!("Failed to run Kademlia bootstrap: {e:?}");
         // }
 
-        let message = format!(
-            "Hello world! Sent from the rust-peer at: {:4}s",
-            self.now.elapsed().as_secs()
-        );
+        let _message = format!("Hello world! Sent from the rust-peer");
 
         // if let Some(Err(err)) = self
         //     .swarm
@@ -226,15 +213,14 @@ impl EventLoop {
                 established_in,
                 ..
             } => {
-                eprintln!("✔️  Connection Established to {peer_id} in {established_in:?} on {send_back_addr}");
-                tracing::info!("Connected to {peer_id}");
+                tracing::info!("✔️  Connection Established to {peer_id} in {established_in:?} on {send_back_addr}");
             }
 
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
                 tracing::warn!("Failed to dial {peer_id:?}: {error}");
 
                 match (peer_id, &error) {
-                    (Some(peer_id), libp2p::swarm::DialError::Transport(details_vector)) => {
+                    (Some(_peer_id), libp2p::swarm::DialError::Transport(details_vector)) => {
                         for (addr, _error) in details_vector.iter() {
                             // self.swarm
                             //     .behaviour_mut()
@@ -256,20 +242,21 @@ impl EventLoop {
                 tracing::debug!("Connection to {peer_id} closed: {cause:?}");
             }
             // Ping event
-            // SwarmEvent::Behaviour(BehaviourEvent::Ping(ping::Event {
-            //     peer,
-            //     result: Ok(ping::Success::Ping { rtt }),
-            // })) => {
-            //     tracing::debug!("🏓 Ping {peer} in {rtt:?}");
-            //     // send msg
-            //     self.event_sender
-            //         .send(NetworkEvent::Ping {
-            //             peer,
-            //             rtt: rtt.as_millis() as u64,
-            //         })
-            //         .await
-            //         .expect("Event receiver not to be dropped.");
-            // }
+            SwarmEvent::Behaviour(BehaviourEvent::Ping(ping::Event {
+                peer,
+                result: Ok(rtt),
+                ..
+            })) => {
+                tracing::debug!("🏓 Ping {peer} in {rtt:?}");
+                // send msg
+                self.event_sender
+                    .send(NetworkEvent::Ping {
+                        peer: peer.to_string(),
+                        rtt: rtt.as_millis() as u64,
+                    })
+                    .await
+                    .expect("Event receiver not to be dropped.");
+            }
             // SwarmEvent::Behaviour(BehaviourEvent::Relay(e)) => {
             //     tracing::debug!("{:?}", e);
             // }
@@ -280,7 +267,7 @@ impl EventLoop {
             //         message,
             //     },
             // )) => {
-            //     eprintln!(
+            //     tracing::info!(
             //         "📨 Received message from {:?}: {}",
             //         message.source,
             //         String::from_utf8(message.data).unwrap()
@@ -440,13 +427,19 @@ impl EventLoop {
                 };
             }
             Command::Dial { addr, sender } => {
-                eprintln!("📞 Dialing {addr}");
+                tracing::info!("Handling Dial command to {addr}");
                 let _ = match self.swarm.dial(addr) {
-                    Ok(_) => sender.send(Ok(())),
+                    Ok(_) => {
+                        tracing::info!("Dialed successfully.");
+                        sender.send(Ok(()))
+                    }
                     Err(e) => sender.send(Err(Box::new(e))),
                 };
             }
-            Command::Publish { message, topic } => {
+            Command::Publish {
+                message: _,
+                topic: _,
+            } => {
                 // if let Some(Err(err)) = self
                 //     .swarm
                 //     .behaviour_mut()
@@ -463,7 +456,7 @@ impl EventLoop {
                 //         .await;
                 // }
             }
-            Command::Subscribe { topic } => {
+            Command::Subscribe { topic: _ } => {
                 // if let Some(Err(err)) = self
                 //     .swarm
                 //     .behaviour_mut()
