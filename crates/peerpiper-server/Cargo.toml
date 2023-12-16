@@ -1,0 +1,21 @@
+[package]
+name = "peerpiper-server"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+peerpiper = { workspace = true }
+
+axum = "0.6.19"
+anyhow = "1.0.72"
+futures = "0.3.29"
+rand = "0.8"
+serde = { version = "1", features = ["derive"] }
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tokio = { version = "1.34", features = ["macros", "net", "rt", "signal"] }
+tower = "0.4"
+tower-http = { version = "0.4.0", features = ["cors"] }
+libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "tokio"] }
