@@ -14,3 +14,15 @@ rand = "0.8"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 libp2p = { git = "https://github.com/libp2p/rust-libp2p.git" }
+
+[profile.release]
+opt-level = "z"          # Optimize for size.
+lto = true               # Enable Link Time Optimization
+codegen-units = 1        # allow for maximum size reduction optimizations
+strip = true             # Automatically strip symbols from the binary.
+panic = 'abort'          # Abort on panic
+debug = false
+debug-assertions = false
+overflow-checks = false
+incremental = false
+rpath = false
