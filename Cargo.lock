@@ -2439,6 +2439,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "peerpiper-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "futures",
+ "libp2p",
+ "peerpiper",
+ "rand",
+ "serde",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "peerpiper-wurbo-pinger"
 version = "0.1.0"
 dependencies = [
