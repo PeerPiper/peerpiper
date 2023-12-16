@@ -26,7 +26,7 @@ const MAX_CHANNELS: usize = 16;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(
-            "interop_tests_native=debug,peerpiper_native=debug,libp2p_webrtc=info,libp2p_ping=debug",
+            "interop_tests_native=debug,peerpiper_native=debug,peerpiper_core=debug,libp2p_webrtc=info,libp2p_ping=debug",
         )
         .try_init();
 
