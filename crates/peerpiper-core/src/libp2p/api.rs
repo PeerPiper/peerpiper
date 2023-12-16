@@ -14,6 +14,7 @@ use libp2p::multiaddr::Protocol;
 use libp2p::swarm::{Swarm, SwarmEvent};
 use libp2p::{ping, Multiaddr};
 use std::error::Error;
+use std::net::Ipv4Addr;
 use std::time::Duration;
 
 use super::delay;
@@ -198,7 +199,8 @@ impl EventLoop {
                         }
                     }
                     Protocol::Ip4(ip4) => {
-                        if !ip4.is_loopback() && !ip4.is_unspecified() {
+                        if !ip4.is_loopback() && !ip4.is_unspecified() && ip4 != Ipv4Addr::LOCALHOST
+                        {
                             if let Err(e) = addr_handler() {
                                 tracing::error!("Failed to send listen address: {:?}", e);
                             }
