@@ -9,6 +9,8 @@ pub enum Network {
     Libp2p,
 }
 
+/// Peerpiper events from the network.
+/// They should be netowrk agnostic?
 #[derive(Debug)]
 pub enum NetworkEvent {
     ListenAddr {
@@ -17,5 +19,9 @@ pub enum NetworkEvent {
     },
     Error {
         error: NetworkError,
+    },
+    Ping {
+        peer: String,
+        rtt: u64,
     },
 }
