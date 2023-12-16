@@ -12,6 +12,7 @@
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^2.0.0",
+		"@sveltejs/adapter-static": "^2.0.3",
 		"@sveltejs/kit": "^1.27.4",
 		"@wasm-tool/rollup-plugin-rust": "^2.4.0",
 		"eslint": "^8.28.0",
