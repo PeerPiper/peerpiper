@@ -6,7 +6,7 @@ const MAX_CHANNELS: usize = 16;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = tracing_subscriber::fmt()
-        .with_env_filter("peerpiper_native=debug,peerpiper_native_bin=debug,libp2p_webrtc=info,libp2p_ping=debug")
+        .with_env_filter("peerpiper_native=debug,peerpiper_native_bin=debug,peerpiper_core=debug,libp2p_webrtc=info,libp2p_ping=debug")
         .try_init();
 
     tracing::info!("Starting peerpiper-native BINARY");
