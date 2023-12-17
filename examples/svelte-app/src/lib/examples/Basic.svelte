@@ -44,6 +44,8 @@
 	loadWasm();
 </script>
 
-Ping PeerPiper
-<br />
-{exportsString}
+<code>
+	<pre>
+    {exportsString}
+  </pre>
+</code>
