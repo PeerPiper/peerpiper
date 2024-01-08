@@ -252,7 +252,7 @@ impl EventLoop {
                 tracing::debug!("🏓 Ping {peer} in {rtt:?}");
                 // send msg
                 self.event_sender
-                    .send(NetworkEvent::Ping {
+                    .send(NetworkEvent::Pong {
                         peer: peer.to_string(),
                         rtt: rtt.as_millis() as u64,
                     })

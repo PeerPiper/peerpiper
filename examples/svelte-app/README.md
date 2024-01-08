@@ -23,6 +23,15 @@ Use `jco` to `transpile a WIT component to JavaScript:
 import { transpile } from 'jco';
 ```
 
+## PeerPiper Server
+
+You can start the [`peerpiper-server`](../../crates/peerpiper-server) so that the multiaddr is served on localhost:8080:
+
+From the workspace root:
+
+```bash
+cargo run --bin peerpiper-server
+```
 
 ## Developing
 

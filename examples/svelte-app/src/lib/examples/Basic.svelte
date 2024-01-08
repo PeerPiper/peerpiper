@@ -2,10 +2,10 @@
 	// A basic call to the peerpiper wasm-bindgen API to ping and show pings.
 	import peerpiper from '../../../../../crates/peerpiper-browser/Cargo.toml';
 
-	import peerpiper_browser_js from '../../../../../crates/peerpiper-browser/pkg/peerpiper_browser.js?raw';
-	import wasmURL from '../../../../../crates/peerpiper-browser/pkg/peerpiper_browser_bg.wasm?url';
-
-	let exportsString = 'Loading...';
+	// import peerpiper_browser_js from '../../../../../crates/peerpiper-browser/pkg/peerpiper_browser.js?raw';
+	// import wasmURL from '../../../../../crates/peerpiper-browser/pkg/peerpiper_browser_bg.wasm?url';
+	//
+	// let exportsString = 'Loading...';
 
 	async function loadWasm() {
 		if (!import.meta.env.SSR) {
@@ -25,19 +25,14 @@
 
 			mod.connect(addr, onping);
 
-			// let importables = [{ 'component:cargo-comp/peerpiper-browser': peerpiper_browser_js },
-			// { 'peerpiper_browser_bg.wasm': peerpiper_browser_bg_wasm}];
-			// Load the wasm component bytes as an array buffer
-			let wasmBytes = await fetch(wasmURL).then((res) => res.arrayBuffer());
+			// Show the code:
 
-			// make a blob url of the bytes of the wasm file
-			let wasmBlobUrl = URL.createObjectURL(new Blob([wasmBytes], { type: 'application/wasm' }));
-			// find and replace
-			// code = code.replace(`new URL('./${fileName}', import.meta.url)`, `'${wasmBlobUrl}'`);
-			exportsString = peerpiper_browser_js.replace(
-				`new URL('peerpiper_browser_bg.wasm', import.meta.url)`,
-				`'${wasmBlobUrl}'`
-			);
+			// let wasmBytes = await fetch(wasmURL).then((res) => res.arrayBuffer());
+			// let wasmBlobUrl = URL.createObjectURL(new Blob([wasmBytes], { type: 'application/wasm' }));
+			// exportsString = peerpiper_browser_js.replace(
+			// 	`new URL('peerpiper_browser_bg.wasm', import.meta.url)`,
+			// 	`'${wasmBlobUrl}'`
+			// );
 		}
 	}
 
@@ -46,6 +41,6 @@
 
 <code>
 	<pre>
-    {exportsString}
+    <!-- {exportsString} -->
   </pre>
 </code>

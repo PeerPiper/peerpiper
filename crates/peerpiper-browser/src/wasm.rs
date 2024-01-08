@@ -1,3 +1,4 @@
+use futures::{channel::mpsc, SinkExt};
 use peerpiper_core::error::Error;
 use peerpiper_core::events::NetworkEvent;
 use peerpiper_core::libp2p::api;
@@ -10,7 +11,10 @@ use futures::StreamExt;
 use libp2p::core::Multiaddr;
 use wasm_bindgen_futures::spawn_local;
 
-pub async fn start(libp2p_endpoint: String) -> Result<(), Error> {
+pub async fn start(
+    mut tx: mpsc::Sender<NetworkEvent>,
+    libp2p_endpoint: String,
+) -> Result<(), Error> {
     tracing::info!("Spawning swarm. Using multiaddr {:?}", libp2p_endpoint);
 
     let swarm = swarm::create(behaviour::build).map_err(Error::CreateSwarm)?;
@@ -34,12 +38,11 @@ pub async fn start(libp2p_endpoint: String) -> Result<(), Error> {
 
     loop {
         let event = network_events.select_next_some().await;
-        match event {
-            NetworkEvent::Ping { peer, rtt } => {
-                tracing::info!("Ping successful: RTT: {rtt:?}, from {peer}");
-            }
-            evt => tracing::info!("Swarm event: {:?}", evt),
+        tracing::debug!("Network event: {:?}", event);
+        if let Err(network_event) = tx.send(event).await {
+            tracing::error!("Failed to send swarm event: {:?}", network_event);
+            // break;
+            continue;
         }
-        // tracing::debug!("Network event: {:?}", event);
     }
 }
