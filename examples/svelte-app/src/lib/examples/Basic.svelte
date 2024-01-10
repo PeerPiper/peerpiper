@@ -2,10 +2,11 @@
 	// A basic call to the peerpiper wasm-bindgen API to ping and show pings.
 	import peerpiper from '../../../../../crates/peerpiper-browser/Cargo.toml';
 
-	// import peerpiper_browser_js from '../../../../../crates/peerpiper-browser/pkg/peerpiper_browser.js?raw';
-	// import wasmURL from '../../../../../crates/peerpiper-browser/pkg/peerpiper_browser_bg.wasm?url';
-	//
-	// let exportsString = 'Loading...';
+	// below import are for code display only, not needed for production:
+	import peerpiper_browser_js from '../../../../../crates/peerpiper-browser/pkg/peerpiper_browser.js?raw';
+	import wasmURL from '../../../../../crates/peerpiper-browser/pkg/peerpiper_browser_bg.wasm?url';
+
+	let exportsString = 'Loading...';
 
 	async function loadWasm() {
 		if (!import.meta.env.SSR) {
@@ -27,12 +28,12 @@
 
 			// Show the code:
 
-			// let wasmBytes = await fetch(wasmURL).then((res) => res.arrayBuffer());
-			// let wasmBlobUrl = URL.createObjectURL(new Blob([wasmBytes], { type: 'application/wasm' }));
-			// exportsString = peerpiper_browser_js.replace(
-			// 	`new URL('peerpiper_browser_bg.wasm', import.meta.url)`,
-			// 	`'${wasmBlobUrl}'`
-			// );
+			let wasmBytes = await fetch(wasmURL).then((res) => res.arrayBuffer());
+			let wasmBlobUrl = URL.createObjectURL(new Blob([wasmBytes], { type: 'application/wasm' }));
+			exportsString = peerpiper_browser_js.replace(
+				`new URL('peerpiper_browser_bg.wasm', import.meta.url)`,
+				`'${wasmBlobUrl}'`
+			);
 		}
 	}
 
@@ -41,6 +42,6 @@
 
 <code>
 	<pre>
-    <!-- {exportsString} -->
+    {exportsString}
   </pre>
 </code>
