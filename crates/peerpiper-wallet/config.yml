@@ -1,0 +1,3 @@
+dependencies:
+  seed-keeper:wit-ui/wurbo-out@0.1.0: ../../submodules/seed-keeper/target/wasm32-wasi/release/seed_keeper_wit_ui.wasm
+  seed-keeper:wallet/config@0.1.0: ../../submodules/seed-keeper/target/wasm32-wasi/release/seed_keeper_wallet.wasm

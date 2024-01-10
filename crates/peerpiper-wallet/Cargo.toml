@@ -3,15 +3,23 @@ name = "peerpiper-wallet"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-cargo-component-bindings = "0.6.0"
-
 [lib]
 crate-type = ["cdylib"]
 
+[dependencies]
+cargo-component-bindings = "0.6.0"
+wurbo = "0.1.5"
+
+[dev-dependencies]
+wasmtime = { version = "16", features = ['component-model'] }
+wasmtime-wasi = "16.0"
+thiserror = "1.0"
+
 [package.metadata.component]
-package = "component:peerpiper-wallet"
+package = "peerpiper:wallet"
 
 [package.metadata.component.dependencies]
+
+[package.metadata.component.target.dependencies]
+"seed-keeper:wit-ui" = { path = "wit/deps/seed-keeper-wit-ui" }
+"seed-keeper:wallet" = { path = "wit/deps/seed-keeper-wallet" } 

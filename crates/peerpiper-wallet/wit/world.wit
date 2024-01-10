@@ -1,6 +1,74 @@
-package component:peerpiper-wallet;
+package peerpiper:wallet@0.1.0;
+
+// use example:edwards-ui/wurbo-out@0.1.0 as edwards-out;
+use seed-keeper:wit-ui/wurbo-out@0.1.0 as seed-out;
+
+interface wurbo-types {
+
+  // use edwards-out.{context as edwards-context};
+  use seed-out.{context as seed-context};
+
+  // Details required in order to add an event listener to an element
+  record listen-details {
+    selector: string,
+    ty: string,
+  }
+
+  // Context for the minijinja rendering
+  record app {
+    title: string
+  }
+
+  // Content record for the initial content of the entire app
+  record content {
+    // pass in props like title, etc.
+    app: app,
+    // optionally pass in an encrypted seed to load
+    seed-ui: seed-context,
+    // optionally pass in a message to sign or verify
+    // edwards-ui: edwards-context
+  }
+
+  // Context variants
+  variant context {
+    all-content(content),
+    seed(seed-context),
+    // edwards(edwards-context)
+  }
+
+}
+interface aggregation {
+  // calls activate on on the child components
+  activates: func();
+}
+
+interface wurbo-in {
+
+  use wurbo-types.{listen-details};
+
+  // Add an event listener to the given element
+  addeventlistener: func(details: listen-details);
+
+}
+
+interface wurbo-out {
+
+  use wurbo-types.{context};
+
+  // renders the initial Web component with the given data
+  render: func(ctx: context) -> result<string, string>;
+
+}
 
 /// An example world for the component to target.
-world example {
-    export hello-world: func() -> string;
+world peerpiper {
+    // requests to the DOM via jco
+    import wurbo-in;
+
+    import seed-keeper:wit-ui/wurbo-out@0.1.0;
+  
+    // requests from the DOM via jco
+    export wurbo-out;
+
+    export aggregation;
 }
