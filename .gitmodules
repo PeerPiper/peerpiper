@@ -1,0 +1,3 @@
+[submodule "submodules/seed-keeper"]
+	path = submodules/seed-keeper
+	url = https://github.com/DougAnderson444/seed-keeper
