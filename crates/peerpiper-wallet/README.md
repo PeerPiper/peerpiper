@@ -28,7 +28,7 @@ git submodule update --remote
 
 ## Symlink to wit files
 
-In order to run tests on our aggregate we will need copies of the .wit files in ./wit/deps folder. In order to avoid copy-pasting, we can instead symlink the files.
+In order to run tests on our aggregate we have made symlinks to the .wit files in ./wit/deps folder. In order to avoid copy-pasting, we can instead symlink the files like this:
 
 ```bash
 cd wit/deps
@@ -49,12 +49,12 @@ Next build the wallet itself:
 
 ```bash
 cd crates/peerpiper-wallet
-cargo component build --workspace --release
+cargo component build --release
 ```
 
 Then compose the dependencies into an aggregate wallet, run:
 
 ```bash
 # from workspace root dir
-wasm-tools compose --config crates/peerpiper-wallet/config.yml -o dist/peerpiper-wallet-aggregate.wasm target/wasm32-wasi/release/peerpiper-wallet.wasm
+wasm-tools compose --config crates/peerpiper-wallet/config.yml -o dist/peerpiper_wallet_aggregate.wasm target/wasm32-wasi/release/peerpiper_wallet.wasm
 ```
