@@ -58,3 +58,11 @@ Then compose the dependencies into an aggregate wallet, run:
 # from workspace root dir
 wasm-tools compose --config crates/peerpiper-wallet/config.yml -o dist/peerpiper_wallet_aggregate.wasm target/wasm32-wasi/release/peerpiper_wallet.wasm
 ```
+
+then load the example app:
+
+```
+cd examples/svelte-app
+npm run build
+npm run preview -- --open
+```
