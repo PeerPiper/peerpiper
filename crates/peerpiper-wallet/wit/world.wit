@@ -29,11 +29,16 @@ interface wurbo-types {
     // edwards-ui: edwards-context
   }
 
+  variant message {
+    encrypted(list<u8>)
+  }
+
   // Context variants
   variant context {
     all-content(content),
     seed(seed-context),
     // edwards(edwards-context)
+    event(message)
   }
 
 }
@@ -58,6 +63,8 @@ interface wurbo-out {
   // renders the initial Web component with the given data
   render: func(ctx: context) -> result<string, string>;
 
+  // activate listening 
+  activate: func();
 }
 
 /// An example world for the component to target.

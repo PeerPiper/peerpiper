@@ -19,7 +19,7 @@
 cargo_component_bindings::generate!();
 
 use crate::bindings::exports::peerpiper::wallet::wurbo_out::Guest as WurboGuest;
-use crate::bindings::peerpiper::wallet::wurbo_types::{self, Context};
+use crate::bindings::peerpiper::wallet::wurbo_types::{self, Context, Message};
 // use bindings::example::edwards_ui;
 use bindings::exports::peerpiper::wallet::aggregation::Guest as AggregationGuest;
 use bindings::seed_keeper::wit_ui;
@@ -73,9 +73,17 @@ impl WurboGuest for Component {
             }
             Context::Seed(ctx) => wit_ui::wurbo_out::render(&ctx.into())?,
             // Context::Edwards(ctx) => edwards_ui::wurbo_out::render(&ctx.into())?,
+            Context::Event(Message::Encrypted(seed)) => {
+                println!("Received Context Event Message Encrypted seed {:?}", seed);
+                "No updates to the DOM".to_string()
+            }
         };
         Ok(html)
     }
+
+    /// No-op for activate(). This is here because the wurbo API calls activate in the library,
+    /// and if this is missing there's a console error. It is benign, but it's annoying.
+    fn activate() {}
 }
 
 impl AggregationGuest for Component {
