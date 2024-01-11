@@ -1,2 +1,1 @@
-export { examples } from './examples/index.js';
-// place files you want to import through the `$lib` alias in this folder.
+export { examples, importables } from './examples/index.js';

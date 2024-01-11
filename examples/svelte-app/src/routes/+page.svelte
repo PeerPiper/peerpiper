@@ -51,7 +51,7 @@
 			0 2px 4px rgba(0, 0, 0, 0.24);
 	}
 	header.box {
-		background: #00bcd4;
+		background: #2ec73d;
 		z-index: 100;
 		cursor: initial;
 		box-shadow:

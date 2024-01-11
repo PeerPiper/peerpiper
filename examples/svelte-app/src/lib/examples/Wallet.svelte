@@ -4,10 +4,7 @@
 
 	// Import wasm component bytes as a url
 	import wasmURL from '../../../../../dist/peerpiper_wallet_aggregate.wasm?url';
-
-	// get imports from +page.svelte
-	export let importables;
-	export let load;
+	import { importables } from '$lib';
 
 	/**
 	 * The rendered component as a string of HTML
@@ -23,7 +20,7 @@
 
 	onMount(async () => {
 		// ensure you are in the Browser environment to rollup your WIT Component
-		// const { load } = await import('rollup-plugin-wit-component');
+		const { load } = await import('rollup-plugin-wit-component');
 
 		let listener = new wurbo.Listener();
 
