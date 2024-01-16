@@ -23,3 +23,5 @@ package = "peerpiper:wallet"
 [package.metadata.component.target.dependencies]
 "seed-keeper:wit-ui" = { path = "wit/deps/seed-keeper-wit-ui" }
 "seed-keeper:wallet" = { path = "wit/deps/seed-keeper-wallet" } 
+"delano:wit-ui" = { path = "wit/deps/delano-wit-ui" } 
+"delano:wallet" = { path = "wit/deps/delano-wallet" }

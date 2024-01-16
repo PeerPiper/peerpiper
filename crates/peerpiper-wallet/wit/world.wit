@@ -2,11 +2,13 @@ package peerpiper:wallet@0.1.0;
 
 // use example:edwards-ui/wurbo-out@0.1.0 as edwards-out;
 use seed-keeper:wit-ui/wurbo-out@0.1.0 as seed-out;
+use delano:wit-ui/wurbo-out@0.1.0 as delano-out;
 
 interface wurbo-types {
 
   // use edwards-out.{context as edwards-context};
   use seed-out.{context as seed-context};
+  use delano-out.{context as delano-context};
 
   // Details required in order to add an event listener to an element
   record listen-details {
@@ -25,6 +27,7 @@ interface wurbo-types {
     app: app,
     // optionally pass in an encrypted seed to load
     seed-ui: seed-context,
+    delano-ui: delano-context,
     // optionally pass in a message to sign or verify
     // edwards-ui: edwards-context
   }
@@ -37,6 +40,7 @@ interface wurbo-types {
   variant context {
     all-content(content),
     seed(seed-context),
+    delano(delano-context),
     // edwards(edwards-context)
     event(message)
   }
