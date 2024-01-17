@@ -72,6 +72,7 @@ impl WurboGuest for Component {
                 let rendered = tmpl.render(&struct_ctx).map_err(prnt_err)?;
                 rendered
             }
+            // The syntax is Context::SlotName(inner_ctx) ...
             Context::Seed(ctx) => wit_ui::wurbo_out::render(&ctx.into())?,
             Context::Delano(ctx) => delano::wit_ui::wurbo_out::render(&ctx.into())?,
             // Context::Edwards(ctx) => edwards_ui::wurbo_out::render(&ctx.into())?,
@@ -89,10 +90,12 @@ impl WurboGuest for Component {
 }
 
 impl AggregationGuest for Component {
-    fn activates() {
-        // iterate over each of the child components' wurbo_out's and call activate
+    /// This function is called to activate all the child components of this aggregate component.
+    /// It iterates over each of the child components' wurbo_out's and calls activate on each.
+    fn activates(selectors: Option<Vec<String>>) {
+        wit_ui::wurbo_out::activate(selectors.as_deref());
+        delano::wit_ui::wurbo_out::activate(selectors.as_deref());
         // edwards_ui::wurbo_out::activate();
-        wit_ui::wurbo_out::activate(None);
     }
 }
 
@@ -102,6 +105,7 @@ impl AggregationGuest for Component {
 pub(crate) struct AppContext {
     app: App,
     seed_ui: SeedUI,
+    delano_ui: DelanoUI,
     // edwards_ui: Edwards,
 }
 
@@ -110,6 +114,7 @@ impl StructObject for AppContext {
         match name {
             "app" => Some(Value::from_struct_object(self.app.clone())),
             "seed_ui" => Some(Value::from_struct_object(self.seed_ui.clone())),
+            "delano_ui" => Some(Value::from_struct_object(self.delano_ui.clone())),
             // "edwards_ui" => Some(Value::from_struct_object(self.edwards_ui.clone())),
             _ => None,
         }
@@ -130,6 +135,7 @@ impl From<wurbo_types::Content> for AppContext {
             app: App::from(context.app),
             // We pass props since initial content could have the encrypted seed for the seed keeper
             seed_ui: SeedUI::from(context.seed_ui),
+            delano_ui: DelanoUI::from(context.delano_ui),
             // We could have an initial message to sign or verify too...
             // edwards_ui: Edwards::from(context.edwards_ui),
         }
@@ -200,6 +206,44 @@ impl From<wit_ui::wurbo_types::Context> for SeedUI {
 
 impl Deref for SeedUI {
     type Target = wurbo_types::SeedContext;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+/// DelanoUI is the context for the Delano user interface component
+#[derive(Debug, Clone)]
+struct DelanoUI(wurbo_types::DelanoContext);
+
+/// Implement StructObject for DelanoUI so that we can use it in the template
+/// The main point of this impl is to call render(ctx) on the DelanoUIContext
+/// and return the HTML string as the Value
+impl StructObject for DelanoUI {
+    /// Simply passes through the seed context to the component for rendering
+    /// outputs to .html
+    fn get_field(&self, name: &str) -> Option<Value> {
+        let render_result = delano::wit_ui::wurbo_out::render(&self);
+        match (name, render_result) {
+            ("html", Ok(html)) => Some(Value::from(html)),
+            _ => None,
+        }
+    }
+
+    /// So that debug will show the values
+    fn static_fields(&self) -> Option<&'static [&'static str]> {
+        Some(&["html"])
+    }
+}
+
+impl From<delano::wit_ui::context_types::Context> for DelanoUI {
+    fn from(context: delano::wit_ui::context_types::Context) -> Self {
+        DelanoUI(context)
+    }
+}
+
+impl Deref for DelanoUI {
+    type Target = wurbo_types::DelanoContext;
 
     fn deref(&self) -> &Self::Target {
         &self.0
