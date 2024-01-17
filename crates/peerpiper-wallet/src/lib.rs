@@ -21,6 +21,7 @@ cargo_component_bindings::generate!();
 use crate::bindings::exports::peerpiper::wallet::wurbo_out::Guest as WurboGuest;
 use crate::bindings::peerpiper::wallet::wurbo_types::{self, Context, Message};
 // use bindings::example::edwards_ui;
+use bindings::delano;
 use bindings::exports::peerpiper::wallet::aggregation::Guest as AggregationGuest;
 use bindings::seed_keeper::wit_ui;
 
@@ -72,6 +73,7 @@ impl WurboGuest for Component {
                 rendered
             }
             Context::Seed(ctx) => wit_ui::wurbo_out::render(&ctx.into())?,
+            Context::Delano(ctx) => delano::wit_ui::wurbo_out::render(&ctx.into())?,
             // Context::Edwards(ctx) => edwards_ui::wurbo_out::render(&ctx.into())?,
             Context::Event(Message::Encrypted(seed)) => {
                 println!("Received Context Event Message Encrypted seed {:?}", seed);
@@ -90,7 +92,7 @@ impl AggregationGuest for Component {
     fn activates() {
         // iterate over each of the child components' wurbo_out's and call activate
         // edwards_ui::wurbo_out::activate();
-        wit_ui::wurbo_out::activate();
+        wit_ui::wurbo_out::activate(None);
     }
 }
 
