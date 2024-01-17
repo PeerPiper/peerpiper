@@ -14,16 +14,15 @@ build-submodules: update-remote
     fi \
   done
 
-build-wallet: build-submodules
+build-wallet:
  cargo component build --manifest-path=crates/peerpiper-wallet/Cargo.toml
  cargo component build --manifest-path=crates/peerpiper-wallet/Cargo.toml --release
 
-compose-wallet:
-  wasm-tools compose --config crates/peerpiper-wallet/config.yml -o dist/peerpiper_wallet_aggregate.wasm target/wasm32-wasi/release/peerpiper_wallet.wasm
+# update and build all submodules, then build the wallet
+updated-build: build-submodules build-wallet
 
-# Just recipe to update, build, and compose all the things
-# to run: `just compose`
-compose: update-remote build-submodules build-wallet compose-wallet
+compose: build-wallet
+  wasm-tools compose --config crates/peerpiper-wallet/config.yml -o dist/peerpiper_wallet_aggregate.wasm target/wasm32-wasi/release/peerpiper_wallet.wasm
 
 preview: compose
   cd examples/svelte-app && npm run build && npm run preview -- --open
