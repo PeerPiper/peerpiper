@@ -48,7 +48,7 @@ interface wurbo-types {
 }
 interface aggregation {
   // calls activate on on the child components
-  activates: func();
+  activates: func(selectors: option<list<string>>);
 }
 
 interface wurbo-in {
