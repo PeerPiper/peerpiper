@@ -16,7 +16,7 @@ use wasmtime::component::{Component, Linker};
 use wasmtime::{Config, Engine, Store};
 use wasmtime_wasi::preview2::{Table, WasiCtx, WasiCtxBuilder, WasiView};
 
-use bindgen::exports::peerpiper::wallet::wurbo_out::Context as AggregateWitUiContext;
+use bindgen::exports::peerpiper::wallet::wurbo_out::Context as WalletContext;
 use bindgen::peerpiper::wallet::wurbo_types;
 
 struct MyCtx {
@@ -65,7 +65,6 @@ impl WasiView for MyCtx {
 // }
 
 impl bindgen::seed_keeper::wit_ui::wurbo_types::Host for MyCtx {}
-
 impl bindgen::seed_keeper::wit_ui::wurbo_out::Host for MyCtx {
     fn render(
         &mut self,
@@ -80,8 +79,22 @@ impl bindgen::seed_keeper::wit_ui::wurbo_out::Host for MyCtx {
     }
 }
 
-impl bindgen::peerpiper::wallet::wurbo_types::Host for MyCtx {}
+impl bindgen::delano::wit_ui::context_types::Host for MyCtx {}
+impl bindgen::delano::wit_ui::wurbo_out::Host for MyCtx {
+    fn render(
+        &mut self,
+        _ctx: bindgen::delano::wit_ui::wurbo_out::Context,
+    ) -> wasmtime::Result<Result<String, String>> {
+        // return some html as string
+        Ok(Ok("delano ui for testing".to_string()))
+    }
 
+    fn activate(&mut self, _selectors: Option<Vec<String>>) -> wasmtime::Result<()> {
+        Ok(())
+    }
+}
+
+impl bindgen::peerpiper::wallet::wurbo_types::Host for MyCtx {}
 impl bindgen::peerpiper::wallet::wurbo_in::Host for MyCtx {
     fn addeventlistener(
         &mut self,
@@ -133,7 +146,9 @@ pub fn workspace_dir() -> PathBuf {
 mod aggregate_peerpiper_tests {
 
     use crate::bindgen::{
-        peerpiper::wallet::wurbo_types::SeedContext, seed_keeper::wit_ui::wurbo_types::Page,
+        delano::wit_ui::context_types,
+        peerpiper::wallet::wurbo_types::{DelanoContext, SeedContext},
+        seed_keeper::wit_ui::wurbo_types::Page,
     };
 
     use super::*;
@@ -184,11 +199,22 @@ mod aggregate_peerpiper_tests {
             output: None,
         });
 
-        let all_context = AggregateWitUiContext::AllContent(wurbo_types::Content {
+        let delano_ui =
+            DelanoContext::AllContent(bindgen::delano::wit_ui::context_types::Everything {
+                page: Some(context_types::Page {
+                    name: "a title for the page".to_string(),
+                    version: "0.1.0".to_string(),
+                    description: "Delanocreds wallet.".to_string(),
+                }),
+                issue: None,
+            });
+
+        let all_context = WalletContext::AllContent(wurbo_types::Content {
             app: wurbo_types::App {
                 title: "a title for the app".to_string(),
             },
             seed_ui: seed_ui.clone(),
+            delano_ui: delano_ui.clone(),
         });
 
         let result = bindings
@@ -208,7 +234,7 @@ mod aggregate_peerpiper_tests {
         // only seed_ui as context for render, should get only seed UI HTML
         let result = bindings
             .peerpiper_wallet_wurbo_out()
-            .call_render(&mut store, &AggregateWitUiContext::Seed(seed_ui))?
+            .call_render(&mut store, &WalletContext::Seed(seed_ui))?
             .expect("render should work in success tests");
 
         eprintln!("seed_ui result: {}", result);
