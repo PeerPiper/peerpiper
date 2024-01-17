@@ -7,14 +7,15 @@ update-remote:
   git submodule update --remote
 
 # for each dir in submodules which has a `Cargo.toml` file and a `wit` directory in it, build it
-build-submodules:
+build-submodules: update-remote
   for dir in submodules/*; do \
     if [ -f $dir/Cargo.toml ]; then \
       cargo component build --manifest-path=$dir/Cargo.toml --workspace --release; \
     fi \
   done
 
-build-wallet:
+build-wallet: build-submodules
+ cargo component build --manifest-path=crates/peerpiper-wallet/Cargo.toml
  cargo component build --manifest-path=crates/peerpiper-wallet/Cargo.toml --release
 
 compose-wallet:
