@@ -29,10 +29,12 @@
 
 		// define the import handles you are giving to your component
 		let all_importables = [
-			{ 'component:wurbo/wurbo-in': importables.buildCodeString(listener.namespace) },
 			{ 'seed-keeper:wit-ui/wurbo-in': importables.buildCodeString(listener.namespace) },
-			{ 'example:edwards-ui/wurbo-in': importables.buildCodeString(listener.namespace) },
-			{ 'wallet:aggregate-wit-ui/wurbo-in': importables.buildCodeString(listener.namespace) }
+			{ 'seed-keeper:wallet/wurbo-in': importables.buildCodeString(listener.namespace) },
+			{ 'delano:wit-ui/wurbo-in': importables.buildCodeString(listener.namespace) },
+			{ 'delano:wallet/wurbo-in': importables.buildCodeString(listener.namespace) },
+			{ 'peerpiper:wallet/wurbo-in': importables.buildCodeString(listener.namespace) }
+			// { 'example:edwards-ui/wurbo-in': importables.buildCodeString(listener.namespace) },
 		];
 
 		// load the import handles into the Wasm component and get the ES module returned
@@ -57,18 +59,29 @@
 						output: null
 					}
 				},
-				edwardsUi: {
+				delanoUi: {
 					tag: 'all-content',
+					// name, version, description
 					val: {
 						page: {
-							title: 'UI #2: An Edwards25519 Signer'
-						},
-						input: {
-							placeholder: 'a message to sign'
-						},
-						output: null
+							name: 'Delano',
+							version: '0.0.1',
+							description: 'A wallet for the people'
+						}
 					}
 				}
+				// edwardsUi: {
+				// 	tag: 'all-content',
+				// 	val: {
+				// 		page: {
+				// 			title: 'UI #2: An Edwards25519 Signer'
+				// 		},
+				// 		input: {
+				// 			placeholder: 'a message to sign'
+				// 		},
+				// 		output: null
+				// 	}
+				// }
 			}
 		};
 		renderedHTML = mod.wurboOut.render(data);
