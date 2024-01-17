@@ -74,7 +74,7 @@ impl bindgen::seed_keeper::wit_ui::wurbo_out::Host for MyCtx {
         Ok(Ok("seed keeper ui for testing".to_string()))
     }
 
-    fn activate(&mut self) -> wasmtime::Result<()> {
+    fn activate(&mut self, _selectors: Option<Vec<String>>) -> wasmtime::Result<()> {
         Ok(())
     }
 }
@@ -228,7 +228,7 @@ mod aggregate_peerpiper_tests {
         // should be able to also call aggregation_activate()
         bindings
             .peerpiper_wallet_aggregation()
-            .call_activates(&mut store)?;
+            .call_activates(&mut store, None)?;
 
         // now pass
         // only seed_ui as context for render, should get only seed UI HTML
