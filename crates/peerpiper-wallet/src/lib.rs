@@ -18,8 +18,14 @@
 //!
 cargo_component_bindings::generate!();
 
+mod state;
+
+use state::State;
+
 use crate::bindings::exports::peerpiper::wallet::wurbo_out::Guest as WurboGuest;
+use crate::bindings::peerpiper::wallet::wurbo_in::set_hash;
 use crate::bindings::peerpiper::wallet::wurbo_types::{self, Context, Message};
+
 // use bindings::example::edwards_ui;
 use bindings::delano;
 use bindings::exports::peerpiper::wallet::aggregation::Guest as AggregationGuest;
@@ -28,6 +34,7 @@ use bindings::seed_keeper::wit_ui;
 use wurbo::jinja::{error::RenderError, Entry, Index, Rest, Templates};
 use wurbo::prelude::*;
 
+use base64ct::{Base64UrlUnpadded, Encoding};
 use std::ops::Deref;
 
 struct Component;
@@ -76,10 +83,20 @@ impl WurboGuest for Component {
             Context::Seed(ctx) => wit_ui::wurbo_out::render(&ctx.into())?,
             Context::Delano(ctx) => delano::wit_ui::wurbo_out::render(&ctx.into())?,
             // Context::Edwards(ctx) => edwards_ui::wurbo_out::render(&ctx.into())?,
-            Context::Event(Message::Encrypted(seed)) => {
-                println!("Received Context Event Message Encrypted seed {:?}", seed);
-                "No updates to the DOM".to_string()
-            }
+            Context::Event(evt) => match evt {
+                Message::Encrypted(seed) => {
+                    // We can do things with the encrypted seed here
+                    // Like push to the URL, or save to local storage, or the network
+                    println!("Received Context Event Message Encrypted seed {:?}", seed);
+                    let state = State::default().with_encrypted(seed);
+                    // convert to json string and set hash to it
+                    let hash_val = serde_json::to_string(&state).map_err(|e| e.to_string())?;
+                    let hash_b64 = Base64UrlUnpadded::encode_string(hash_val.as_bytes());
+                    set_hash(&hash_b64);
+                    // return no html
+                    "".to_string()
+                }
+            },
         };
         Ok(html)
     }
