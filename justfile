@@ -19,7 +19,7 @@ build-wallet:
  cargo component build --manifest-path=crates/peerpiper-wallet/Cargo.toml --release
 
 # update and build all submodules, then build the wallet
-updated-build: build-submodules build-wallet
+update-build: build-submodules build-wallet
 
 compose: build-wallet
   wasm-tools compose --config crates/peerpiper-wallet/config.yml -o dist/peerpiper_wallet_aggregate.wasm target/wasm32-wasi/release/peerpiper_wallet.wasm
