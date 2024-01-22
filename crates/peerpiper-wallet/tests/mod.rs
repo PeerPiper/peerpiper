@@ -102,6 +102,11 @@ impl bindgen::peerpiper::wallet::wurbo_in::Host for MyCtx {
     ) -> wasmtime::Result<()> {
         Ok(())
     }
+
+    /// Sets location hash (stub)
+    fn set_hash(&mut self, _hash: String) -> wasmtime::Result<()> {
+        Ok(())
+    }
 }
 
 #[derive(Error, Debug)]
