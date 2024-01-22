@@ -1,5 +1,7 @@
 <script>
 	import { onMount, tick } from 'svelte';
+	// When we use $page.url.hash, responding to chnages in the hash becomes very easy.
+	import { page } from '$app/stores';
 	import * as wurbo from 'wurbo';
 
 	// Import wasm component bytes as a url
@@ -40,6 +42,22 @@
 		// load the import handles into the Wasm component and get the ES module returned
 		mod = await load(wasmBytes, all_importables);
 
+		let encrypted = null;
+		try {
+			// get any state from the window.location.hash
+			let hash = window.location.hash.slice(1);
+			// decode it from Base64UrlUnpadded
+			let decoded = atob(hash);
+			// parse it from string to json object
+			let state = JSON.parse(decoded);
+
+			encrypted = new Uint8Array(state?.encrypted) || null;
+		} catch (e) {
+			console.log(e);
+		}
+
+		console.log({ encrypted });
+
 		// call `render` with your inputs for the component
 		let data = {
 			tag: 'all-content',
@@ -54,7 +72,8 @@
 							title: 'UI #1: A Seed Keeper'
 						},
 						input: {
-							placeholder: 'Your Username (pick any 8+ chars)'
+							placeholder: 'Your Username (pick any 8+ chars)',
+							encrypted
 						},
 						output: null
 					}
@@ -69,7 +88,8 @@
 							description: 'A wallet for the people'
 						}
 					}
-				}
+				},
+				event
 				// edwardsUi: {
 				// 	tag: 'all-content',
 				// 	val: {
