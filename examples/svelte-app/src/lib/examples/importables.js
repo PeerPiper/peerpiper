@@ -44,5 +44,10 @@ export function buildCodeString(namespace) {
       export function emit(message) {
         bc.postMessage(message);
       }
+
+      // Set hash of the current window to the given value
+      export function setHash(hash) {
+        window.location.hash = hash;
+      }
 `;
 }
