@@ -2,7 +2,7 @@ import { default as Basic } from './Basic.svelte';
 import { default as Wallet } from './Wallet.svelte';
 
 export const examples = [
-	{ name: 'Basic Ping with Server (start server first)', component: Basic },
+	// { name: 'Basic Ping with Server (start server first)', component: Basic },
 	{ name: 'Wallet', component: Wallet }
 ];
 
