@@ -16,7 +16,7 @@
 //! Each child component takes care of its own inputs/output, so the Router doesn't
 //! need to worry about it.
 //!
-cargo_component_bindings::generate!();
+mod bindings;
 
 mod state;
 
