@@ -32,17 +32,14 @@ interface wurbo-types {
     // edwards-ui: edwards-context
   }
 
-  variant message {
-    encrypted(list<u8>)
-  }
-
   // Context variants
   variant context {
     all-content(content),
     seed(seed-context),
     delano(delano-context),
     // edwards(edwards-context)
-    event(message)
+    // Keep the event JSON as a base64 encoded string so that we don't have to parse Uint8Arrays for `jco` to receive it
+    event(string)
   }
 
 }
@@ -70,7 +67,7 @@ interface wurbo-out {
   render: func(ctx: context) -> result<string, string>;
 
   // activate listening 
-  activate: func();
+  activate: func(selectors: option<list<string>>);
 }
 
 /// An example world for the component to target.

@@ -18,4 +18,9 @@ impl State {
         self.encrypted = Some(encrypted);
         self
     }
+
+    /// Returns whether the state has an encrypted seed.
+    pub fn has_encrypted(&self) -> bool {
+        self.encrypted.is_some()
+    }
 }

@@ -16,6 +16,8 @@
 //! Each child component takes care of its own inputs/output, so the Router doesn't
 //! need to worry about it.
 //!
+#![feature(lazy_cell)]
+
 mod bindings;
 
 mod state;
@@ -24,18 +26,22 @@ use state::State;
 
 use crate::bindings::exports::peerpiper::wallet::wurbo_out::Guest as WurboGuest;
 use crate::bindings::peerpiper::wallet::wurbo_in::set_hash;
-use crate::bindings::peerpiper::wallet::wurbo_types::{self, Context, Message};
+use crate::bindings::peerpiper::wallet::wurbo_types::{self, Content, Context};
 
 // use bindings::example::edwards_ui;
 use bindings::delano;
 use bindings::exports::peerpiper::wallet::aggregation::Guest as AggregationGuest;
 use bindings::seed_keeper::wit_ui;
 
+use seed_keeper_wit_ui::events::Message;
 use wurbo::jinja::{error::RenderError, Entry, Index, Rest, Templates};
 use wurbo::prelude::*;
 
 use base64ct::{Base64UrlUnpadded, Encoding};
 use std::ops::Deref;
+use std::sync::{LazyLock, Mutex};
+
+static APP_CONTEXT: LazyLock<Mutex<Option<AppContext>>> = LazyLock::new(|| Mutex::new(None));
 
 struct Component;
 
@@ -54,56 +60,92 @@ impl WurboGuest for Component {
     fn render(context: Context) -> Result<String, String> {
         let html = match context {
             Context::AllContent(ctx) => {
-                let templates = get_templates();
-                let entry = templates.entry.name;
-                let mut env = Environment::new();
+                // Store the context in the APP_CONTENT, since we don't have &self in this trait
+                *APP_CONTEXT.lock().unwrap() = Some(AppContext::from(ctx.clone()));
 
-                for (name, template) in templates.into_iter() {
-                    env.add_template(name, template)
-                        .expect("template should be added");
-                }
-
-                let struct_ctx = Value::from_struct_object(AppContext::from(ctx.clone()));
-
-                let prnt_err = |e| {
-                    println!("Could not render template: {:#}", e);
-                    let mut err = &e as &dyn std::error::Error;
-                    while let Some(next_err) = err.source() {
-                        println!("caused by: {:#}", next_err);
-                        err = next_err;
-                    }
-                    RenderError::from(e)
-                };
-
-                let tmpl = env.get_template(entry).map_err(prnt_err)?;
-                let rendered = tmpl.render(&struct_ctx).map_err(prnt_err)?;
-                rendered
+                render_all(ctx.into()).map_err(|e| e.to_string())?
             }
             // The syntax is Context::SlotName(inner_ctx) ...
             Context::Seed(ctx) => wit_ui::wurbo_out::render(&ctx.into())?,
             Context::Delano(ctx) => delano::wit_ui::wurbo_out::render(&ctx.into())?,
             // Context::Edwards(ctx) => edwards_ui::wurbo_out::render(&ctx.into())?,
-            Context::Event(evt) => match evt {
-                Message::Encrypted(seed) => {
-                    // We can do things with the encrypted seed here
-                    // Like push to the URL, or save to local storage, or the network
-                    println!("Received Context Event Message Encrypted seed {:?}", seed);
-                    let state = State::default().with_encrypted(seed);
-                    // convert to json string and set hash to it
-                    let hash_val = serde_json::to_string(&state).map_err(|e| e.to_string())?;
-                    let hash_b64 = Base64UrlUnpadded::encode_string(hash_val.as_bytes());
-                    set_hash(&hash_b64);
-                    // return no html
-                    "".to_string()
+            Context::Event(base64) => {
+                let decoded = Base64UrlUnpadded::decode_vec(&base64).map_err(|e| e.to_string())?;
+                let val: Message = serde_json::from_slice(&decoded).map_err(|e| e.to_string())?;
+
+                match val {
+                    Message::Encrypted(seed) => {
+                        // We can do things with the encrypted seed here
+                        // Like push to the URL, or save to local storage, or the network
+                        let state = State::default().with_encrypted(seed);
+
+                        // Set APP_CONTEXT to the new state
+                        let ctx = {
+                            let mut ctx_guard = APP_CONTEXT.lock().unwrap();
+                            let app_context = ctx_guard.as_mut().unwrap();
+                            app_context.state = state.clone();
+                            // drop the lock
+                            app_context.clone()
+                        };
+
+                        *APP_CONTEXT.lock().unwrap() = Some(ctx.clone());
+                        // let ctx = APP_CONTEXT.lock().unwrap().as_ref().unwrap().clone();
+
+                        // convert to json string and set hash to it
+                        let hash_val = serde_json::to_string(&state).map_err(|e| e.to_string())?;
+                        let hash_b64 = Base64UrlUnpadded::encode_string(hash_val.as_bytes());
+                        set_hash(&hash_b64);
+                        // re-render_all using APP_CONTEXT to refresh the screen and show anything that depends on seed
+                        let res = render_all(ctx.content.clone()).map_err(|e| e.to_string())?;
+                        res
+                    }
+                    Message::Username(username) => {
+                        // We can do things with the username here
+                        // Like push to the URL, or save to local storage, or the network
+                        println!("Received Context Event Message Username {:?}", username);
+                        "".into()
+                    }
+                    _ => {
+                        println!("No Handler for Event Message {:?}", base64);
+                        "".into()
+                    }
                 }
-            },
+            }
         };
         Ok(html)
     }
 
     /// No-op for activate(). This is here because the wurbo API calls activate in the library,
     /// and if this is missing there's a console error. It is benign, but it's annoying.
-    fn activate() {}
+    fn activate(_selectors: Option<Vec<String>>) {}
+}
+
+/// Renders all app content into the page
+fn render_all(ctx: Content) -> Result<String, String> {
+    let templates = get_templates();
+    let entry = templates.entry.name;
+    let mut env = Environment::new();
+
+    for (name, template) in templates.into_iter() {
+        env.add_template(name, template)
+            .expect("template should be added");
+    }
+
+    let struct_ctx = Value::from_struct_object(AppContext::from(ctx.clone()));
+
+    let prnt_err = |e| {
+        println!("Could not render template: {:#}", e);
+        let mut err = &e as &dyn std::error::Error;
+        while let Some(next_err) = err.source() {
+            println!("caused by: {:#}", next_err);
+            err = next_err;
+        }
+        RenderError::from(e)
+    };
+
+    let tmpl = env.get_template(entry).map_err(prnt_err)?;
+    let rendered = tmpl.render(&struct_ctx).map_err(prnt_err)?;
+    Ok(rendered)
 }
 
 impl AggregationGuest for Component {
@@ -124,6 +166,8 @@ pub(crate) struct AppContext {
     seed_ui: SeedUI,
     delano_ui: DelanoUI,
     // edwards_ui: Edwards,
+    state: State,
+    content: Content,
 }
 
 impl StructObject for AppContext {
@@ -133,14 +177,17 @@ impl StructObject for AppContext {
             "seed_ui" => Some(Value::from_struct_object(self.seed_ui.clone())),
             "delano_ui" => Some(Value::from_struct_object(self.delano_ui.clone())),
             // "edwards_ui" => Some(Value::from_struct_object(self.edwards_ui.clone())),
+            "has_seed" => Some(Value::from(self.state.has_encrypted())),
             _ => None,
         }
     }
     /// So that debug will show the values
     fn static_fields(&self) -> Option<&'static [&'static str]> {
         Some(&[
-            "app", "seed_ui",
-            // "edwards_ui"
+            "app",
+            "seed_ui",
+            "delano_ui",
+            /* "edwards_ui", */ "has_seed",
         ])
     }
 }
@@ -148,13 +195,21 @@ impl StructObject for AppContext {
 /// We have all the content, convert it to AppContext
 impl From<wurbo_types::Content> for AppContext {
     fn from(context: wurbo_types::Content) -> Self {
+        // let last_state = APP_CONTEXT.lock().unwrap() if some, else default if none
+        let state = match APP_CONTEXT.lock().unwrap().as_ref() {
+            Some(ctx) => ctx.state.clone(),
+            None => State::default(),
+        };
+
         AppContext {
-            app: App::from(context.app),
+            app: App::from(context.app.clone()),
             // We pass props since initial content could have the encrypted seed for the seed keeper
-            seed_ui: SeedUI::from(context.seed_ui),
-            delano_ui: DelanoUI::from(context.delano_ui),
+            seed_ui: SeedUI::from(context.seed_ui.clone()),
+            delano_ui: DelanoUI::from(context.delano_ui.clone()),
             // We could have an initial message to sign or verify too...
             // edwards_ui: Edwards::from(context.edwards_ui),
+            state,
+            content: context,
         }
     }
 }
@@ -167,7 +222,7 @@ impl StructObject for App {
     fn get_field(&self, name: &str) -> Option<Value> {
         match name {
             "title" => Some(Value::from(self.title.clone())),
-            "id" => Some(Value::from(utils::rand_id())),
+            "id" => Some(Value::from(rand_id())),
             _ => None,
         }
     }
