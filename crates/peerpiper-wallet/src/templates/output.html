@@ -2,6 +2,14 @@
   <!-- Autoescape off so our html props get rendered -->
   {% autoescape false %}
   <h2 data-slot="seed">{{seed_ui.html}}</h2>
-  <h2 data-slot="delano">{{delano_ui.html}}</h2>
+  <!-- Check to see if there is a seed before showing the children -->
+  {% if has_seed is true %}
+  <!-- We know there's a seed if it has been emitted from seed-keeper -->
+  <div data-slot="delano">{{delano_ui.html}}</div>
+  {% endif %}
+  <!---->
   {% endautoescape %}
 </div>
+Has Seed: {{has_seed|tojson}}
+<br />
+State: {{state|tojson}}
