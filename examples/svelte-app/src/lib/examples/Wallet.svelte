@@ -42,21 +42,13 @@
 		// load the import handles into the Wasm component and get the ES module returned
 		mod = await load(wasmBytes, all_importables);
 
-		let encrypted = null;
+		// get the string after the hash (slice 1)
+		let api = null;
 		try {
-			// get any state from the window.location.hash
-			let hash = window.location.hash.slice(1);
-			// decode it from Base64UrlUnpadded
-			let decoded = atob(hash);
-			// parse it from string to json object
-			let state = JSON.parse(decoded);
-
-			encrypted = new Uint8Array(state?.encrypted) || null;
+			api = $page.url.hash.slice(1);
 		} catch (e) {
-			console.log(e);
+			console.warn(e);
 		}
-
-		console.log({ encrypted });
 
 		// call `render` with your inputs for the component
 		let data = {
@@ -72,10 +64,9 @@
 							title: 'UI #1: A Seed Keeper'
 						},
 						input: {
-							placeholder: 'Your Username (pick any 8+ chars)',
-							encrypted
+							placeholder: 'Your Username (pick any 8+ chars)'
 						},
-						output: null
+						load: api
 					}
 				},
 				delanoUi: {
@@ -85,8 +76,9 @@
 						page: {
 							name: 'Delano',
 							version: '0.0.1',
-							description: 'A wallet for the people'
-						}
+							description: 'A DAC wallet for the people'
+						},
+						load: api
 					}
 				},
 				event
