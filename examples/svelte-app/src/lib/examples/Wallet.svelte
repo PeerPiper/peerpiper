@@ -1,12 +1,12 @@
 <script>
 	import { onMount, tick } from 'svelte';
+	import { Wurbo, wurboIn } from 'wurbo';
+
 	// When we use $page.url.hash, responding to chnages in the hash becomes very easy.
 	import { page } from '$app/stores';
-	import * as wurbo from 'wurbo';
 
 	// Import wasm component bytes as a url
 	import wasmURL from '../../../../../dist/peerpiper_wallet_aggregate.wasm?url';
-	import { importables } from '$lib';
 
 	/**
 	 * The rendered component as a string of HTML
@@ -18,29 +18,24 @@
 	 *
 	 * @type {{ render: (arg0: string) => string | null; listen: () => void; }}
 	 */
-	let mod;
+	let wurbo;
 
 	onMount(async () => {
-		// ensure you are in the Browser environment to rollup your WIT Component
-		const { load } = await import('rollup-plugin-wit-component');
-
-		let listener = new wurbo.Listener();
-
 		// get your wasm bytes from your storage source
 		let wasmBytes = await fetch(wasmURL).then((res) => res.arrayBuffer());
 
 		// define the import handles you are giving to your component
-		let all_importables = [
-			{ 'seed-keeper:wit-ui/wurbo-in': importables.buildCodeString(listener.namespace) },
-			{ 'seed-keeper:wallet/wurbo-in': importables.buildCodeString(listener.namespace) },
-			{ 'delano:wit-ui/wurbo-in': importables.buildCodeString(listener.namespace) },
-			{ 'delano:wallet/wurbo-in': importables.buildCodeString(listener.namespace) },
-			{ 'peerpiper:wallet/wurbo-in': importables.buildCodeString(listener.namespace) }
-			// { 'example:edwards-ui/wurbo-in': importables.buildCodeString(listener.namespace) },
+		let importables = [
+			{ 'seed-keeper:wit-ui/wurbo-in': wurboIn },
+			{ 'seed-keeper:wallet/wurbo-in': wurboIn },
+			{ 'delano:wit-ui/wurbo-in': wurboIn },
+			{ 'delano:wallet/wurbo-in': wurboIn },
+			{ 'peerpiper:wallet/wurbo-in': wurboIn }
+			// { 'example:edwards-ui/wurbo-in': wurboIn },
 		];
 
 		// load the import handles into the Wasm component and get the ES module returned
-		mod = await load(wasmBytes, all_importables);
+		wurbo = new Wurbo({ arrayBuffer: wasmBytes, importables });
 
 		// get the string after the hash (slice 1)
 		let api = null;
@@ -96,30 +91,16 @@
 				// }
 			}
 		};
-		renderedHTML = mod.wurboOut.render(data);
-
-		// lisen for events from the component
-		listener.listen(mod);
-
-		// Set up a broadcast channel to listen for updates from the Blob URLs
-		const bc = new BroadcastChannel(listener.namespace);
-
-		// Listen for messages from the Blob URLs
-		bc.onmessage = (event) => {
-			// console.log('Svelte BroadcastChannel evt', { event });
-		};
+		renderedHTML = await wurbo.render(data);
 	});
 
 	// Once the HTML is rendered and the module is loaded, we can activate the event emitters
-	$: if (renderedHTML && mod)
+	$: if (renderedHTML && wurbo)
 		(async () => {
 			// wait for the DOM to reflect the updates first
 			await tick();
 			// once the DOM has our elements loaded, we can activate the event emitters
-			// mod.wurboOut.activate();
-			console.log({ mod });
-			mod.aggregation.activates();
-			console.log('events activated');
+			wurbo.aggregation();
 		})();
 </script>
 

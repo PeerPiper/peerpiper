@@ -1,1 +1,1 @@
-export { examples, importables } from './examples/index.js';
+export { examples } from './examples/index.js';
