@@ -7,12 +7,13 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-wit-bindgen = { version = "0.16.0", default-features = false, features = ["realloc"] }
-wurbo = "0.1.5"
+wit-bindgen = { workspace = true }
+wurbo = "0.1.9"
 base64ct = { version = "1.6.0", features = ["alloc"] }
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = "1.0.68"
 serde_with = { version = "3.3.0", features = ["base64"] }
+seed-keeper-wit-ui = { path = "../../submodules/seed-keeper/crates/seed-keeper-wit-ui" }
 
 [dev-dependencies]
 wasmtime = { version = "17", features = ['component-model'] }
@@ -21,6 +22,11 @@ thiserror = "1.0"
 
 [package.metadata.component]
 package = "peerpiper:wallet"
+
+# It's not documented, but you can use `package.metadata.component.bindings` to
+# set additional derive attributes for the generated bindings:
+[package.metadata.component.bindings]
+# derives = ["serde::Deserialize"]
 
 [package.metadata.component.dependencies]
 
