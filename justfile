@@ -26,3 +26,5 @@ compose: build-wallet
 
 preview: compose
   cd examples/svelte-app && npm run build && npm run preview -- --open
+
+all: update-build preview
