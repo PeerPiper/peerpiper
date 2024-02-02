@@ -22,6 +22,7 @@ mod bindings;
 
 mod state;
 
+use serde::Deserialize;
 use state::State;
 
 use crate::bindings::exports::peerpiper::wallet::wurbo_out::Guest as WurboGuest;
@@ -54,6 +55,13 @@ fn get_templates() -> Templates {
     )
 }
 
+/// All the various event messages that can be processed by this Router.
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum Events {
+    Message(Message),
+}
+
 impl WurboGuest for Component {
     /// Render needs to use the Aggregate Template for the initial load, but after that simply call
     /// render on the child component and pass through the HTML
@@ -71,10 +79,11 @@ impl WurboGuest for Component {
             // Context::Edwards(ctx) => edwards_ui::wurbo_out::render(&ctx.into())?,
             Context::Event(base64) => {
                 let decoded = Base64UrlUnpadded::decode_vec(&base64).map_err(|e| e.to_string())?;
-                let val: Message = serde_json::from_slice(&decoded).map_err(|e| e.to_string())?;
 
-                match val {
-                    Message::Encrypted(seed) => {
+                match serde_json::from_slice(&decoded)
+                    .map_err(|e| format!("No matching Event type, couldn't deserialize: {:#}", e))?
+                {
+                    Events::Message(Message::Encrypted(seed)) => {
                         // We can do things with the encrypted seed here
                         // Like push to the URL, or save to local storage, or the network
                         let state = State::default().with_encrypted(seed);
@@ -98,12 +107,6 @@ impl WurboGuest for Component {
                         // re-render_all using APP_CONTEXT to refresh the screen and show anything that depends on seed
                         let res = render_all(ctx.content.clone()).map_err(|e| e.to_string())?;
                         res
-                    }
-                    Message::Username(username) => {
-                        // We can do things with the username here
-                        // Like push to the URL, or save to local storage, or the network
-                        println!("Received Context Event Message Username {:?}", username);
-                        "".into()
                     }
                     _ => {
                         println!("No Handler for Event Message {:?}", base64);
