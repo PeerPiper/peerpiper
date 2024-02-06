@@ -22,17 +22,15 @@ mod bindings;
 
 mod state;
 
-use serde::Deserialize;
 use state::State;
 
-use crate::bindings::exports::peerpiper::wallet::wurbo_out::Guest as WurboGuest;
-use crate::bindings::peerpiper::wallet::context_types::{self, Content, Context, Message, Seed};
-use crate::bindings::peerpiper::wallet::wurbo_in::set_hash;
-
-// use bindings::example::edwards_ui;
 use bindings::delano;
 use bindings::exports::peerpiper::wallet::aggregation::Guest as AggregationGuest;
+use bindings::exports::peerpiper::wallet::wurbo_out::Guest as WurboGuest;
+use bindings::peerpiper::wallet::context_types::{self, Content, Context, Message, Seed};
+use bindings::peerpiper::wallet::wurbo_in::set_hash;
 use bindings::seed_keeper::wit_ui;
+// use bindings::example::edwards_ui;
 
 use wurbo::jinja::{error::RenderError, Entry, Index, Rest, Templates};
 use wurbo::prelude::*;
