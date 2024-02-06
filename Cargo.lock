@@ -3055,7 +3055,7 @@ name = "peerpiper-wallet"
 version = "0.1.0"
 dependencies = [
  "base64ct",
- "seed-keeper-wit-ui",
+ "seed-keeper-events",
  "serde",
  "serde_json",
  "serde_with",
@@ -3063,7 +3063,7 @@ dependencies = [
  "wasmtime",
  "wasmtime-wasi",
  "wit-bindgen",
- "wurbo",
+ "wurbo 0.1.9",
 ]
 
 [[package]]
@@ -3855,14 +3855,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "seed-keeper-wit-ui"
+name = "seed-keeper-events"
 version = "0.1.0"
 dependencies = [
- "base64ct",
  "serde",
- "serde_json",
- "wit-bindgen",
- "wurbo",
+ "serde_with",
+ "wurbo 0.2.0",
 ]
 
 [[package]]
@@ -5855,6 +5853,25 @@ name = "wurbo"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d523518b0c700aa0a9a332006ec5c23042cc195c0725c9b48545d3ee0a660dd5"
+dependencies = [
+ "base64ct",
+ "convert_case",
+ "lazy_static",
+ "minijinja",
+ "nanoid",
+ "pest",
+ "pest_derive",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "wit-parser",
+]
+
+[[package]]
+name = "wurbo"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "373d302e1aecbfdba6ddfe1860d3385d34f181f854c4493725555d7a988a57f1"
 dependencies = [
  "base64ct",
  "convert_case",

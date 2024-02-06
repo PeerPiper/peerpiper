@@ -26,15 +26,14 @@ use serde::Deserialize;
 use state::State;
 
 use crate::bindings::exports::peerpiper::wallet::wurbo_out::Guest as WurboGuest;
+use crate::bindings::peerpiper::wallet::context_types::{self, Content, Context, Message, Seed};
 use crate::bindings::peerpiper::wallet::wurbo_in::set_hash;
-use crate::bindings::peerpiper::wallet::wurbo_types::{self, Content, Context};
 
 // use bindings::example::edwards_ui;
 use bindings::delano;
 use bindings::exports::peerpiper::wallet::aggregation::Guest as AggregationGuest;
 use bindings::seed_keeper::wit_ui;
 
-use seed_keeper_wit_ui::events::Message;
 use wurbo::jinja::{error::RenderError, Entry, Index, Rest, Templates};
 use wurbo::prelude::*;
 
@@ -55,12 +54,12 @@ fn get_templates() -> Templates {
     )
 }
 
-/// All the various event messages that can be processed by this Router.
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
-enum Events {
-    Message(Message),
-}
+// /// All the various event messages that can be processed by this Router.
+// #[derive(Debug, Deserialize)]
+// #[serde(untagged)]
+// enum Events {
+//     Message(Message),
+// }
 
 impl WurboGuest for Component {
     /// Render needs to use the Aggregate Template for the initial load, but after that simply call
@@ -77,42 +76,33 @@ impl WurboGuest for Component {
             Context::Seed(ctx) => wit_ui::wurbo_out::render(&ctx.into())?,
             Context::Delano(ctx) => delano::wit_ui::wurbo_out::render(&ctx.into())?,
             // Context::Edwards(ctx) => edwards_ui::wurbo_out::render(&ctx.into())?,
-            Context::Event(base64) => {
-                let decoded = Base64UrlUnpadded::decode_vec(&base64).map_err(|e| e.to_string())?;
+            Context::Event(Message::Encrypted(Seed { seed })) => {
+                // convert the string to a byte array
+                let seed = base64ct::Base64::decode_vec(&seed).map_err(|e| e.to_string())?;
 
-                match serde_json::from_slice(&decoded)
-                    .map_err(|e| format!("No matching Event type, couldn't deserialize: {:#}", e))?
-                {
-                    Events::Message(Message::Encrypted(seed)) => {
-                        // We can do things with the encrypted seed here
-                        // Like push to the URL, or save to local storage, or the network
-                        let state = State::default().with_encrypted(seed);
+                // We can do things with the encrypted seed here
+                // Like push to the URL, or save to local storage, or the network
+                let state = State::default().with_encrypted(seed);
 
-                        // Set APP_CONTEXT to the new state
-                        let ctx = {
-                            let mut ctx_guard = APP_CONTEXT.lock().unwrap();
-                            let app_context = ctx_guard.as_mut().unwrap();
-                            app_context.state = state.clone();
-                            // drop the lock
-                            app_context.clone()
-                        };
+                // Set APP_CONTEXT to the new state
+                let ctx = {
+                    let mut ctx_guard = APP_CONTEXT.lock().unwrap();
+                    let app_context = ctx_guard.as_mut().unwrap();
+                    app_context.state = state.clone();
+                    // drop the lock
+                    app_context.clone()
+                };
 
-                        *APP_CONTEXT.lock().unwrap() = Some(ctx.clone());
-                        // let ctx = APP_CONTEXT.lock().unwrap().as_ref().unwrap().clone();
+                *APP_CONTEXT.lock().unwrap() = Some(ctx.clone());
+                // let ctx = APP_CONTEXT.lock().unwrap().as_ref().unwrap().clone();
 
-                        // convert to json string and set hash to it
-                        let hash_val = serde_json::to_string(&state).map_err(|e| e.to_string())?;
-                        let hash_b64 = Base64UrlUnpadded::encode_string(hash_val.as_bytes());
-                        set_hash(&hash_b64);
-                        // re-render_all using APP_CONTEXT to refresh the screen and show anything that depends on seed
-                        let res = render_all(ctx.content.clone()).map_err(|e| e.to_string())?;
-                        res
-                    }
-                    _ => {
-                        println!("No Handler for Event Message {:?}", base64);
-                        "".into()
-                    }
-                }
+                // convert to json string and set hash to it
+                let hash_val = serde_json::to_string(&state).map_err(|e| e.to_string())?;
+                let hash_b64 = Base64UrlUnpadded::encode_string(hash_val.as_bytes());
+                set_hash(&hash_b64);
+                // re-render_all using APP_CONTEXT to refresh the screen and show anything that depends on seed
+                let res = render_all(ctx.content.clone()).map_err(|e| e.to_string())?;
+                res
             }
         };
         Ok(html)
@@ -196,8 +186,8 @@ impl StructObject for AppContext {
 }
 
 /// We have all the content, convert it to AppContext
-impl From<wurbo_types::Content> for AppContext {
-    fn from(context: wurbo_types::Content) -> Self {
+impl From<context_types::Content> for AppContext {
+    fn from(context: context_types::Content) -> Self {
         // let last_state = APP_CONTEXT.lock().unwrap() if some, else default if none
         let state = match APP_CONTEXT.lock().unwrap().as_ref() {
             Some(ctx) => ctx.state.clone(),
@@ -219,7 +209,7 @@ impl From<wurbo_types::Content> for AppContext {
 
 // Some App properties
 #[derive(Debug, Clone)]
-pub(crate) struct App(wurbo_types::App);
+pub(crate) struct App(context_types::App);
 
 impl StructObject for App {
     fn get_field(&self, name: &str) -> Option<Value> {
@@ -235,14 +225,14 @@ impl StructObject for App {
     }
 }
 
-impl From<wurbo_types::App> for App {
-    fn from(context: wurbo_types::App) -> Self {
+impl From<context_types::App> for App {
+    fn from(context: context_types::App) -> Self {
         App(context)
     }
 }
 
 impl Deref for App {
-    type Target = wurbo_types::App;
+    type Target = context_types::App;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -251,7 +241,7 @@ impl Deref for App {
 
 /// Wrapper around the seed keeper context so we can implement StructObject on top of it
 #[derive(Debug, Clone)]
-struct SeedUI(wurbo_types::SeedContext);
+struct SeedUI(context_types::SeedContext);
 
 /// Implement StructObject for SeedKeeper so that we can use it in the template
 /// The main point of this impl is to call render(ctx) on the SeedKeeperUIContext
@@ -280,7 +270,7 @@ impl From<wit_ui::wurbo_types::Context> for SeedUI {
 }
 
 impl Deref for SeedUI {
-    type Target = wurbo_types::SeedContext;
+    type Target = context_types::SeedContext;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -289,7 +279,7 @@ impl Deref for SeedUI {
 
 /// DelanoUI is the context for the Delano user interface component
 #[derive(Debug, Clone)]
-struct DelanoUI(wurbo_types::DelanoContext);
+struct DelanoUI(context_types::DelanoContext);
 
 /// Implement StructObject for DelanoUI so that we can use it in the template
 /// The main point of this impl is to call render(ctx) on the DelanoUIContext
@@ -318,7 +308,7 @@ impl From<delano::wit_ui::context_types::Context> for DelanoUI {
 }
 
 impl Deref for DelanoUI {
-    type Target = wurbo_types::DelanoContext;
+    type Target = context_types::DelanoContext;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -326,7 +316,7 @@ impl Deref for DelanoUI {
 }
 
 // #[derive(Debug, Clone)]
-// struct Edwards(wurbo_types::EdwardsContext);
+// struct Edwards(context_types::EdwardsContext);
 //
 // /// Implement StructObject for Edwards so that we can use it in the template
 // /// The main point of this impl is to call render(ctx) on the EdwardsUIContext
@@ -352,7 +342,7 @@ impl Deref for DelanoUI {
 // }
 //
 // impl Deref for Edwards {
-//     type Target = wurbo_types::EdwardsContext;
+//     type Target = context_types::EdwardsContext;
 //
 //     fn deref(&self) -> &Self::Target {
 //         &self.0
