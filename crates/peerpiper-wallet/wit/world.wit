@@ -4,7 +4,7 @@ package peerpiper:wallet@0.1.0;
 use seed-keeper:wit-ui/wurbo-out@0.1.0 as seed-out;
 use delano:wit-ui/wurbo-out@0.1.0 as delano-out;
 
-interface wurbo-types {
+interface context-types {
 
   // use edwards-out.{context as edwards-context};
   use seed-out.{context as seed-context};
@@ -32,6 +32,15 @@ interface wurbo-types {
     // edwards-ui: edwards-context
   }
 
+  record seed {
+    // base64 standard padded string
+    seed: string
+  }
+
+  variant message {
+    encrypted(seed)
+  }
+
   // Context variants
   variant context {
     all-content(content),
@@ -39,7 +48,7 @@ interface wurbo-types {
     delano(delano-context),
     // edwards(edwards-context)
     // Keep the event JSON as a base64 encoded string so that we don't have to parse Uint8Arrays for `jco` to receive it
-    event(string)
+    event(message)
   }
 
 }
@@ -50,7 +59,7 @@ interface aggregation {
 
 interface wurbo-in {
 
-  use wurbo-types.{listen-details};
+  use context-types.{listen-details};
 
   // Add an event listener to the given element
   addeventlistener: func(details: listen-details);
@@ -61,7 +70,7 @@ interface wurbo-in {
 
 interface wurbo-out {
 
-  use wurbo-types.{context};
+  use context-types.{context};
 
   // renders the initial Web component with the given data
   render: func(ctx: context) -> result<string, string>;
