@@ -22,6 +22,7 @@ mod bindings;
 
 mod state;
 
+use serde::Deserialize;
 use state::State;
 
 use bindings::delano;
@@ -35,7 +36,8 @@ use bindings::seed_keeper::wit_ui;
 use wurbo::jinja::{error::RenderError, Entry, Index, Rest, Templates};
 use wurbo::prelude::*;
 
-use base64ct::{Base64UrlUnpadded, Encoding};
+use base64ct::{Base64Url, Encoding};
+use delano_events::PublishMessage;
 use std::ops::Deref;
 use std::sync::{LazyLock, Mutex};
 
@@ -52,12 +54,12 @@ fn get_templates() -> Templates {
     )
 }
 
-// /// All the various event messages that can be processed by this Router.
-// #[derive(Debug, Deserialize)]
-// #[serde(untagged)]
-// enum Events {
-//     Message(Message),
-// }
+/// All the various event messages that can be processed by this Router.
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum Events {
+    Message(PublishMessage),
+}
 
 impl WurboGuest for Component {
     /// Render needs to use the Aggregate Template for the initial load, but after that simply call
@@ -96,11 +98,27 @@ impl WurboGuest for Component {
 
                 // convert to json string and set hash to it
                 let hash_val = serde_json::to_string(&state).map_err(|e| e.to_string())?;
-                let hash_b64 = Base64UrlUnpadded::encode_string(hash_val.as_bytes());
+                let hash_b64 = Base64Url::encode_string(hash_val.as_bytes());
                 set_hash(&hash_b64);
                 // re-render_all using APP_CONTEXT to refresh the screen and show anything that depends on seed
                 let res = render_all(ctx.content.clone()).map_err(|e| e.to_string())?;
                 res
+            }
+            // There are 2 types of publishing events: publish and subscribe
+            // A) For publish, we just need to send the bytes on our network of choice without
+            // deserializing the bytes. Goes through wallet so we can sign the message.
+            // B) For subscribe, we need to deserialize the bytes and then do something with the data
+            // The way we tell the difference is the Event mesage type, telling us wher it cam from
+            Context::Message(base64) => {
+                match decode_base64::<Events>(&base64)? {
+                    Events::Message(PublishMessage { key, value: _ }) => {
+                        // We can do something with the message here
+                        println!("Received PUBLISH message: key: {:#?}", key);
+                        // TODO: UI feedback for the user. Toast?
+                        // TODO: Send message to PeerPiper network
+                    }
+                }
+                "".to_string()
             }
         };
         Ok(html)
@@ -109,6 +127,11 @@ impl WurboGuest for Component {
     /// No-op for activate(). This is here because the wurbo API calls activate in the library,
     /// and if this is missing there's a console error. It is benign, but it's annoying.
     fn activate(_selectors: Option<Vec<String>>) {}
+}
+
+fn decode_base64<T: serde::de::DeserializeOwned>(base64: &str) -> Result<T, String> {
+    let decoded = Base64Url::decode_vec(base64).map_err(|e| e.to_string())?;
+    serde_json::from_slice(&decoded).map_err(|e| e.to_string())
 }
 
 /// Renders all app content into the page

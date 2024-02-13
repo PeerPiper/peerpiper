@@ -47,8 +47,9 @@ interface context-types {
     seed(seed-context),
     delano(delano-context),
     // edwards(edwards-context)
-    // Keep the event JSON as a base64 encoded string so that we don't have to parse Uint8Arrays for `jco` to receive it
-    event(message)
+    event(message),
+    // messages that are base64 encoded
+    message(string)
   }
 
 }
