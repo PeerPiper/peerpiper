@@ -25,6 +25,9 @@ compose: build-wallet
   wasm-tools compose --config crates/peerpiper-wallet/config.yml -o dist/peerpiper_wallet_aggregate.wasm target/wasm32-wasi/release/peerpiper_wallet.wasm
 
 preview: compose
-  cd examples/svelte-app && npm run build && npm run preview -- --open
+  cd examples/svelte-app && npm run build && npm run preview -- --open & cargo run --bin peerpiper-server
+
+serve:
+  cargo run --bin peerpiper-server
 
 all: update-build preview
