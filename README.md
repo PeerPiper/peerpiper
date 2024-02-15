@@ -6,8 +6,11 @@ The idea is to put all the reusable code in this repo so it can be linked and te
 
 # Goals
 
+### [PeerPiper Protocol GreenPaper](https://peerpiper.io/paper)
+
 - [x] No blockchain required
-- [x] [Peer-to-peer](https://en.wikipedia.org/wiki/Peer-to-peer) networking via [rust-libp2p](https://libp2p.io/)
+- [x] Default [Peer-to-peer](https://en.wikipedia.org/wiki/Peer-to-peer) networking via [rust-libp2p](https://libp2p.io/)
+- [ ] Add your own publishing network (Nostr, Farcaster, AT Protocol, etc.)
 - [x] [Modular, Composable Wallet](./crates/peerpiper-wallet/) (add your own plugins) via [Wasm Components](https://component-model.bytecodealliance.org/introduction.html)
 - [ ] [Plaintext Peer discovery](https://en.wikipedia.org/wiki/Peer_discovery) (name, email, phone, etc.) via [Delanocreds](https://github.com/DougAnderson444/delanocreds)
 - [ ] [Modular, Composable, Templatable] app & data sharing
@@ -16,9 +19,9 @@ The idea is to put all the reusable code in this repo so it can be linked and te
 
 The core library should include wrappers so that it can be deployed to various infrastructure providers:
 
-- [ ] Browser via [WebAssembly](https://en.wikipedia.org/wiki/WebAssembly)
+- [x] Browser via [WebAssembly](https://en.wikipedia.org/wiki/WebAssembly)
 - [ ] Browser via [Vite](https://vitejs.dev/) and [`wasm-bindgen`](https://rustwasm.github.io/docs/wasm-bindgen/)
-- [ ] [Command Line Application](https://en.wikipedia.org/wiki/Command-line_interface) via Rust
+- [x] [Command Line Application](https://en.wikipedia.org/wiki/Command-line_interface) via Rust
 - [ ] [Tauri](https://tauri.studio/) home, mobile, and desktop
 - [ ] [Shuttle](https://shuttle.dev/) via Rust
 - [ ] [Fly.io](https://fly.io/) via Docker
