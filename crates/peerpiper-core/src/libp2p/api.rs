@@ -114,7 +114,7 @@ impl Client {
                     }
                 },
                 command = command_receiver.next() => {
-                    tracing::debug!("WASM Received command: {:?}", command);
+                    tracing::trace!("WASM Received command");
                     if let Some(pp_cmd) = command {
                         self.command(pp_cmd).await;
                     }
