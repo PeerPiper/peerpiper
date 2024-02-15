@@ -33,10 +33,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Starting peerpiper-native TESTS");
 
     let (tx, mut rx) = mpsc::channel(MAX_CHANNELS);
-    // spawn peerpiper::start_native(tx).await?;
+    let (mut command_sender, command_receiver) = mpsc::channel(8);
     let tx_clone = tx.clone();
+
     tokio::spawn(async move {
-        peerpiper::start(tx_clone).await.unwrap();
+        peerpiper::start(tx_clone, command_receiver).await.unwrap();
     });
 
     tracing::info!("Started.");
