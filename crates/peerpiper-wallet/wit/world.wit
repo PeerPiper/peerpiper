@@ -65,6 +65,9 @@ interface wurbo-in {
   // Add an event listener to the given element
   addeventlistener: func(details: listen-details);
 
+  // Emit events from this component. Messages should be serialized JSON strings of Event type.
+  emit: func(message: string);
+
   // set the location hash
   set-hash: func(hash: string);
 }
