@@ -14,9 +14,9 @@ tracing = "0.1.37"
 serde = { version = "1.0", features = ["derive"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "wasm-bindgen"] }
+libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "wasm-bindgen", "gossipsub", "identify", "kad"] }
 libp2p-webrtc-websys = { git = "https://github.com/libp2p/rust-libp2p.git" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "quic", "tokio"]}
+libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "quic", "tokio", "gossipsub", "identify", "kad"]}
 libp2p-webrtc = { git = "https://github.com/libp2p/rust-libp2p.git" }
