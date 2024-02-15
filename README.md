@@ -27,3 +27,5 @@ The core library should include wrappers so that it can be deployed to various i
 - [ ] [Fly.io](https://fly.io/) via Docker
 - [ ] [Cloudflare Workers](https://workers.cloudflare.com/) via WebAssembly
 - [ ] [VPS](https://en.wikipedia.org/wiki/Virtual_private_server) via Rust
+- [ ] [Web3.storage](https://web3.storage/) via HTTP
+- [ ] [Fireproof DB](https://use-fireproof.com/) via HTTP
