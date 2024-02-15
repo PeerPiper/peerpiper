@@ -27,11 +27,11 @@
 
 			const addr = await res.text();
 
-			let onping = (ping) => {
-				console.log('Event emitted: ', { ping });
+			let onNetworkEvent = (event) => {
+				console.log('Event emitted: ', { event });
 			};
 
-			mod.connect(addr, onping);
+			mod.connect(addr, onNetworkEvent);
 
 			// Show the code:
 

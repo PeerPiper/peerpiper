@@ -7,6 +7,7 @@
 
 	// Import wasm component bytes as a url
 	import wasmURL from '../../../../../dist/peerpiper_wallet_aggregate.wasm?url';
+	import peerpiper from '../../../../../crates/peerpiper-browser/Cargo.toml';
 
 	/**
 	 * The rendered component as a string of HTML
@@ -21,6 +22,8 @@
 	let wurbo;
 
 	onMount(async () => {
+		const pipernet = await peerpiper();
+
 		// get your wasm bytes from your storage source
 		let wasmBytes = await fetch(wasmURL).then((res) => res.arrayBuffer());
 
@@ -35,7 +38,9 @@
 		];
 
 		// load the import handles into the Wasm component and get the ES module returned
-		wurbo = new Wurbo({ arrayBuffer: wasmBytes, importables });
+		wurbo = new Wurbo({ arrayBuffer: wasmBytes, importables }, (payload) => {
+			pipernet.command(payload);
+		});
 
 		// get the string after the hash (slice 1)
 		let api = null;
@@ -92,6 +97,23 @@
 			}
 		};
 		renderedHTML = await wurbo.render(data);
+
+		// After the initial data is rendered, then connect to the pipernet:
+		// Start peerpiper-server to get a local Multiaddr at port 8080:
+		// use try / catch to possibly display "Have you started the server?"
+		let res;
+		try {
+			res = await fetch('http://localhost:8080/');
+		} catch (e) {
+			console.log('Have you started the server?');
+		}
+
+		const dialAddr = await res.text();
+
+		pipernet.connect(dialAddr, (event) => {
+			console.log('Event emitted: ', { event });
+			wurbo.eventHandler(event);
+		});
 	});
 
 	// Once the HTML is rendered and the module is loaded, we can activate the event emitters
