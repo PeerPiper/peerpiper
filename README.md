@@ -6,9 +6,8 @@ The idea is to put all the reusable code in this repo so it can be linked and te
 
 # Goals
 
-- [ ] [Peer-to-peer](https://en.wikipedia.org/wiki/Peer-to-peer) networking via [rust-libp2p](https://libp2p.io/)
+- [x] [Peer-to-peer](https://en.wikipedia.org/wiki/Peer-to-peer) networking via [rust-libp2p](https://libp2p.io/)
 - [ ] [Peer discovery](https://en.wikipedia.org/wiki/Peer_discovery) via [Delanocreds](https://github.com/DougAnderson444/delanocreds)
-- [ ] Light p2p sharing of discovery data (Cred Proofs)
 - [ ] (Stretch) Eventual SUITable app sharing
 
 # Deployment
