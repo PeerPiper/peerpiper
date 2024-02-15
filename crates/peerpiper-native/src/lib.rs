@@ -1,23 +1,23 @@
-use futures::{channel::mpsc, SinkExt};
-use libp2p::{
-    futures::StreamExt,
-    multiaddr::{Multiaddr, Protocol},
-};
+use futures::channel::mpsc;
+use libp2p::multiaddr::{Multiaddr, Protocol};
 use std::net::Ipv4Addr;
 
 use peerpiper_core::{
     error::Error,
-    events::NetworkEvent,
+    events::{NetworkEvent, PeerPiperCommand},
     libp2p::{api, behaviour, swarm},
 };
 
-pub async fn start(mut tx: mpsc::Sender<NetworkEvent>) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start(
+    tx: mpsc::Sender<NetworkEvent>,
+    command_receiver: mpsc::Receiver<PeerPiperCommand>,
+) -> Result<(), Box<dyn std::error::Error>> {
     let swarm = swarm::create(behaviour::build).map_err(Error::CreateSwarm)?;
 
     let peer_id = *swarm.local_peer_id();
     tracing::info!("Local peer id: {:?}", peer_id);
 
-    let (mut network_client, mut network_events, network_event_loop) = api::new(swarm).await;
+    let (mut network_client, network_events, network_event_loop) = api::new(swarm).await;
 
     // We need to start the network event loop first in order to listen for our address
     tokio::spawn(async move { network_event_loop.run().await });
@@ -37,13 +37,9 @@ pub async fn start(mut tx: mpsc::Sender<NetworkEvent>) -> Result<(), Box<dyn std
             .expect("Listening not to fail.");
     }
 
-    loop {
-        let event = network_events.select_next_some().await;
-        tracing::debug!("Network event: {:?}", event);
-        if let Err(network_event) = tx.send(event).await {
-            tracing::error!("Failed to send swarm event: {:?}", network_event);
-            // break;
-            continue;
-        }
-    }
+    network_client
+        .run(network_events, command_receiver, tx)
+        .await;
+
+    Ok(())
 }

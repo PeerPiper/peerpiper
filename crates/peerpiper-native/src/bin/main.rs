@@ -1,5 +1,4 @@
 use futures::{channel::mpsc, StreamExt};
-use peerpiper_native::start;
 
 const MAX_CHANNELS: usize = 16;
 
@@ -12,7 +11,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Starting peerpiper-native BINARY");
 
     let (tx, mut rx) = mpsc::channel(MAX_CHANNELS);
-    start(tx).await?;
+    let (command_sender, command_receiver) = mpsc::channel(8);
+    peerpiper_native::start(tx, command_receiver).await?;
 
     loop {
         tokio::select! {
