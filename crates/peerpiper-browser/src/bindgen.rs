@@ -23,6 +23,18 @@ static COMMAND_SENDER: OnceLock<Mutex<mpsc::Sender<PeerPiperCommand>>> = OnceLoc
 cfg_if::cfg_if! {
     if #[cfg(feature = "logging")] {
         fn init_log() {
+            // use tracing_wasm::{WASMLayer, WASMLayerConfig};
+            // use tracing_subscriber::layer::SubscriberExt;
+            // use tracing_subscriber::EnvFilter;
+            //
+            // std::env::set_var("RUST_LOG", "debug");
+            //
+            // let subscriber = tracing_subscriber::Registry::default()
+            //     .with(WASMLayer::new(WASMLayerConfig::default()).with_filter(
+            //         EnvFilter::from_default_env()
+            //     ));
+            //
+            // tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
             console_error_panic_hook::set_once();
             tracing_wasm::set_as_global_default();
         }
@@ -32,10 +44,10 @@ cfg_if::cfg_if! {
 }
 
 #[wasm_bindgen]
-pub async fn connect(libp2p_endpoint: &str, callback: &js_sys::Function) -> Result<(), JsError> {
+pub async fn connect(libp2p_endpoint: &str, on_event: &js_sys::Function) -> Result<(), JsError> {
     init_log();
 
-    let (tx, mut rx) = mpsc::channel(MAX_CHANNELS);
+    let (tx_evts, mut rx_evts) = mpsc::channel(MAX_CHANNELS);
 
     // command_sender will be used by other wasm_bindgen functions to send commands to the network
     // so we will need to wrap it in a Mutex or something to make it thread safe.
@@ -46,17 +58,17 @@ pub async fn connect(libp2p_endpoint: &str, callback: &js_sys::Function) -> Resu
     let endpoint = libp2p_endpoint.to_string().clone();
 
     spawn_local(async move {
-        crate::start(tx, command_receiver, endpoint)
+        crate::start(tx_evts, command_receiver, endpoint)
             .await
             .expect("never end")
     });
 
     let this = JsValue::null();
 
-    while let Some(event) = rx.next().await {
+    while let Some(event) = rx_evts.next().await {
         tracing::debug!("Rx BINDGEN Event: {:?}", event);
         let evt = JsValue::from_serde(&event).unwrap();
-        let _ = callback.call1(&this, &evt);
+        let _ = on_event.call1(&this, &evt);
     }
 
     tracing::info!("Done test");
@@ -66,7 +78,7 @@ pub async fn connect(libp2p_endpoint: &str, callback: &js_sys::Function) -> Resu
 /// Uses COMMAND_SENDER (if initialized) to send a command to the network.
 /// Else, returns an error.
 pub async fn send_command(command: PeerPiperCommand) -> Result<(), JsError> {
-    tracing::info!("Sending command: {:?}", command);
+    tracing::trace!("Sending command");
     let command_sender = COMMAND_SENDER.get().ok_or_else(|| {
         JsError::new(
             "Command sender not initialized. Did you call `connect()` first to establish a connection?",
@@ -106,6 +118,7 @@ pub async fn unsubscribe(topic: String) -> Result<(), JsError> {
 /// If it fails, returns an error.
 #[wasm_bindgen]
 pub async fn command(json: &str) -> Result<(), JsError> {
+    tracing::trace!("BINDGEN.rs: Received command JSON");
     let example_publish = PeerPiperCommand::Publish {
         topic: "example".to_string(),
         data: vec![1, 2, 3],
