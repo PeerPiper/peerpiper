@@ -1,4 +1,4 @@
-use crate::events::{Network, NetworkEvent};
+use crate::events::{Network, NetworkError, NetworkEvent, PeerPiperCommand};
 use crate::libp2p::behaviour::{Behaviour, BehaviourEvent};
 use futures::StreamExt;
 use futures::{
@@ -12,7 +12,7 @@ use libp2p::core::transport::ListenerId;
 use libp2p::core::ConnectedPoint;
 use libp2p::multiaddr::Protocol;
 use libp2p::swarm::{Swarm, SwarmEvent};
-use libp2p::{ping, Multiaddr};
+use libp2p::{ping, Multiaddr, PeerId};
 use std::error::Error;
 use std::net::Ipv4Addr;
 use std::time::Duration;
@@ -65,9 +65,18 @@ impl Client {
             .expect("Command receiver not to be dropped.");
         receiver.await.expect("Sender not to be dropped.")
     }
-    pub async fn publish(&mut self, message: String, topic: String) {
+    pub async fn add_peer(&mut self, peer_id: PeerId) {
         self.sender
-            .send(Command::Publish { message, topic })
+            .send(Command::AddPeer { peer_id })
+            .await
+            .expect("Command receiver not to be dropped.");
+    }
+    pub async fn publish(&mut self, message: impl AsRef<[u8]>, topic: String) {
+        self.sender
+            .send(Command::Publish {
+                message: message.as_ref().to_vec(),
+                topic,
+            })
             .await
             .expect("Command receiver not to be dropped.");
     }
@@ -76,6 +85,42 @@ impl Client {
             .send(Command::Subscribe { topic })
             .await
             .expect("Command receiver not to be dropped.");
+    }
+    /// General command PeerPiperCommand parsed into Command then called
+    pub async fn command(&mut self, command: PeerPiperCommand) {
+        self.sender
+            .send(command.into())
+            .await
+            .expect("Command receiver not to be dropped.");
+    }
+    /// Run the Client loop, awaiting commands and passing along network events.
+    // Loop awaits two separate futures using select:
+    // 1) Network_events.select_next_some()
+    // 2) Recieved Network Commands via `command_receiver`, passing along PeerPiperCommand to network_client.command(pp_cmd)
+    pub async fn run(
+        &mut self,
+        mut network_events: Receiver<NetworkEvent>,
+        mut command_receiver: Receiver<PeerPiperCommand>,
+        mut tx: mpsc::Sender<NetworkEvent>,
+    ) {
+        loop {
+            futures::select! {
+                event = network_events.select_next_some() => {
+                    tracing::debug!("Network event: {:?}", event);
+                    if let Err(network_event) = tx.send(event).await {
+                        tracing::error!("Failed to send swarm event: {:?}", network_event);
+                        // break;
+                        continue;
+                    }
+                },
+                command = command_receiver.next() => {
+                    tracing::debug!("WASM Received command: {:?}", command);
+                    if let Some(pp_cmd) = command {
+                        self.command(pp_cmd).await;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -90,12 +135,31 @@ enum Command {
         sender: oneshot::Sender<Result<(), Box<dyn Error + Send>>>,
     },
     Publish {
-        message: String,
+        message: Vec<u8>,
         topic: String,
     },
     Subscribe {
         topic: String,
     },
+    Unsubscribe {
+        topic: String,
+    },
+    AddPeer {
+        peer_id: PeerId,
+    },
+}
+
+impl From<PeerPiperCommand> for Command {
+    fn from(command: PeerPiperCommand) -> Self {
+        match command {
+            PeerPiperCommand::Publish { topic, data } => Command::Publish {
+                topic,
+                message: data,
+            },
+            PeerPiperCommand::Subscribe { topic } => Command::Subscribe { topic },
+            PeerPiperCommand::Unsubscribe { topic } => Command::Unsubscribe { topic },
+        }
+    }
 }
 
 /// The network event loop.
@@ -216,6 +280,21 @@ impl EventLoop {
                 ..
             } => {
                 tracing::info!("✔️  Connection Established to {peer_id} in {established_in:?} on {send_back_addr}");
+                // add as explitcit peer
+                self.swarm
+                    .behaviour_mut()
+                    .gossipsub
+                    .add_explicit_peer(&peer_id);
+
+                if let Err(e) = self
+                    .event_sender
+                    .send(NetworkEvent::NewConnection {
+                        peer: peer_id.to_string(),
+                    })
+                    .await
+                {
+                    tracing::error!("Failed to send NewConnection event: {e}");
+                };
             }
 
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
@@ -262,55 +341,56 @@ impl EventLoop {
             // SwarmEvent::Behaviour(BehaviourEvent::Relay(e)) => {
             //     tracing::debug!("{:?}", e);
             // }
-            // SwarmEvent::Behaviour(BehaviourEvent::Gossipsub(
-            //     libp2p::gossipsub::Event::Message {
-            //         message_id: _,
-            //         propagation_source: _,
-            //         message,
-            //     },
-            // )) => {
-            //     tracing::info!(
-            //         "📨 Received message from {:?}: {}",
-            //         message.source,
-            //         String::from_utf8(message.data).unwrap()
-            //     );
-            //
-            //     /* Plugin */
-            //     // iterate through registered Plugins and call on_message
-            //     // for plugin in self.plugins.iter_mut() {
-            //     //     let response = plugin.call("on_message", &message).unwrap();
-            //     //     if let Some(response) = response {
-            //     //         self.event_sender.send(response)
-            //     //     }
-            //     // }
-            // }
-            // SwarmEvent::Behaviour(BehaviourEvent::Gossipsub(
-            //     libp2p::gossipsub::Event::Subscribed { peer_id, topic },
-            // )) => {
-            //     debug!("{peer_id} subscribed to {topic}");
-            //
-            //     if let Some(g) = self.swarm.behaviour_mut().gossipsub.as_mut() {
-            //         g.add_explicit_peer(&peer_id)
-            //     };
-            //
-            //     // publish a message
-            //     // get the last 4 chars of the peer_id as slice:
-            //     let message = format!(
-            //         "📨 Welcome subscriber {}! From rust-peer at: {:4}s",
-            //         &peer_id.to_string()[peer_id.to_string().len() - 4..],
-            //         self.now.elapsed().as_secs()
-            //     );
-            //
-            //     if let Some(Err(err)) = self
-            //         .swarm
-            //         .behaviour_mut()
-            //         .gossipsub
-            //         .as_mut()
-            //         .map(|g| g.publish(topic::topic(), message.as_bytes()))
-            //     {
-            //         error!("Failed to publish periodic message: {err}")
-            //     }
-            // }
+            SwarmEvent::Behaviour(BehaviourEvent::Gossipsub(
+                libp2p::gossipsub::Event::Message {
+                    message_id: _,
+                    propagation_source: peer_id,
+                    message,
+                },
+            )) => {
+                tracing::info!(
+                    "📨 Received message from {:?}: {}",
+                    message.source,
+                    String::from_utf8(message.data.clone()).unwrap()
+                );
+
+                self.event_sender
+                    .send(NetworkEvent::Message {
+                        peer: peer_id.to_string(),
+                        topic: message.topic.to_string(),
+                        data: message.data,
+                    })
+                    .await
+                    .expect("Event receiver not to be dropped.");
+            }
+            SwarmEvent::Behaviour(BehaviourEvent::Gossipsub(
+                libp2p::gossipsub::Event::Subscribed { peer_id, topic },
+            )) => {
+                tracing::debug!("{peer_id} subscribed to {topic}");
+
+                // Indiscriminately add the peer to the routing table
+                self.swarm
+                    .behaviour_mut()
+                    .gossipsub
+                    .add_explicit_peer(&peer_id);
+
+                // publish a message
+                // get the last 4 chars of the peer_id as slice:
+                let message = format!(
+                    "📨 Welcome subscriber {} of topic {:?}! 🎉",
+                    &peer_id.to_string()[peer_id.to_string().len() - 4..],
+                    topic
+                );
+
+                if let Err(err) = self
+                    .swarm
+                    .behaviour_mut()
+                    .gossipsub
+                    .publish(topic, message.as_bytes())
+                {
+                    tracing::error!("Failed to publish periodic message: {err}")
+                }
+            }
             // SwarmEvent::Behaviour(BehaviourEvent::Identify(identify::Event::Error {
             //     peer_id,
             //     error: libp2p::swarm::StreamUpgradeError::Timeout,
@@ -438,42 +518,72 @@ impl EventLoop {
                     Err(e) => sender.send(Err(Box::new(e))),
                 };
             }
-            Command::Publish {
-                message: _,
-                topic: _,
-            } => {
-                // if let Some(Err(err)) = self
-                //     .swarm
-                //     .behaviour_mut()
-                //     .gossipsub
-                //     .as_mut()
-                //     .map(|g| g.publish(topic::new(topic), message.as_bytes()))
-                // {
-                //     error!("Failed to publish message: {err}");
-                //     let _ = self
-                //         .event_sender
-                //         .send(NetworkEvent::Error {
-                //             error: anyhow!("Trouble sending message: {}", err),
-                //         })
-                //         .await;
-                // }
+            Command::Publish { message, topic } => {
+                tracing::info!("API: Handling Publish command to {topic}");
+                let top = libp2p::gossipsub::IdentTopic::new(&topic);
+                if let Err(err) = self.swarm.behaviour_mut().gossipsub.publish(top, message) {
+                    tracing::error!("Failed to publish message: {err}");
+
+                    // list of all peers
+                    let peers = self
+                        .swarm
+                        .behaviour()
+                        .gossipsub
+                        .all_peers()
+                        .collect::<Vec<_>>();
+                    // show explicit peers
+                    tracing::info!("All peers: {:?}", peers);
+
+                    // let _ = self
+                    //     .event_sender
+                    //     .send(NetworkEvent::Error {
+                    //         error: NetworkError::PublishFailed,
+                    //     })
+                    //     .await;
+                }
+                tracing::info!("API: Successfully Published to {topic}");
             }
-            Command::Subscribe { topic: _ } => {
-                // if let Some(Err(err)) = self
-                //     .swarm
-                //     .behaviour_mut()
-                //     .gossipsub
-                //     .as_mut()
-                //     .map(|g| g.subscribe(&topic::new(topic)))
-                // {
-                //     error!("Failed to subscribe to topic: {err}");
-                //     let _ = self
-                //         .event_sender
-                //         .send(NetworkEvent::Error {
-                //             error: anyhow!("Trouble subscribing to topic: {}", err),
-                //         })
-                //         .await;
-                // }
+            Command::Subscribe { topic } => {
+                tracing::info!("API: Handling Subscribe command to {topic}");
+                if let Err(err) = self
+                    .swarm
+                    .behaviour_mut()
+                    .gossipsub
+                    .subscribe(&libp2p::gossipsub::IdentTopic::new(&topic))
+                {
+                    tracing::error!("Failed to subscribe to topic: {err}");
+                    let _ = self
+                        .event_sender
+                        .send(NetworkEvent::Error {
+                            error: NetworkError::SubscribeFailed,
+                        })
+                        .await;
+                }
+                tracing::info!("API: Successfully Subscribed to {topic}");
+            }
+            Command::Unsubscribe { topic } => {
+                if let Err(err) = self
+                    .swarm
+                    .behaviour_mut()
+                    .gossipsub
+                    .unsubscribe(&libp2p::gossipsub::IdentTopic::new(topic))
+                {
+                    tracing::error!("Failed to unsubscribe from topic: {err}");
+                    let _ = self
+                        .event_sender
+                        .send(NetworkEvent::Error {
+                            error: NetworkError::UnsubscribeFailed,
+                        })
+                        .await;
+                }
+            }
+            // Add Explicit Peer by PeerId
+            Command::AddPeer { peer_id } => {
+                self.swarm
+                    .behaviour_mut()
+                    .gossipsub
+                    .add_explicit_peer(&peer_id);
+                tracing::info!("API: Added Peer {peer_id} to the routing table.");
             }
         }
     }

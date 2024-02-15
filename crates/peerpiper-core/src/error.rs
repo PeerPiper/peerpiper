@@ -16,4 +16,11 @@ pub enum Error {
     /// From<DialError>
     #[error("Dial error")]
     Dial(#[from] libp2p::swarm::DialError),
+
+    /// From crate::libp2p::error::Error
+    #[error("Libp2p error")]
+    Libp2p(#[from] crate::libp2p::error::Error),
+
+    #[error("Libp2p error")]
+    GossipSubMessageAuthenticity,
 }

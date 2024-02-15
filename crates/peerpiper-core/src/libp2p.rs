@@ -2,6 +2,8 @@
 pub mod api;
 /// Behaviour for the libp2p swarm
 pub mod behaviour;
+/// Libp2p specific error conversions
+pub mod error;
 /// Create a libp2p swarm
 pub mod swarm;
 

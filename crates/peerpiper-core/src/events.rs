@@ -2,7 +2,13 @@ use libp2p::Multiaddr;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum NetworkError {}
+pub enum NetworkError {
+    DialFailed,
+    ListenFailed,
+    PublishFailed,
+    SubscribeFailed,
+    UnsubscribeFailed,
+}
 
 /// Peerpiper events from the network.
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,6 +39,9 @@ pub enum NetworkEvent {
         topic: String,
         data: Vec<u8>,
     },
+    NewConnection {
+        peer: String,
+    },
 }
 
 /// Command Events to the PeerPiper network.
@@ -44,8 +53,42 @@ pub enum NetworkEvent {
 #[derive(Debug, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum PeerPiperCommand {
-    Ping { peer: String },
     Publish { topic: String, data: Vec<u8> },
     Subscribe { topic: String },
     Unsubscribe { topic: String },
+}
+
+pub mod test_helpers {
+    use super::PeerPiperCommand;
+    use futures::channel::mpsc;
+    use futures::SinkExt;
+
+    pub async fn test_all_commands(command_sender: &mut mpsc::Sender<PeerPiperCommand>) {
+        command_sender
+            .send(PeerPiperCommand::Subscribe {
+                topic: "test publish".to_string(),
+            })
+            .await
+            .expect("Failed to send subscribe command");
+
+        // tracing::info!("Sending unsubscribe command");
+        // command_sender
+        //     .send(PeerPiperCommand::Unsubscribe {
+        //         topic: "test".to_string(),
+        //     })
+        //     .await
+        //     .expect("Failed to send unsubscribe command");
+
+        let data = vec![42; 690];
+        match command_sender
+            .send(PeerPiperCommand::Publish {
+                topic: "test publish".to_string(),
+                data,
+            })
+            .await
+        {
+            Ok(_) => tracing::info!("Published data"),
+            Err(e) => tracing::error!("Failed to publish data: {:?}", e),
+        }
+    }
 }
