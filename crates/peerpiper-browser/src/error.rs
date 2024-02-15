@@ -11,4 +11,10 @@ pub enum Error {
     /// From<DialError>
     #[error("Dial error")]
     Dial(#[from] libp2p::swarm::DialError),
+    /// From core::Error
+    #[error("Core error {0}")]
+    Core(#[from] peerpiper_core::error::Error),
+    /// From futures channel mspc send Error
+    #[error("Send error {0}")]
+    Send(#[from] futures::channel::mpsc::SendError),
 }
