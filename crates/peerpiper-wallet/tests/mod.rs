@@ -17,7 +17,6 @@ use wasmtime::{Config, Engine, Store};
 use wasmtime_wasi::preview2::{WasiCtx, WasiCtxBuilder, WasiView};
 
 use bindgen::exports::peerpiper::wallet::wurbo_out::Context as WalletContext;
-use bindgen::peerpiper::wallet::wurbo_types;
 
 struct MyCtx {
     wasi_ctx: Context,
@@ -94,7 +93,7 @@ impl bindgen::delano::wit_ui::wurbo_out::Host for MyCtx {
     }
 }
 
-impl bindgen::peerpiper::wallet::wurbo_types::Host for MyCtx {}
+impl bindgen::peerpiper::wallet::context_types::Host for MyCtx {}
 impl bindgen::peerpiper::wallet::wurbo_in::Host for MyCtx {
     fn addeventlistener(
         &mut self,
@@ -152,7 +151,7 @@ mod aggregate_peerpiper_tests {
 
     use crate::bindgen::{
         delano::wit_ui::context_types,
-        peerpiper::wallet::wurbo_types::{DelanoContext, SeedContext},
+        peerpiper::wallet::context_types::{App, Content, DelanoContext, SeedContext},
         seed_keeper::wit_ui::wurbo_types::Page,
     };
 
@@ -200,10 +199,9 @@ mod aggregate_peerpiper_tests {
             }),
             input: Some(bindgen::seed_keeper::wit_ui::wurbo_types::Input {
                 placeholder: "a placeholder".to_string(),
-                username: None,
-                encrypted: None,
+                encrypted_seed: None,
             }),
-            output: None,
+            load: None,
         });
 
         let delano_ui =
@@ -213,11 +211,11 @@ mod aggregate_peerpiper_tests {
                     version: "0.1.0".to_string(),
                     description: "Delanocreds wallet.".to_string(),
                 }),
-                issue: None,
+                load: None,
             });
 
-        let all_context = WalletContext::AllContent(wurbo_types::Content {
-            app: wurbo_types::App {
+        let all_context = WalletContext::AllContent(Content {
+            app: App {
                 title: "a title for the app".to_string(),
             },
             seed_ui: seed_ui.clone(),
