@@ -15,6 +15,7 @@ serde_json = "1.0.68"
 serde_with = { version = "3.3.0", features = ["base64"] }
 seed-keeper-events = { path = "../../submodules/seed-keeper/crates/seed-keeper-events" }
 delano-events = { path = "../../submodules/delanocreds/crates/delano-events" }
+peerpiper = { workspace = true }
 
 [dev-dependencies]
 wasmtime = { version = "17", features = ['component-model'] }
