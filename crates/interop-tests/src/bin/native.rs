@@ -8,7 +8,7 @@ use axum::{http::Method, routing::get};
 // use axum::{Json};
 use axum::Router;
 use futures::channel::mpsc;
-use futures::StreamExt;
+use futures::{SinkExt, StreamExt};
 use libp2p::multiaddr::{Multiaddr, Protocol};
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
@@ -18,7 +18,7 @@ use tower_http::cors::{Any, CorsLayer};
 // use tokio::io::{AsyncBufReadExt, BufReader};
 // use tokio::process::Child;
 
-use peerpiper::core::events::NetworkEvent;
+use peerpiper::core::events::{NetworkEvent, PeerPiperCommand};
 
 const MAX_CHANNELS: usize = 16;
 
@@ -32,17 +32,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::info!("Starting peerpiper-native TESTS");
 
-    let (tx, mut rx) = mpsc::channel(MAX_CHANNELS);
-    // spawn peerpiper::start_native(tx).await?;
-    let tx_clone = tx.clone();
+    let (tx_net_evt, mut rx_net_evt) = mpsc::channel(MAX_CHANNELS);
+    let (mut command_sender, command_receiver) = mpsc::channel(8);
+    let tx_net_evt_clone = tx_net_evt.clone();
+
     tokio::spawn(async move {
-        peerpiper::start(tx_clone).await.unwrap();
+        peerpiper::start(tx_net_evt_clone, command_receiver)
+            .await
+            .unwrap();
     });
 
     tracing::info!("Started.");
 
     let address = loop {
-        if let NetworkEvent::ListenAddr { address, .. } = rx.next().await.unwrap() {
+        if let NetworkEvent::ListenAddr { address, .. } = rx_net_evt.next().await.unwrap() {
             tracing::info!(%address, "RXD Address");
             break address;
         }
@@ -53,8 +56,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     loop {
         tokio::select! {
-            Some(msg) = rx.next() => {
+            Some(msg) = rx_net_evt.next() => {
                 tracing::info!("Received msg: {:?}", msg);
+                match msg {
+                    NetworkEvent::NewConnection { peer } => {
+                       // Once connection establish, subscribe to "test" topic
+                        tracing::info!("New connection from {}, subscribing to test topic", peer);
+                        command_sender
+                            .send(PeerPiperCommand::Subscribe {
+                                topic: "test publish".to_string(),
+                            })
+                            .await
+                            .expect("Failed to send subscribe command");
+                    }
+                    NetworkEvent::Message { peer, topic, data } => {
+                        tracing::info!("Received message from {} on topic {}: {:?}", peer, topic, data);
+                    }
+                    NetworkEvent::Pong { peer, rtt } => {
+                        tracing::info!("Received pong from {} with rtt: {}", peer, rtt);
+                    }
+                    _ => {}
+                }
             }
             _ = tokio::signal::ctrl_c() => {
                 tracing::info!("Received ctrl-c");

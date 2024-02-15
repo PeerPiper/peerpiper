@@ -17,3 +17,9 @@ cargo run --bin interop-tests-native
 ```
 
 4. Open the browser at the URL printed by the native node.
+
+The above steps are streamlined using [`just`](https://just.systems/). Run `just` to see the available commands:
+
+```bash
+just all
+```

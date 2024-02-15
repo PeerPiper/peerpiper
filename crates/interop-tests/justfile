@@ -1,0 +1,9 @@
+# https://github.com/casey/just
+
+pack:
+  wasm-pack build --target web --out-dir static
+
+serve:
+  cargo run --bin interop-tests-native
+
+all: pack serve
