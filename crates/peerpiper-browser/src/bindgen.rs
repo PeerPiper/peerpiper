@@ -23,18 +23,19 @@ static COMMAND_SENDER: OnceLock<Mutex<mpsc::Sender<PeerPiperCommand>>> = OnceLoc
 cfg_if::cfg_if! {
     if #[cfg(feature = "logging")] {
         fn init_log() {
-            // use tracing_wasm::{WASMLayer, WASMLayerConfig};
+            // use tracing_wasm::{WASMLayer, WASMLayerConfigBuilder};
             // use tracing_subscriber::layer::SubscriberExt;
-            // use tracing_subscriber::EnvFilter;
+            // use tracing_subscriber::Registry;
             //
-            // std::env::set_var("RUST_LOG", "debug");
+            // let layer_config = WASMLayerConfigBuilder::new()
+            //     .set_max_level(tracing::Level::WARN)
+            //     .build();
             //
-            // let subscriber = tracing_subscriber::Registry::default()
-            //     .with(WASMLayer::new(WASMLayerConfig::default()).with_filter(
-            //         EnvFilter::from_default_env()
-            //     ));
+            // if let Err(_) = tracing::subscriber::set_global_default(Registry::default().with(WASMLayer::new(layer_config))) {
+            //     tracing_wasm::set_as_global_default();
+            // }
             //
-            // tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+            // tracing_wasm::set_as_global_default_with_config(layer_config);
             console_error_panic_hook::set_once();
             tracing_wasm::set_as_global_default();
         }
@@ -66,7 +67,7 @@ pub async fn connect(libp2p_endpoint: &str, on_event: &js_sys::Function) -> Resu
     let this = JsValue::null();
 
     while let Some(event) = rx_evts.next().await {
-        tracing::debug!("Rx BINDGEN Event: {:?}", event);
+        // tracing::trace!("Rx BINDGEN Event: {:?}", event);
         let evt = JsValue::from_serde(&event).unwrap();
         let _ = on_event.call1(&this, &evt);
     }
@@ -118,7 +119,6 @@ pub async fn unsubscribe(topic: String) -> Result<(), JsError> {
 /// If it fails, returns an error.
 #[wasm_bindgen]
 pub async fn command(json: &str) -> Result<(), JsError> {
-    tracing::trace!("BINDGEN.rs: Received command JSON");
     let example_publish = PeerPiperCommand::Publish {
         topic: "example".to_string(),
         data: vec![1, 2, 3],
