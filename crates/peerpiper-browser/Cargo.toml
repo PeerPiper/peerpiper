@@ -11,7 +11,7 @@ anyhow = "1.0.72"
 futures = "0.3.29"
 rand = "0.8"
 tracing = "0.1.37"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3" }
 cfg-if = "1"
 thiserror = "1.0.50"
 js-sys = "0.3.66"
