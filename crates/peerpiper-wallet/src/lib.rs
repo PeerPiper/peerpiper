@@ -28,7 +28,9 @@ use state::State;
 use bindings::delano;
 use bindings::exports::peerpiper::wallet::aggregation::Guest as AggregationGuest;
 use bindings::exports::peerpiper::wallet::wurbo_out::Guest as WurboGuest;
-use bindings::peerpiper::wallet::context_types::{self, Content, Context, Events, Message, Seed};
+use bindings::peerpiper::wallet::context_types::{
+    self, Content, Context, Events, Message, PublishMessage, Seed, SubscribeTopic,
+};
 use bindings::peerpiper::wallet::wurbo_in;
 use bindings::peerpiper::wallet::wurbo_in::set_hash;
 use bindings::seed_keeper::wit_ui;
@@ -38,8 +40,7 @@ use wurbo::jinja::{error::RenderError, Entry, Index, Rest, Templates};
 use wurbo::prelude::*;
 
 use base64ct::{Base64Url, Base64UrlUnpadded, Encoding};
-use delano_events::{utils::PayloadEncoding, PublishMessage, SubscribeTopic};
-use peerpiper::core::events::{NetworkEvent, PeerPiperCommand};
+use peerpiper::core::events::PeerPiperCommand;
 use std::ops::Deref;
 use std::sync::{LazyLock, Mutex};
 
@@ -55,17 +56,6 @@ fn get_templates() -> Templates {
         Rest::new(vec![]),
     )
 }
-
-/// All the various event messages that can be processed by this Router.
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
-enum Wrapper {
-    PublishMsg(PublishMessage),
-    SubscribeTop(SubscribeTopic),
-    NetworkEvent(NetworkEvent),
-}
-
-impl PayloadEncoding for Wrapper {}
 
 impl WurboGuest for Component {
     /// Render needs to use the Aggregate Template for the initial load, but after that simply call
@@ -121,61 +111,33 @@ impl WurboGuest for Component {
                 );
                 "".to_string()
             }
-            // There are 2 types of publishing events: publish and subscribe
-            // A) For publish, we just need to send the bytes on our network of choice without
-            // deserializing the bytes. Goes through wallet so we can sign the message.
-            // B) For subscribe, we need to deserialize the bytes and then do something with the data
-            // The way we tell the difference is the Event mesage type, telling us where it came from
-            Context::Message(base64) => {
-                println!("PeerPiper Wallet Received string message");
-                // Works as long as all the variants use the same deserializing method
-                match PayloadEncoding::decode_deserialize(&base64)? {
-                    Wrapper::PublishMsg(PublishMessage { key, value }) => {
-                        // We can do something with the message here
-                        println!("Received PUBLISH message: key: {:#?}", key);
-                        // TODO: UI feedback for the user. Toast?
+            Context::Event(Events::Publish(PublishMessage { key, value })) => {
+                // We can do something with the message here
+                println!("Received PUBLISH message: key: {:#?}", key);
+                // TODO: UI feedback for the user. Toast?
 
-                        // Send message to PeerPiper network as pubsub msg.
-                        // needs to emit stringified peerpiper::core::PeerPiperCommand
-                        wurbo_in::emit(
-                            &serde_json::to_string(&PeerPiperCommand::Publish {
-                                topic: key,
-                                data: value,
-                            })
-                            .map_err(|e| e.to_string())?,
-                        );
-                    }
-                    Wrapper::SubscribeTop(SubscribeTopic { key }) => {
-                        // We can do something with the message here
-                        println!("Received SUBSCRIBE message: key: {:#?}", key);
+                // Send message to PeerPiper network as pubsub msg.
+                // needs to emit stringified peerpiper::core::PeerPiperCommand
+                wurbo_in::emit(
+                    &serde_json::to_string(&PeerPiperCommand::Publish {
+                        topic: key,
+                        data: value,
+                    })
+                    .map_err(|e| e.to_string())?,
+                );
+                "".to_string()
+            }
+            Context::Event(Events::Subscribe(SubscribeTopic { key })) => {
+                // We can do something with the message here
+                println!("Received SUBSCRIBE message: key: {:#?}", key);
 
-                        // Send message to PeerPiper network as pubsub msg.
-                        // needs to emit stringified peerpiper::core::PeerPiperCommand
-                        wurbo_in::emit(
-                            &serde_json::to_string(&PeerPiperCommand::Subscribe { topic: key })
-                                .map_err(|e| e.to_string())?,
-                        );
-                    }
-                    Wrapper::NetworkEvent(NetworkEvent::Message {
-                        peer: _,
-                        topic,
-                        data: _,
-                    }) => {
-                        // We can do something with the message here
-                        println!(
-                            "Rust Wallet Received MESSAGE NETWORK message: event: {:#?}",
-                            topic
-                        );
-                    }
-                    Wrapper::NetworkEvent(evt) => {
-                        // We can do something with the message here
-                        println!(
-                            "Rust Wallet Received OTHER NETWORK error: event: {:#?}",
-                            evt
-                        );
-                    }
-                }
-                "PUBSUB: blank content after processing messages.".to_string()
+                // Send message to PeerPiper network as pubsub msg.
+                // needs to emit stringified peerpiper::core::PeerPiperCommand
+                wurbo_in::emit(
+                    &serde_json::to_string(&PeerPiperCommand::Subscribe { topic: key })
+                        .map_err(|e| e.to_string())?,
+                );
+                "".to_string()
             }
         };
         Ok(html)

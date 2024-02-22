@@ -43,9 +43,20 @@ interface context-types {
     data: list<u8>
   }
 
+  record publish-message {
+    key: string,
+    value: list<u8>
+  }
+
+  record subscribe-topic {
+    key: string
+  }
+
   variant events {
     encrypted(seed),
-    message(message)
+    message(message),
+    publish(publish-message),
+    subscribe(subscribe-topic)
   }
 
   // Context variants
@@ -55,8 +66,6 @@ interface context-types {
     delano(delano-context),
     // edwards(edwards-context)
     event(events),
-    // messages that are base64 encoded
-    message(string)
   }
 
 }
