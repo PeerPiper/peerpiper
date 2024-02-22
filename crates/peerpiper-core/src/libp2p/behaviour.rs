@@ -46,7 +46,7 @@ pub fn build(key: &Keypair) -> Behaviour {
     );
 
     Behaviour {
-        ping: ping::Behaviour::new(ping::Config::new().with_interval(Duration::from_secs(5))),
+        ping: ping::Behaviour::new(ping::Config::new().with_interval(Duration::from_secs(25))),
         // Need to include identify until https://github.com/status-im/nim-libp2p/issues/924 is resolved.
         identify: identify::Behaviour::new(identify::Config::new(
             "/interop-tests".to_owned(),
