@@ -106,7 +106,7 @@ impl Client {
         loop {
             futures::select! {
                 event = network_events.select_next_some() => {
-                    tracing::debug!("Network event: {:?}", event);
+                    tracing::trace!("Network event: {:?}", event);
                     if let Err(network_event) = tx.send(event).await {
                         tracing::error!("Failed to send swarm event: {:?}", network_event);
                         // break;
@@ -253,8 +253,8 @@ impl EventLoop {
                     })
                 };
                 // Protocol::Ip is the first item in the address vector
-                match address.iter().next().unwrap() {
-                    Protocol::Ip6(ip6) => {
+                match address.iter().next() {
+                    Some(Protocol::Ip6(ip6)) => {
                         // Only add our globally available IPv6 addresses to the external addresses list.
                         if !ip6.is_loopback() && !ip6.is_unspecified() {
                             if let Err(e) = addr_handler() {
@@ -262,7 +262,7 @@ impl EventLoop {
                             }
                         }
                     }
-                    Protocol::Ip4(ip4) => {
+                    Some(Protocol::Ip4(ip4)) => {
                         if !ip4.is_loopback() && !ip4.is_unspecified() && ip4 != Ipv4Addr::LOCALHOST
                         {
                             if let Err(e) = addr_handler() {
@@ -348,11 +348,7 @@ impl EventLoop {
                     message,
                 },
             )) => {
-                tracing::info!(
-                    "📨 Received message from {:?}: {}",
-                    message.source,
-                    String::from_utf8(message.data.clone()).unwrap()
-                );
+                tracing::info!("📨 Received message from {:?}", message.source);
 
                 self.event_sender
                     .send(NetworkEvent::Message {
@@ -377,10 +373,20 @@ impl EventLoop {
                 // publish a message
                 // get the last 4 chars of the peer_id as slice:
                 let message = format!(
-                    "📨 Welcome subscriber {} of topic {:?}! 🎉",
+                    "📨 Welcome subscriber ..{} of topic {:?}! 🎉",
                     &peer_id.to_string()[peer_id.to_string().len() - 4..],
                     topic
                 );
+
+                // subscribe to this topic so we can act as super peer to browsers
+                if let Err(err) = self
+                    .swarm
+                    .behaviour_mut()
+                    .gossipsub
+                    .subscribe(&libp2p::gossipsub::IdentTopic::new(topic.as_str()))
+                {
+                    tracing::error!("Failed to subscribe to topic: {err}");
+                }
 
                 if let Err(err) = self
                     .swarm
@@ -388,7 +394,7 @@ impl EventLoop {
                     .gossipsub
                     .publish(topic, message.as_bytes())
                 {
-                    tracing::error!("Failed to publish periodic message: {err}")
+                    tracing::error!("Failed to publish welcome message: {err}")
                 }
             }
             // SwarmEvent::Behaviour(BehaviourEvent::Identify(identify::Event::Error {
@@ -422,8 +428,8 @@ impl EventLoop {
             //             g.remove_explicit_peer(&peer_id)
             //         };
             //
-            //         // remove from swarm
-            //         self.swarm.disconnect_peer_id(peer_id).unwrap();
+            //         // remove from swarm. TODO: rm unwrap
+            //         // self.swarm.disconnect_peer_id(peer_id).unwrap();
             //
             //         // remove the peer from the warning_counters HashMap
             //         self.warning_counters.remove(&peer_id);
@@ -455,7 +461,7 @@ impl EventLoop {
             //             .behaviour()
             //             .kademlia
             //             .as_ref()
-            //             .unwrap()
+            //             //.unwrap()
             //             .protocol_names()
             //             .iter()
             //             .any(|q| p == q)
