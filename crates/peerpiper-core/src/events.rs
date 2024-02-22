@@ -16,11 +16,23 @@ pub enum Network {
     Libp2p,
 }
 
+/// The Context of the event. This is essentially a serde wrapper to ensure that any JSON string is
+/// formatted correctly, as WIT expects variants to be {tag: _, val: _} in lower kebab-case.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(tag = "tag", content = "val")]
+#[non_exhaustive]
+pub enum Context {
+    Event(NetworkEvent),
+}
+
 /// Events from the Peerpiper network.
 /// They should be network, transport, and protocol agnostic. Could be libp2p, Nostr or HTTPS
 /// publish, for example.
 /// This is marked non-exhaustive because we may want to add new events in the future.
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[serde(tag = "tag", content = "val")]
 #[non_exhaustive]
 pub enum NetworkEvent {
     ListenAddr {
