@@ -39,6 +39,8 @@
 
 		// load the import handles into the Wasm component and get the ES module returned
 		wurbo = new Wurbo({ arrayBuffer: wasmBytes, importables }, (payload) => {
+			// Relay emitted commands from the Wasm component to PiperNet
+			// console.log('Command emitted: ', { payload });
 			pipernet.command(payload);
 		});
 
@@ -111,8 +113,16 @@
 		const dialAddr = await res.text();
 
 		pipernet.connect(dialAddr, (event) => {
-			console.log('Event emitted: ', { event });
-			wurbo.eventHandler(event);
+			// Relay events from PiperNet to the Wasm component using Wurbo's eventHandler
+			// 1) `jco` expects TypedArrays, so we convert the event to Uint8Arrays
+			let val = toUint8Arrays(event);
+			console.log('Event emitted: ', val);
+
+			// 2) Wrap the event in an event tage so it's compatible witht he expect Context::Event
+			let wrapped = { tag: 'event', val };
+
+			// Wrap in Context::Event / Message
+			wurbo.eventHandler(wrapped);
 		});
 	});
 
@@ -124,6 +134,19 @@
 			// once the DOM has our elements loaded, we can activate the event emitters
 			wurbo.aggregation();
 		})();
+
+	// Helper function which recursively converts any array to uint8array, because `jco` needs TypedArrays
+	function toUint8Arrays(obj) {
+		if (obj instanceof Array) {
+			return new Uint8Array(obj);
+		}
+		if (obj instanceof Object) {
+			for (let key in obj) {
+				obj[key] = toUint8Arrays(obj[key]);
+			}
+		}
+		return obj;
+	}
 </script>
 
 <svelte:head>

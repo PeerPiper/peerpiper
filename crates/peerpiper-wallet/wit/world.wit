@@ -37,8 +37,15 @@ interface context-types {
     seed: string
   }
 
-  variant message {
-    encrypted(seed)
+  record message {
+    peer: string,
+    topic: string,
+    data: list<u8>
+  }
+
+  variant events {
+    encrypted(seed),
+    message(message)
   }
 
   // Context variants
@@ -47,7 +54,7 @@ interface context-types {
     seed(seed-context),
     delano(delano-context),
     // edwards(edwards-context)
-    event(message),
+    event(events),
     // messages that are base64 encoded
     message(string)
   }
