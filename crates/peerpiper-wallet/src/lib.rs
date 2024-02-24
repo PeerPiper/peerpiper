@@ -100,16 +100,26 @@ impl WurboGuest for Component {
                 res
             }
             Context::Event(Events::Message(Message {
-                peer,
-                topic,
-                data: _,
+                ref peer,
+                ref topic,
+                ref data,
             })) => {
                 // We can do something with the message here
                 println!(
                     "Received NETWORK message: peer: {:#?}, topic: {:#?}",
                     peer, topic
                 );
-                "".to_string()
+                // We need to pass the data to the appropriate component(s) here
+                // TODO: How would we handle it if mulitple components are interested in the message?
+                delano::wit_ui::wurbo_out::render(
+                    &delano::wit_ui::context_types::Context::Networkevent(
+                        delano::wit_ui::context_types::Message {
+                            peer: peer.clone(),
+                            topic: topic.clone(),
+                            data: data.to_vec(),
+                        },
+                    ),
+                )?
             }
             Context::Event(Events::Publish(PublishMessage { key, value })) => {
                 // We can do something with the message here
@@ -195,7 +205,17 @@ pub(crate) struct AppContext {
     delano_ui: DelanoUI,
     // edwards_ui: Edwards,
     state: State,
+    // Persist the initial loaded content, for when the page is refreshed
     content: Content,
+}
+
+impl AppContext {
+    /// Create AppContext from the LAST_STATE
+    pub fn from_latest() -> Self {
+        let binding = APP_CONTEXT.lock().unwrap();
+        let last = binding.as_ref().unwrap();
+        last.clone()
+    }
 }
 
 impl StructObject for AppContext {

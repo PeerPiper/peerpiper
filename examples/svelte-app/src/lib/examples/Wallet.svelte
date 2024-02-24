@@ -135,7 +135,7 @@
 		(async () => {
 			// wait for the DOM to reflect the updates first
 			await tick();
-			// once the DOM has our elements loaded, we can activate the event emitters
+			// once the DOM has our elements loaded, we can activate the aggregated event emitters
 			wurbo.aggregation();
 		})();
 
