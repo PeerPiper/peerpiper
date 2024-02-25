@@ -1,5 +1,5 @@
 <script>
-	import { onMount, tick } from 'svelte';
+	import { onMount } from 'svelte';
 	import { examples } from '$lib';
 </script>
 
