@@ -1,7 +1,5 @@
 [workspace]
-members = [
-  "crates/*"
-]
+members = ["crates/*", "examples/form"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -14,11 +12,11 @@ rand = "0.8"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 libp2p = { git = "https://github.com/libp2p/rust-libp2p.git" }
-wit-bindgen = { version = "0.16.0", default-features = false, features = ["realloc"] }
+wit-bindgen = { version = "0.19.2", default-features = false, features = ["realloc"] }
 
 [profile.release]
 opt-level = "z"          # Optimize for size.
-lto = true               # Enable Link Time Optimization
+lto = true              # Link Time Optimization
 codegen-units = 1        # allow for maximum size reduction optimizations
 strip = true             # Automatically strip symbols from the binary.
 panic = 'abort'          # Abort on panic
