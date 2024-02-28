@@ -1,5 +1,6 @@
+#[cfg(target_arch = "wasm32")]
 mod bindgen;
-pub mod blockstore_idb;
+
 mod error;
 mod wasm;
 
