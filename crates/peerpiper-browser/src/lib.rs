@@ -1,4 +1,5 @@
 mod bindgen;
+pub mod blockstore_idb;
 mod error;
 mod wasm;
 

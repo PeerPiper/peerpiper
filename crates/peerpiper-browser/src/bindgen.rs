@@ -9,7 +9,6 @@ pub use peerpiper_core::events::PeerPiperCommand;
 use std::sync::Mutex;
 use std::sync::OnceLock;
 use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::spawn_local;
 
 const MAX_CHANNELS: usize = 16;
@@ -47,6 +46,10 @@ cfg_if::cfg_if! {
 #[wasm_bindgen]
 pub async fn connect(libp2p_endpoint: &str, on_event: &js_sys::Function) -> Result<(), JsError> {
     init_log();
+
+    // try to create idb and save somthing
+    let blockstore = crate::blockstore_idb::IDBBlockstore::new("peerpiper");
+    let _ = wasm_bindgen_futures::JsFuture::from(blockstore.open()).await;
 
     let (tx_evts, mut rx_evts) = mpsc::channel(MAX_CHANNELS);
 

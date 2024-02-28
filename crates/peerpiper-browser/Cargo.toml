@@ -24,6 +24,8 @@ gloo-utils = "0.2.0"
 serde_json = "1.0.68"
 tracing-wasm = { version = "0.2.1", optional = true }
 console_error_panic_hook = { version = "0.1.7", optional = true }
+cid = "0.11.0"
+multihash-codetable = {version = "0.1.2", features = ["sha2"] }
 
 [target.wasm32-unknown-unknown.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
