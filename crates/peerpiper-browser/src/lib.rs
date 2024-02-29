@@ -1,5 +1,5 @@
 #[cfg(target_arch = "wasm32")]
-mod bindgen;
+pub mod bindgen;
 
 mod error;
 mod wasm;

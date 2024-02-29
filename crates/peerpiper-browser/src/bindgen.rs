@@ -160,7 +160,7 @@ pub async fn save(filepath: Vec<String>, data: Vec<u8>) -> Result<(), JsError> {
         )
     })?;
 
-    // TODO: Use WNFS to save data to path usign blockstore.
+    // TODO: Use WNFS to save data to path using blockstore.
 
     let cid = blockstore
         .lock()
