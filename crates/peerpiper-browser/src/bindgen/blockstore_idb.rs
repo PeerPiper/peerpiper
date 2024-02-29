@@ -6,14 +6,14 @@ use wasm_bindgen::prelude::*;
 use wnfs::common::libipld::Cid;
 use wnfs::common::utils::Arc;
 use wnfs::common::utils::CondSend;
-use wnfs::common::BlockStore;
+use wnfs::common::BlockStore as WNFSBlockStore;
 use wnfs::common::BlockStoreError;
 
 #[wasm_bindgen(module = "/src/bindgen/blockstore-idb.js")]
 extern "C" {
 
     /// CID Class
-    pub(crate) type CID;
+    pub type CID;
 
     /// CID Constructor
     #[wasm_bindgen(constructor)]
@@ -74,7 +74,7 @@ extern "C" {
 
     /// has(key): Promise<boolean>
     #[wasm_bindgen(method)]
-    pub fn has(this: &IDBBlockstore, key: &str) -> js_sys::Promise;
+    pub fn has(this: &IDBBlockstore, key: &CID) -> js_sys::Promise;
 
     /// put(key, val: Uint8Array): Promise<CID<unknown, number, number, Version>>
     #[wasm_bindgen(method)]
@@ -116,9 +116,27 @@ impl BrowserBlockStore {
             .map_err(|_| JsValue::from_str("Error getting block"))?;
         Ok(js_val.into())
     }
+
+    /// Puts bytes into the blockstore.
+    pub async fn put(&self, cid: &CID, bytes: Uint8Array) -> Result<CID, JsValue> {
+        let promise = self.idb.lock().put(cid, bytes);
+        let js_val = wasm_bindgen_futures::JsFuture::from(promise)
+            .await
+            .map_err(|_| JsValue::from_str("Error putting block"))?;
+        Ok(js_val.into())
+    }
+
+    /// Checks if the blockstore has a block with the given CID.
+    pub async fn has(&self, cid: &CID) -> Result<bool, JsValue> {
+        let promise = self.idb.lock().has(cid);
+        let js_val = wasm_bindgen_futures::JsFuture::from(promise)
+            .await
+            .map_err(|_| JsValue::from_str("Error checking for block"))?;
+        Ok(js_val.as_bool().unwrap())
+    }
 }
 
-impl BlockStore for BrowserBlockStore {
+impl WNFSBlockStore for BrowserBlockStore {
     async fn get_block(&self, cid: &Cid) -> Result<Bytes, BlockStoreError> {
         let key = CID::parse(&cid.to_string());
         let js_uint8array = self
@@ -140,17 +158,16 @@ impl BlockStore for BrowserBlockStore {
 
         let val = js_sys::Uint8Array::from(bytes.as_ref());
         // call put inside the send_wrapper
-        let _cid = self.idb.lock().put(&key, val);
+        let _cid = self.put(&key, val).await;
 
         Ok(())
     }
 
     async fn has_block(&self, cid: &Cid) -> Result<bool, BlockStoreError> {
         let key = CID::parse(&cid.to_string());
-        let js_val = self.idb.lock().has(&key.to_string());
-        let js_val = wasm_bindgen_futures::JsFuture::from(js_val)
+        Ok(self
+            .has(&key)
             .await
-            .map_err(|_| BlockStoreError::CIDNotFound(*cid))?;
-        Ok(js_val.as_bool().unwrap())
+            .map_err(|_| BlockStoreError::CIDNotFound(*cid))?)
     }
 }
