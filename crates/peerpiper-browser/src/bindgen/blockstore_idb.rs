@@ -9,6 +9,8 @@ use wnfs::common::utils::CondSend;
 use wnfs::common::BlockStore as WNFSBlockStore;
 use wnfs::common::BlockStoreError;
 
+// TODO: Feature flag for this
+
 #[wasm_bindgen(module = "/src/bindgen/blockstore-idb.js")]
 extern "C" {
 
@@ -109,7 +111,7 @@ impl BrowserBlockStore {
         Ok(())
     }
 
-    pub async fn get(&self, cid: &CID) -> Result<Uint8Array, JsValue> {
+    pub async fn get_idb(&self, cid: &CID) -> Result<Uint8Array, JsValue> {
         let promise = self.idb.lock().get(cid);
         let js_val = wasm_bindgen_futures::JsFuture::from(promise)
             .await
@@ -118,7 +120,7 @@ impl BrowserBlockStore {
     }
 
     /// Puts bytes into the blockstore.
-    pub async fn put(&self, cid: &CID, bytes: Uint8Array) -> Result<CID, JsValue> {
+    pub async fn put_idb(&self, cid: &CID, bytes: Uint8Array) -> Result<CID, JsValue> {
         let promise = self.idb.lock().put(cid, bytes);
         let js_val = wasm_bindgen_futures::JsFuture::from(promise)
             .await
@@ -127,12 +129,14 @@ impl BrowserBlockStore {
     }
 
     /// Checks if the blockstore has a block with the given CID.
-    pub async fn has(&self, cid: &CID) -> Result<bool, JsValue> {
+    pub async fn has_in_idb(&self, cid: &CID) -> Result<bool, JsValue> {
         let promise = self.idb.lock().has(cid);
         let js_val = wasm_bindgen_futures::JsFuture::from(promise)
             .await
             .map_err(|_| JsValue::from_str("Error checking for block"))?;
-        Ok(js_val.as_bool().unwrap())
+        Ok(js_val
+            .as_bool()
+            .ok_or(JsValue::from_str("Error converting to bool"))?)
     }
 }
 
@@ -140,7 +144,7 @@ impl WNFSBlockStore for BrowserBlockStore {
     async fn get_block(&self, cid: &Cid) -> Result<Bytes, BlockStoreError> {
         let key = CID::parse(&cid.to_string());
         let js_uint8array = self
-            .get(&key)
+            .get_idb(&key)
             .await
             .map_err(|_| BlockStoreError::CIDNotFound(*cid))?;
         let bytes: Bytes = js_uint8array.to_vec().into();
@@ -157,8 +161,7 @@ impl WNFSBlockStore for BrowserBlockStore {
         let bytes: Bytes = bytes.into();
 
         let val = js_sys::Uint8Array::from(bytes.as_ref());
-        // call put inside the send_wrapper
-        let _cid = self.put(&key, val).await;
+        let _cid = self.put_idb(&key, val).await;
 
         Ok(())
     }
@@ -166,7 +169,7 @@ impl WNFSBlockStore for BrowserBlockStore {
     async fn has_block(&self, cid: &Cid) -> Result<bool, BlockStoreError> {
         let key = CID::parse(&cid.to_string());
         Ok(self
-            .has(&key)
+            .has_in_idb(&key)
             .await
             .map_err(|_| BlockStoreError::CIDNotFound(*cid))?)
     }

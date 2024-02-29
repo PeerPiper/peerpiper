@@ -1,5 +1,5 @@
-use multihash_codetable::{Code, MultihashDigest};
 pub use peerpiper_core::events::PeerPiperCommand;
+use wasm_bindgen_test::console_log;
 use wasm_bindgen_test::wasm_bindgen_test_configure;
 use wasm_bindgen_test::*;
 
@@ -9,6 +9,7 @@ const RAW: u64 = 0x55;
 
 #[wasm_bindgen_test]
 async fn idb_test() {
+    use cid::multihash::{Code, MultihashDigest, Sha2_256};
     use cid::Cid;
 
     // try to create idb and save somthing
@@ -47,7 +48,7 @@ async fn idb_test() {
 #[wasm_bindgen_test]
 async fn test_wnfs_impl() {
     use bytes::Bytes;
-    use wnfs::common::blockstore::BlockStore;
+    use wnfs::common::blockstore::BlockStore as WNFSBlockStore;
     use wnfs::common::libipld::cid::{Cid, CidGeneric};
     use wnfs::common::CODEC_RAW;
 
@@ -58,7 +59,7 @@ async fn test_wnfs_impl() {
         peerpiper_browser::bindgen::blockstore_idb::BrowserBlockStore::new("peerpiper");
     let _ = blockstore.open().await;
 
-    let bytes = vec![69, 42, 42, 69];
+    let bytes = vec![42, 42, 42, 42];
     let bytes: Bytes = bytes.into();
     let cid = blockstore
         .put_block(bytes.clone(), CODEC_RAW)
