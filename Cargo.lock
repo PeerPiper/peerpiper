@@ -709,8 +709,10 @@ checksum = "5bc015644b92d5890fab7489e49d21f879d5c990186827d42ec511919404f38b"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
+ "js-sys",
  "num-traits",
  "serde",
+ "wasm-bindgen",
  "windows-targets 0.52.3",
 ]
 
@@ -3623,6 +3625,7 @@ dependencies = [
  "anyhow",
  "bytes",
  "cfg-if",
+ "chrono",
  "cid 0.11.0",
  "console_error_panic_hook",
  "futures",
@@ -3635,9 +3638,12 @@ dependencies = [
  "parking_lot",
  "peerpiper-core",
  "rand",
+ "rand_chacha",
+ "rand_core",
  "send_wrapper 0.6.0",
  "serde_json",
  "thiserror",
+ "tokio",
  "tracing",
  "tracing-subscriber",
  "tracing-wasm",
@@ -3645,6 +3651,7 @@ dependencies = [
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
  "wnfs",
+ "wnfs-unixfs-file",
 ]
 
 [[package]]
