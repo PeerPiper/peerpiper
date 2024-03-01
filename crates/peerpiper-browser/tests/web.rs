@@ -1,4 +1,5 @@
 pub use peerpiper_core::events::PeerPiperCommand;
+use wasm_bindgen::{JsError, JsValue};
 use wasm_bindgen_test::console_log;
 use wasm_bindgen_test::wasm_bindgen_test_configure;
 use wasm_bindgen_test::*;
@@ -9,8 +10,8 @@ const RAW: u64 = 0x55;
 
 #[wasm_bindgen_test]
 async fn idb_test() {
-    use cid::multihash::{Code, MultihashDigest, Sha2_256};
     use cid::Cid;
+    use multihash_codetable::{Code, MultihashDigest, Sha2_256};
 
     // try to create idb and save somthing
     let blockstore = peerpiper_browser::bindgen::blockstore_idb::IDBBlockstore::new("peerpiper");
@@ -59,7 +60,7 @@ async fn test_wnfs_impl() {
         peerpiper_browser::bindgen::blockstore_idb::BrowserBlockStore::new("peerpiper");
     let _ = blockstore.open().await;
 
-    let bytes = vec![42, 42, 42, 42];
+    let bytes = vec![42; 1024 * 256]; // 256 ok, 286 nope.
     let bytes: Bytes = bytes.into();
     let cid = blockstore
         .put_block(bytes.clone(), CODEC_RAW)
@@ -79,4 +80,56 @@ async fn test_wnfs_impl() {
         .expect("test should be able to get a block");
 
     assert_eq!(block, bytes);
+}
+
+#[wasm_bindgen_test]
+async fn test_chunker() -> Result<(), JsValue> {
+    use rand_chacha::ChaCha12Rng;
+    use rand_core::{RngCore, SeedableRng};
+    use tokio::io::AsyncReadExt;
+    use wnfs_unixfs_file::builder::FileBuilder;
+    use wnfs_unixfs_file::unixfs::UnixFsFile;
+
+    let blockstore =
+        peerpiper_browser::bindgen::blockstore_idb::BrowserBlockStore::new("peerpiper");
+    let _ = blockstore.open().await;
+
+    let len = 1024 * 1024;
+    // create a random seed
+    let seed: u64 = rand::random();
+    let rng = &mut ChaCha12Rng::seed_from_u64(seed);
+    let mut data = vec![0; len];
+    rng.fill_bytes(&mut data);
+
+    let root_cid = FileBuilder::new()
+        .content_bytes(data.clone())
+        .fixed_chunker(256 * 1024)
+        .build()
+        .map_err(|err| JsError::new(&format!("Failed to build file: {}", err)))?
+        .store(&blockstore.clone())
+        .await
+        .map_err(|err| JsError::new(&format!("Failed to store file: {}", err)))?;
+
+    let file = UnixFsFile::load(&root_cid, &blockstore)
+        .await
+        .map_err(|err| {
+            JsError::new(&format!(
+                "Failed to load file from blockstore: {}",
+                err.to_string()
+            ))
+        })?;
+    assert_eq!(file.filesize(), Some(len as u64));
+
+    let mut buffer = Vec::new();
+    let mut reader = file
+        .into_content_reader(&blockstore, None)
+        .map_err(|err| JsError::new(&format!("Failed to create content reader: {}", err)))?;
+    reader
+        .read_to_end(&mut buffer)
+        .await
+        .map_err(|err| JsError::new(&format!("Failed to read file: {}", err)))?;
+
+    assert_eq!(buffer, data);
+
+    Ok(())
 }

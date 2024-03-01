@@ -30,12 +30,17 @@ wnfs = "0.2"
 bytes = "1.5.0"
 parking_lot = "0.12.1"
 send_wrapper = { version = "0.6.0", features = ["futures"] }
+chrono = "0.4"
+wnfs-unixfs-file = "0.2.0"
+tokio = { version = "1.34", features = ["io-util"] }
 
 [target.wasm32-unknown-unknown.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
+rand_chacha = "0.3.1"
+rand_core = "0.6.4"
 
 # feature logging is default, includes tracing-wasm and console_error_panic_hook
 [features]
