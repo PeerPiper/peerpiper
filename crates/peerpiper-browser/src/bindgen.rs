@@ -13,8 +13,12 @@ use std::sync::Mutex;
 use std::sync::OnceLock;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
-use wnfs::common::BlockStore;
 use wnfs::common::CODEC_RAW;
+use wnfs::common::{BlockStore, Storable};
+use wnfs_unixfs_file::{
+    builder::{Config, FileBuilder},
+    chunker::{Chunker, ChunkerConfig},
+};
 
 const MAX_CHANNELS: usize = 16;
 
@@ -54,17 +58,19 @@ cfg_if::cfg_if! {
 /// As a local-frst app, we always need the storage even if not yet connected.
 #[wasm_bindgen(start)]
 pub async fn start() -> Result<(), JsValue> {
+    init_log();
+
     // Set up a blockstore in the browser
     let blockstore = blockstore_idb::BrowserBlockStore::new("peerpiper");
     blockstore.open().await?;
+
     BSTORE.get_or_init(|| Mutex::new(blockstore));
+
     Ok(())
 }
 
 #[wasm_bindgen]
 pub async fn connect(libp2p_endpoint: &str, on_event: &js_sys::Function) -> Result<(), JsError> {
-    init_log();
-
     let (tx_evts, mut rx_evts) = mpsc::channel(MAX_CHANNELS);
 
     // command_sender will be used by other wasm_bindgen functions to send commands to the network
@@ -150,24 +156,33 @@ pub async fn command(json: &str) -> Result<(), JsError> {
     send_command(command).await
 }
 
-/// Allows the user to save a file to the system (Memory and IndexedDB)
+/// Allows the user to save a file to the system (IndexedDB. TODO: Memory too?)
 #[wasm_bindgen]
-pub async fn save(filepath: Vec<String>, data: Vec<u8>) -> Result<(), JsError> {
-    // use BSTORE to save data
-    let blockstore = BSTORE.get().ok_or_else(|| {
-        JsError::new(
+pub async fn save(data: Vec<u8>) -> Result<(), JsError> {
+    tracing::info!("Saving to blockstore bytes {:?}", data.len());
+
+    let blockstore = BSTORE
+        .get()
+        .ok_or_else(|| {
+            JsError::new(
             "Blockstore not initialized. Did you call `start()` first to establish a connection?",
         )
-    })?;
-
-    // TODO: Use WNFS to save data to path using blockstore.
-
-    let cid = blockstore
+        })?
         .lock()
-        .map_err(|err| JsError::new(&format!("Failed to lock blockstore: {}", err)))?
-        .put_block(data, CODEC_RAW)
+        .unwrap();
+
+    // The chunker needs to be here because it is specific to IndexedDB having a max size of 256 *
+    // 1024 bytes. In another system (like a desktop disk) it could be chunked differently.
+    let root_cid = FileBuilder::new()
+        .content_bytes(data.clone())
+        .fixed_chunker(256 * 1024)
+        .build()
+        .map_err(|err| JsError::new(&format!("Failed to build file: {}", err)))?
+        .store(&blockstore.clone())
         .await
-        .map_err(|err| JsError::new(&format!("Failed to save file: {}", err)))?;
+        .map_err(|err| JsError::new(&format!("Failed to store file: {}", err)))?;
+
+    tracing::info!("Saved file to blockstore with CID: {:?}", root_cid);
 
     Ok(())
 }
