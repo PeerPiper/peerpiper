@@ -15,6 +15,8 @@ The idea is to put all the reusable code in this repo so it can be linked and te
 - [ ] [Plaintext Peer discovery](https://en.wikipedia.org/wiki/Peer_discovery) (name, email, phone, etc.) via [Delanocreds](https://github.com/DougAnderson444/delanocreds)
 - [ ] **Modular, Composable, Templatable** app & data sharing
 
+![PeerPiper Architecture](./peerpiper_arch.png)
+
 # Deployment
 
 The core library should include wrappers so that it can be deployed to various infrastructure providers:
