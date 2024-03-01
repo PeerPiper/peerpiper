@@ -12,9 +12,9 @@ The idea is to put all the reusable code in this repo so it can be linked and te
 - [x] Default [Peer-to-peer](https://en.wikipedia.org/wiki/Peer-to-peer) networking via [rust-libp2p](https://libp2p.io/)
 - [x] [Modular, Composable Wallet](./crates/peerpiper-wallet/) (add your own plugins) via [Wasm Components](https://component-model.bytecodealliance.org/introduction.html)
 - [x] [Plaintext Peer discovery](https://en.wikipedia.org/wiki/Peer_discovery) (name, email, phone, etc.) via [Delanocreds](https://github.com/DougAnderson444/delanocreds)
-- [🚧] **Modular, Composable, Templatable** app & data sharing
-- [🚧] Add your own publishing network (Nostr, Farcaster, AT Protocol, etc.)
-
+- [ ] 🚧 **Modular, Composable, Templatable** app & data sharing
+- [ ] 🚧 Add your own publishing network (Nostr, Farcaster, AT Protocol, etc.)
+ 
 ![PeerPiper Architecture](./peerpiper_arch.png)
 
 # Deployment
