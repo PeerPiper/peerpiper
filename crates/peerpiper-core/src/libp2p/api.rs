@@ -158,6 +158,7 @@ impl From<PeerPiperCommand> for Command {
             },
             PeerPiperCommand::Subscribe { topic } => Command::Subscribe { topic },
             PeerPiperCommand::Unsubscribe { topic } => Command::Unsubscribe { topic },
+            _ => unimplemented!(),
         }
     }
 }

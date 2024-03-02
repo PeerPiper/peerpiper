@@ -1,6 +1,9 @@
+#![cfg(target_arch = "wasm32")]
+
+use gloo_utils::format::JsValueSerdeExt;
+use peerpiper_browser::bindgen;
 pub use peerpiper_core::events::PeerPiperCommand;
 use wasm_bindgen::{JsError, JsValue};
-use wasm_bindgen_test::console_log;
 use wasm_bindgen_test::wasm_bindgen_test_configure;
 use wasm_bindgen_test::*;
 
@@ -11,10 +14,10 @@ const RAW: u64 = 0x55;
 #[wasm_bindgen_test]
 async fn idb_test() {
     use cid::Cid;
-    use multihash_codetable::{Code, MultihashDigest, Sha2_256};
+    use multihash_codetable::{Code, MultihashDigest};
 
     // try to create idb and save somthing
-    let blockstore = peerpiper_browser::bindgen::blockstore_idb::IDBBlockstore::new("peerpiper");
+    let blockstore = peerpiper_browser::blockstore::IDBBlockstore::new("peerpiper");
     let _ = wasm_bindgen_futures::JsFuture::from(blockstore.open()).await;
 
     // create a block of data, get the CID, and put it into store
@@ -25,7 +28,7 @@ async fn idb_test() {
     let h = Code::Sha2_256.digest(bytes.as_slice());
     let cid = Cid::new_v1(RAW, h);
 
-    let key = peerpiper_browser::bindgen::blockstore_idb::CID::parse(&cid.to_string());
+    let key = peerpiper_browser::blockstore::CID::parse(&cid.to_string());
 
     let val = js_sys::Uint8Array::from(bytes.as_slice());
     let cid = blockstore.put(&key, val);
@@ -50,14 +53,12 @@ async fn idb_test() {
 async fn test_wnfs_impl() {
     use bytes::Bytes;
     use wnfs::common::blockstore::BlockStore as WNFSBlockStore;
-    use wnfs::common::libipld::cid::{Cid, CidGeneric};
     use wnfs::common::CODEC_RAW;
 
     // async fn get_block(&self, cid: &Cid) -> Result<Bytes, BlockStoreError>
     // async fn put_block_keyed(&self, cid: Cid, bytes: impl Into<Bytes> + CondSend) -> Result<(), BlockStoreError>
     // async fn has_block(&self, cid: &Cid) -> Result<bool, BlockStoreError> {
-    let blockstore =
-        peerpiper_browser::bindgen::blockstore_idb::BrowserBlockStore::new("peerpiper");
+    let blockstore = peerpiper_browser::blockstore::BrowserBlockStore::new("peerpiper");
     let _ = blockstore.open().await;
 
     let bytes = vec![42; 1024 * 256]; // 256 ok, 286 nope.
@@ -90,8 +91,7 @@ async fn test_chunker() -> Result<(), JsValue> {
     use wnfs_unixfs_file::builder::FileBuilder;
     use wnfs_unixfs_file::unixfs::UnixFsFile;
 
-    let blockstore =
-        peerpiper_browser::bindgen::blockstore_idb::BrowserBlockStore::new("peerpiper");
+    let blockstore = peerpiper_browser::blockstore::BrowserBlockStore::new("peerpiper");
     let _ = blockstore.open().await;
 
     let len = 1024 * 1024;
@@ -130,6 +130,58 @@ async fn test_chunker() -> Result<(), JsValue> {
         .map_err(|err| JsError::new(&format!("Failed to read file: {}", err)))?;
 
     assert_eq!(buffer, data);
+
+    Ok(())
+}
+
+#[wasm_bindgen_test]
+async fn test_commander() -> Result<(), JsValue> {
+    // we need to run start before anything else
+    bindgen::start().await?;
+
+    let bytes = vec![24; 24];
+
+    // call crate::bindgen::command with Stringified PeerPiperCommand::SystemCommands for put, then get, compare the
+    // two to ensure they match.
+    let command = PeerPiperCommand::System(peerpiper_core::events::SystemCommand::Put {
+        bytes: bytes.clone(),
+    });
+
+    let json = serde_json::to_string(&command).map_err(|err| {
+        JsError::new(&format!(
+            "Failed to serialize PeerPiperCommand::SystemCommands: {:?}",
+            err.to_string()
+        ))
+    })?;
+
+    let cid = peerpiper_browser::bindgen::command(&json).await?;
+
+    // result should be JsValue::from_str("ba...") where ... is the CID
+    let cid = cid
+        .as_string()
+        .ok_or_else(|| JsError::new("Failed to get string from JsValue, expected a string"))?;
+
+    // now get the data back from cid string
+    let command = PeerPiperCommand::System(peerpiper_core::events::SystemCommand::Get { key: cid });
+
+    let json = serde_json::to_string(&command).map_err(|err| {
+        JsError::new(&format!(
+            "Failed to serialize PeerPiperCommand::SystemCommands: {:?}",
+            err.to_string()
+        ))
+    })?;
+
+    let data = peerpiper_browser::bindgen::command(&json).await?;
+
+    // data should be a JsValue that converts to bytes vector which matches the original bytes
+    let data: Vec<u8> = data.into_serde().map_err(|err| {
+        JsError::new(&format!(
+            "Failed to convert JsValue to Vec<u8>: {:?}",
+            err.to_string()
+        ))
+    })?;
+
+    assert_eq!(data, bytes);
 
     Ok(())
 }

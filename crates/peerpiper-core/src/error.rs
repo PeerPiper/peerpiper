@@ -23,4 +23,8 @@ pub enum Error {
 
     #[error("Libp2p error")]
     GossipSubMessageAuthenticity,
+
+    /// SendError
+    #[error("Send error")]
+    SendError(#[from] futures::channel::mpsc::SendError),
 }

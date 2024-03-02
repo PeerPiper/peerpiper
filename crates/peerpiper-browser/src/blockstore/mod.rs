@@ -1,17 +1,19 @@
-use bytes::Bytes;
+/// WebNative File System Blockstore module
+mod wnfs_blockstore;
+
+use crate::error;
 use js_sys::Uint8Array;
 use parking_lot::Mutex;
+use peerpiper_core::SystemCommandHandler;
 use send_wrapper::SendWrapper;
+use tokio::io::AsyncReadExt as _;
 use wasm_bindgen::prelude::*;
-use wnfs::common::libipld::Cid;
 use wnfs::common::utils::Arc;
-use wnfs::common::utils::CondSend;
-use wnfs::common::BlockStore as WNFSBlockStore;
-use wnfs::common::BlockStoreError;
 
-// TODO: Feature flag for this
+use wnfs::common::libipld::Cid;
+use wnfs_unixfs_file::unixfs::UnixFsFile;
 
-#[wasm_bindgen(module = "/src/bindgen/blockstore-idb.js")]
+#[wasm_bindgen(module = "/src/blockstore/blockstore-idb.js")]
 extern "C" {
 
     /// CID Class
@@ -88,6 +90,38 @@ extern "C" {
 
 }
 
+impl SystemCommandHandler for BrowserBlockStore {
+    type Error = crate::error::Error;
+    async fn put(&self, data: Vec<u8>) -> Result<Cid, Self::Error> {
+        let root_cid = wnfs_blockstore::put_chunks(self.clone(), data)
+            .await
+            .map_err(|err| error::Error::Anyhow(err))?;
+        Ok(root_cid)
+    }
+
+    async fn get(&self, cid: String) -> Result<Vec<u8>, Self::Error> {
+        let cid = Cid::try_from(cid).map_err(|err| {
+            error::Error::Anyhow(anyhow::Error::msg(format!("Failed to parse CID: {}", err)))
+        })?;
+        let file = UnixFsFile::load(&cid, &self).await.map_err(|err| {
+            error::Error::Anyhow(anyhow::Error::msg(format!("Failed to load file: {}", err)))
+        })?;
+
+        let mut buffer = Vec::new();
+        let mut reader = file.into_content_reader(&self, None).map_err(|err| {
+            error::Error::Anyhow(anyhow::Error::msg(format!(
+                "Failed to create content reader: {}",
+                err
+            )))
+        })?;
+        reader.read_to_end(&mut buffer).await.map_err(|err| {
+            error::Error::Anyhow(anyhow::Error::msg(format!("Failed to read file: {}", err)))
+        })?;
+
+        Ok(buffer)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct BrowserBlockStore {
     pub(crate) idb: SendWrapper<Arc<Mutex<IDBBlockstore>>>,
@@ -137,40 +171,5 @@ impl BrowserBlockStore {
         Ok(js_val
             .as_bool()
             .ok_or(JsValue::from_str("Error converting to bool"))?)
-    }
-}
-
-impl WNFSBlockStore for BrowserBlockStore {
-    async fn get_block(&self, cid: &Cid) -> Result<Bytes, BlockStoreError> {
-        let key = CID::parse(&cid.to_string());
-        let js_uint8array = self
-            .get_idb(&key)
-            .await
-            .map_err(|_| BlockStoreError::CIDNotFound(*cid))?;
-        let bytes: Bytes = js_uint8array.to_vec().into();
-        Ok(bytes)
-    }
-
-    async fn put_block_keyed(
-        &self,
-        cid: Cid,
-        bytes: impl Into<Bytes> + CondSend,
-    ) -> Result<(), BlockStoreError> {
-        let key = CID::parse(&cid.to_string());
-
-        let bytes: Bytes = bytes.into();
-
-        let val = js_sys::Uint8Array::from(bytes.as_ref());
-        let _cid = self.put_idb(&key, val).await;
-
-        Ok(())
-    }
-
-    async fn has_block(&self, cid: &Cid) -> Result<bool, BlockStoreError> {
-        let key = CID::parse(&cid.to_string());
-        Ok(self
-            .has_in_idb(&key)
-            .await
-            .map_err(|_| BlockStoreError::CIDNotFound(*cid))?)
     }
 }

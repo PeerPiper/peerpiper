@@ -17,4 +17,8 @@ pub enum Error {
     /// From futures channel mspc send Error
     #[error("Send error {0}")]
     Send(#[from] futures::channel::mpsc::SendError),
+
+    /// anyhow
+    #[error("Anyhow error {0}")]
+    Anyhow(#[from] anyhow::Error),
 }

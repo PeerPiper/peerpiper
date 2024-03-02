@@ -65,9 +65,27 @@ pub enum NetworkEvent {
 #[derive(Debug, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum PeerPiperCommand {
-    Publish { topic: String, data: Vec<u8> },
-    Subscribe { topic: String },
-    Unsubscribe { topic: String },
+    Publish {
+        topic: String,
+        data: Vec<u8>,
+    },
+    Subscribe {
+        topic: String,
+    },
+    Unsubscribe {
+        topic: String,
+    },
+    /// System commands are a subset of PeerPiperCommands that do not go to the network, but come
+    /// from componets to direct the system to do something, like save bytes to a file.
+    System(SystemCommand),
+}
+
+/// System Commands that do not fo to the network, but come from componets to direct
+/// the system to do something, like save bytes to a file.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SystemCommand {
+    Put { bytes: Vec<u8> },
+    Get { key: String },
 }
 
 pub mod test_helpers {
