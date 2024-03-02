@@ -38,11 +38,11 @@
 		];
 
 		// load the import handles into the Wasm component and get the ES module returned
-		wurbo = new Wurbo({ arrayBuffer: wasmBytes, importables }, (payload) => {
+		wurbo = new Wurbo({ arrayBuffer: wasmBytes, importables }, async (payload) => {
 			// Relay emitted commands from the Wasm component to PiperNet
 			// console.log('Command emitted: ', { payload });
 			try {
-				pipernet.command(payload);
+				return await pipernet.command(payload);
 			} catch (error) {
 				// it's ok to fail silently, not all messages are commands
 			}
