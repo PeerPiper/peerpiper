@@ -10,6 +10,8 @@ Shortcut: Use [just](https://just.systems) to run the [automated commands](../..
 just all
 ```
 
+Or from this directory:
+
 ```bash
 npm install
 npm run build
