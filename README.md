@@ -1,5 +1,7 @@
 # PeerPiper Workspace Monorepo
 
+🚧 Alpha level software. The docs are a bit rough, but will give you an outline of the vision. Raise an issue if you run into troubles.
+
 The core Rust libraries and front-end examples for the PeerPiper project. Mainly holds the peer-to-peer networking logic, the core data structures, and how to use them.
 
 The idea is to put all the reusable code in this repo so it can be linked and tested in its entirety.
@@ -30,3 +32,19 @@ The core library should include wrappers so that it can be deployed to various i
 - [ ] [VPS](https://en.wikipedia.org/wiki/Virtual_private_server) via Rust
 - [ ] [Web3.storage](https://web3.storage/) via HTTP
 - [ ] [Fireproof DB](https://use-fireproof.com/) via HTTP
+
+# Development
+
+You'll need a few dependencies to get started:
+
+### 🦀 [Rust](https://www.rust-lang.org/)
+
+- [x] [Rust](https://www.rust-lang.org/) 1.78+ (use nightly as stipulated in the `rust-toolchain.toml` file)
+
+### 📦 [cargo-component](https://github.com/bytecodealliance/cargo-component)
+
+- [x] [cargo-component](https://github.com/bytecodealliance/cargo-component)
+
+### Just
+
+- [x] [Just](https://just.systems/) makes running batch commands easier. There's a `justfile` in the root of the project.

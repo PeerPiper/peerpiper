@@ -15,12 +15,12 @@ build-submodules: update-remote
   done
 
 build-wallet:
- cargo component build --manifest-path=examples/form/Cargo.toml
+ # cargo component build --manifest-path=examples/form/Cargo.toml
  cargo component build --manifest-path=crates/peerpiper-wallet/Cargo.toml
  cargo component build --manifest-path=crates/peerpiper-wallet/Cargo.toml --release
 
 build-examples:
- cargo component build --manifest-path=examples/form/Cargo.toml
+ # cargo component build --manifest-path=examples/form/Cargo.toml
 
 # update and build all submodules, then build the wallet
 update-build: build-submodules build-wallet
