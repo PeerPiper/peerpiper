@@ -33,7 +33,7 @@ The core library should include wrappers so that it can be deployed to various i
 - [ ] [Web3.storage](https://web3.storage/) via HTTP
 - [ ] [Fireproof DB](https://use-fireproof.com/) via HTTP
 
-# Development
+# Development dependencies
 
 You'll need a few dependencies to get started:
 
@@ -44,6 +44,8 @@ You'll need a few dependencies to get started:
 ### 📦 [cargo-component](https://github.com/bytecodealliance/cargo-component)
 
 - [x] [cargo-component](https://github.com/bytecodealliance/cargo-component)
+
+Using [`binstall`](https://github.com/cargo-bins/cargo-binstall): `cargo binstall cargo-component`
 
 ### Just
 
