@@ -47,6 +47,6 @@ You'll need a few dependencies to get started:
 
 Using [`binstall`](https://github.com/cargo-bins/cargo-binstall): `cargo binstall cargo-component`
 
-### Just
+### ⚖️  [Just](https://just.systems/) 
 
 - [x] [Just](https://just.systems/) makes running batch commands easier. There's a `justfile` in the root of the project.
