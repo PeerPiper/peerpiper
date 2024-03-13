@@ -12,7 +12,8 @@ rand = "0.8"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 libp2p = { git = "https://github.com/libp2p/rust-libp2p.git" }
-wit-bindgen = { version = "0.19.2", default-features = false, features = ["realloc"] }
+bitflags = "2.4.2"
+wit-bindgen-rt = "0.22.0"
 
 [profile.release]
 opt-level = "z"          # Optimize for size.
@@ -25,3 +26,7 @@ debug-assertions = false
 overflow-checks = false
 incremental = false
 rpath = false
+
+[patch.crates-io]
+# patch with https://github.com/bytecodealliance/wit-bindgen/commit/9c913f6d119739a09b521deed89743b4a001aae1
+wit-bindgen-rt = { git = "https://github.com/bytecodealliance/wit-bindgen.git", rev = "9c913f6" }

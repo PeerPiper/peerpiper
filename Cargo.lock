@@ -3736,6 +3736,7 @@ name = "peerpiper-wallet"
 version = "0.1.0"
 dependencies = [
  "base64ct",
+ "bitflags 2.4.2",
  "delano-events",
  "peerpiper",
  "seed-keeper-events",
@@ -3745,7 +3746,7 @@ dependencies = [
  "thiserror",
  "wasmtime",
  "wasmtime-wasi",
- "wit-bindgen",
+ "wit-bindgen-rt",
  "wurbo",
 ]
 
@@ -6754,13 +6755,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "wit-bindgen"
-version = "0.19.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b37d270da94012e0ac490ac633ad5bdd76a10a3fb15069edb033c1b771ce931f"
-dependencies = [
- "bitflags 2.4.2",
-]
+name = "wit-bindgen-rt"
+version = "0.22.0"
+source = "git+https://github.com/bytecodealliance/wit-bindgen.git?rev=9c913f6#9c913f6d119739a09b521deed89743b4a001aae1"
 
 [[package]]
 name = "wit-parser"

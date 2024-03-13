@@ -49,6 +49,12 @@ You'll need a few dependencies to get started:
 
 Using [`binstall`](https://github.com/cargo-bins/cargo-binstall): `cargo binstall cargo-component@0.8.0`
 
+Note that `cargo-component` is a work in progress and may not be stable. Configs, settings, and commands may change from version to version.
+
 ### ⚖️  [Just](https://just.systems/) 
 
 - [x] [Just](https://just.systems/) makes running batch commands easier. There's a `justfile` in the root of the project.
+
+## Development
+
+Many of the commands used in development are in the `justfile`. You can see them by running `just`.
