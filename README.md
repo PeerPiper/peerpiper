@@ -47,7 +47,7 @@ You'll need a few dependencies to get started:
 
 - [x] [cargo-component](https://github.com/bytecodealliance/cargo-component)
 
-Using [`binstall`](https://github.com/cargo-bins/cargo-binstall): `cargo binstall cargo-component@0.8.0`
+Using [`binstall`](https://github.com/cargo-bins/cargo-binstall): `cargo binstall cargo-component@0.10.1`
 
 Note that `cargo-component` is a work in progress and may not be stable. Configs, settings, and commands may change from version to version.
 
