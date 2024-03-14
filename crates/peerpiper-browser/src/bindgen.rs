@@ -36,6 +36,7 @@ cfg_if::cfg_if! {
             // tracing_wasm::set_as_global_default_with_config(layer_config);
             console_error_panic_hook::set_once();
             tracing_wasm::set_as_global_default();
+            tracing::info!("Initialized logging");
         }
     } else {
         fn init_log() {}
@@ -99,15 +100,31 @@ pub async fn connect(libp2p_endpoint: &str, on_event: &js_sys::Function) -> Resu
 /// If it fails, returns an error.
 #[wasm_bindgen]
 pub async fn command(json: &str) -> Result<JsValue, JsError> {
+    tracing::trace!("Received command.");
+
     let example_publish = PeerPiperCommand::Publish {
         topic: "example".to_string(),
         data: vec![1, 2, 3],
     };
+
+    let example_put = PeerPiperCommand::System(SystemCommand::Put {
+        bytes: vec![1, 2, 3],
+    });
+
+    tracing::debug!(
+        "Example Put Command: {:?}",
+        serde_json::to_string(&example_put).unwrap()
+    );
+
     let command: PeerPiperCommand = serde_json::from_str(json).map_err(|err| {
+        let err_str = format!("Failed to parse command from JSON: {}", err);
+        tracing::error!(err_str);
+        // TODO: Figure out why this error does not propagate to JavaScript as an error. It just
+        // hangs.
         JsError::new(&format!(
             "Failed to parse command from JSON: {}. Expected format: {:?}",
             err.to_string(),
-            serde_json::to_string(&example_publish).unwrap()
+            serde_json::to_string(&example_put).unwrap()
         ))
     })?;
 
