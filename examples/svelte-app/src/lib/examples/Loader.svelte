@@ -23,11 +23,13 @@
 		console.log('path', path);
 		(async () => {
 			try {
-				console.log('saving plugin bytes', { bytes: pluginFile.bytes });
-				await piper.save(path, new Uint8Array(pluginFile.bytes));
+				let bytesString = Array.from(new Uint8Array(pluginFile.bytes)).join(',');
+				let command = `{ "System": { "Put": { "bytes": [${bytesString}] } } }`;
+				// TODO: Figure out why the Errors don't propagate back up here. It gets stuck in wasm-bindgen
+				let res = await piper.command(command);
+				console.log('command result', res);
 				pluginFile = null; // reset loader state
 				fileinput.value = null; // reset file input
-				console.log('plugin saved');
 			} catch (error) {
 				console.error('error saving plugin', { error });
 			}
