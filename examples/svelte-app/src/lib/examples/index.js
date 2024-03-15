@@ -7,5 +7,5 @@ export const examples = [
 	{ name: 'Demo Form', component: Form },
 	{ name: 'Wallet', component: Wallet },
 	// { name: 'Basic', component: Basic },
-	{ name: 'Loader', component: Loader }
+	{ name: 'Wurbo Loader', component: Loader }
 ];
