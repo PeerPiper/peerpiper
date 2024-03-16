@@ -55,7 +55,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         tokio::select! {
             Some(msg) = rx.next() => {
-                tracing::info!("Received msg: {:?}", msg);
+                match msg {
+                    NetworkEvent::Message { topic, peer, .. } => {
+                        tracing::info!("Received msg on topic {:?} from peer: {:?}", topic, peer);
+                    }
+                    _ => {}
+                }
             }
             _ = tokio::signal::ctrl_c() => {
                 tracing::info!("Received ctrl-c");
