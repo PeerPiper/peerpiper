@@ -18,3 +18,6 @@ Run the tests with:
 wasm-pack test --headless --chrome
 ```
 
+## Blockstore JS Bindings
+
+The [JS Bindings](./src/blockstore/blockstore-idb.js) come from [blockstore-idb](https://www.npmjs.com/package/blockstore-idb) but [bundled into one file](https://bundlejs.com/?q=blockstore-idb%401.1.8%2Cblockstore-idb%401.1.8&treeshake=%5B*%5D%2C%5B%7BCID%7D%5D&config=%7B%22esbuild%22%3A%7B%22minify%22%3Afalse%7D%7D) so it can be Foreign Function Interfaced (FFI'd) to Rust.
