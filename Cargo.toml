@@ -12,7 +12,7 @@ rand = "0.8"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 libp2p = { git = "https://github.com/libp2p/rust-libp2p.git" }
-bitflags = "2.4.2"
+bitflags = "2.5.0"
 wit-bindgen-rt = "0.22.0"
 
 [profile.release]
