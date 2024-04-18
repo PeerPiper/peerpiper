@@ -37,7 +37,9 @@ jobs:
           cargo install wasm-tools
 
       - name: Build and Compose Wasm
-        run: just compose
+        run: |
+          just build-submodules
+          just compose
 
       - name: Archive build
         uses: actions/upload-artifact@v2
