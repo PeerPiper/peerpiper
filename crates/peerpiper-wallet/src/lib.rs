@@ -22,7 +22,6 @@ mod bindings;
 
 mod state;
 
-use serde::Deserialize;
 use state::State;
 
 use bindings::delano;
@@ -158,16 +157,20 @@ impl WurboGuest for Component {
     /// No-op for activate(). This is here because the wurbo API calls activate in the library,
     /// and if this is missing there's a console error. It is benign, but it's annoying.
     fn activate(_selectors: Option<Vec<String>>) {}
+
+    fn customize(templates: Vec<(String, String)>) -> Result<(), String> {
+        return Ok(());
+    }
 }
 
 /// Renders all app content into the page
 fn render_all(ctx: Content) -> Result<String, String> {
     let templates = get_templates();
-    let entry = templates.entry.name;
+    let entry = templates.entry.name.to_owned();
     let mut env = Environment::new();
 
     for (name, template) in templates.into_iter() {
-        env.add_template(name, template)
+        env.add_template_owned(name, template)
             .expect("template should be added");
     }
 
@@ -183,7 +186,7 @@ fn render_all(ctx: Content) -> Result<String, String> {
         RenderError::from(e)
     };
 
-    let tmpl = env.get_template(entry).map_err(prnt_err)?;
+    let tmpl = env.get_template(&entry).map_err(prnt_err)?;
     let rendered = tmpl.render(&struct_ctx).map_err(prnt_err)?;
     Ok(rendered)
 }
@@ -266,12 +269,18 @@ impl From<context_types::Content> for AppContext {
 
 // Some App properties
 #[derive(Debug, Clone)]
-pub(crate) struct App(context_types::App);
+pub(crate) struct App(Option<context_types::App>);
 
 impl StructObject for App {
     fn get_field(&self, name: &str) -> Option<Value> {
         match name {
-            "title" => Some(Value::from(self.title.clone())),
+            "title" => Some(Value::from(
+                // unravel app<option<title>> to app<title> to title
+                self.as_ref()
+                    .map(|v| v.title.clone())
+                    .unwrap_or_default()
+                    .unwrap_or_default(),
+            )),
             "id" => Some(Value::from(rand_id())),
             _ => None,
         }
@@ -284,13 +293,18 @@ impl StructObject for App {
 
 impl From<context_types::App> for App {
     fn from(context: context_types::App) -> Self {
+        App(Some(context))
+    }
+}
+
+impl From<Option<context_types::App>> for App {
+    fn from(context: Option<context_types::App>) -> Self {
         App(context)
     }
 }
 
 impl Deref for App {
-    type Target = context_types::App;
-
+    type Target = Option<context_types::App>;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -298,7 +312,7 @@ impl Deref for App {
 
 /// Wrapper around the seed keeper context so we can implement StructObject on top of it
 #[derive(Debug, Clone)]
-struct SeedUI(context_types::SeedContext);
+struct SeedUI(Option<context_types::SeedContext>);
 
 /// Implement StructObject for SeedKeeper so that we can use it in the template
 /// The main point of this impl is to call render(ctx) on the SeedKeeperUIContext
@@ -307,7 +321,13 @@ impl StructObject for SeedUI {
     /// Simply passes through the seed context to the component for rendering
     /// outputs to .html
     fn get_field(&self, name: &str) -> Option<Value> {
-        let render_result = wit_ui::wurbo_out::render(&self);
+        let render_result = wit_ui::wurbo_out::render(&self.as_ref().map(|v| v.clone()).unwrap_or(
+            wit_ui::wurbo_types::Context::AllContent(wit_ui::wurbo_types::Content {
+                page: None,
+                input: None,
+                load: None,
+            }),
+        ));
         match (name, render_result) {
             ("html", Ok(html)) => Some(Value::from(html)),
             _ => None,
@@ -322,12 +342,18 @@ impl StructObject for SeedUI {
 
 impl From<wit_ui::wurbo_types::Context> for SeedUI {
     fn from(context: wit_ui::wurbo_types::Context) -> Self {
+        SeedUI(Some(context))
+    }
+}
+
+impl From<Option<wit_ui::wurbo_types::Context>> for SeedUI {
+    fn from(context: Option<wit_ui::wurbo_types::Context>) -> Self {
         SeedUI(context)
     }
 }
 
 impl Deref for SeedUI {
-    type Target = context_types::SeedContext;
+    type Target = Option<context_types::SeedContext>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -336,7 +362,7 @@ impl Deref for SeedUI {
 
 /// DelanoUI is the context for the Delano user interface component
 #[derive(Debug, Clone)]
-struct DelanoUI(context_types::DelanoContext);
+struct DelanoUI(Option<context_types::DelanoContext>);
 
 /// Implement StructObject for DelanoUI so that we can use it in the template
 /// The main point of this impl is to call render(ctx) on the DelanoUIContext
@@ -345,7 +371,15 @@ impl StructObject for DelanoUI {
     /// Simply passes through the seed context to the component for rendering
     /// outputs to .html
     fn get_field(&self, name: &str) -> Option<Value> {
-        let render_result = delano::wit_ui::wurbo_out::render(&self);
+        let render_result =
+            delano::wit_ui::wurbo_out::render(&self.as_ref().map(|v| v.clone()).unwrap_or(
+                delano::wit_ui::context_types::Context::AllContent(
+                    delano::wit_ui::context_types::Everything {
+                        page: None,
+                        load: None,
+                    },
+                ),
+            ));
         match (name, render_result) {
             ("html", Ok(html)) => Some(Value::from(html)),
             _ => None,
@@ -360,12 +394,18 @@ impl StructObject for DelanoUI {
 
 impl From<delano::wit_ui::context_types::Context> for DelanoUI {
     fn from(context: delano::wit_ui::context_types::Context) -> Self {
+        DelanoUI(Some(context))
+    }
+}
+
+impl From<Option<delano::wit_ui::context_types::Context>> for DelanoUI {
+    fn from(context: Option<delano::wit_ui::context_types::Context>) -> Self {
         DelanoUI(context)
     }
 }
 
 impl Deref for DelanoUI {
-    type Target = context_types::DelanoContext;
+    type Target = Option<context_types::DelanoContext>;
 
     fn deref(&self) -> &Self::Target {
         &self.0

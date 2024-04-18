@@ -9,7 +9,7 @@ crate-type = ["cdylib"]
 [dependencies]
 bitflags = { workspace = true }
 wit-bindgen-rt = { workspace = true }
-wurbo = "0.2.0"
+wurbo = "0.3.2"
 base64ct = { version = "1.6.0", features = ["alloc"] }
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = "1.0.68"

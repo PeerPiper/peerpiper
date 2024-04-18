@@ -564,7 +564,7 @@ pub mod peerpiper {
             /// Context for the minijinja rendering
             #[derive(Clone)]
             pub struct App {
-                pub title: _rt::String,
+                pub title: Option<_rt::String>,
             }
             impl ::core::fmt::Debug for App {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
@@ -575,10 +575,10 @@ pub mod peerpiper {
             #[derive(Clone)]
             pub struct Content {
                 /// pass in props like title, etc.
-                pub app: App,
+                pub app: Option<App>,
                 /// optionally pass in an encrypted seed to load
-                pub seed_ui: SeedContext,
-                pub delano_ui: DelanoContext,
+                pub seed_ui: Option<SeedContext>,
+                pub delano_ui: Option<DelanoContext>,
             }
             impl ::core::fmt::Debug for Content {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
@@ -1213,719 +1213,821 @@ pub mod exports {
                     super::super::super::super::peerpiper::wallet::context_types::Context;
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
+                pub unsafe fn _export_customize_cabi<T: Guest>(
+                    arg0: *mut u8,
+                    arg1: usize,
+                ) -> *mut u8 {
+                    let base6 = arg0;
+                    let len6 = arg1;
+                    let mut result6 = _rt::Vec::with_capacity(len6);
+                    for i in 0..len6 {
+                        let base = base6.add(i * 16);
+                        let e6 = {
+                            let l0 = *base.add(0).cast::<*mut u8>();
+                            let l1 = *base.add(4).cast::<usize>();
+                            let len2 = l1;
+                            let bytes2 = _rt::Vec::from_raw_parts(l0.cast(), len2, len2);
+                            let l3 = *base.add(8).cast::<*mut u8>();
+                            let l4 = *base.add(12).cast::<usize>();
+                            let len5 = l4;
+                            let bytes5 = _rt::Vec::from_raw_parts(l3.cast(), len5, len5);
+
+                            (_rt::string_lift(bytes2), _rt::string_lift(bytes5))
+                        };
+                        result6.push(e6);
+                    }
+                    _rt::cabi_dealloc(base6, len6 * 16, 4);
+                    let result7 = T::customize(result6);
+                    let ptr8 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result7 {
+                        Ok(_) => {
+                            *ptr8.add(0).cast::<u8>() = (0i32) as u8;
+                        }
+                        Err(e) => {
+                            *ptr8.add(0).cast::<u8>() = (1i32) as u8;
+                            let vec9 = (e.into_bytes()).into_boxed_slice();
+                            let ptr9 = vec9.as_ptr().cast::<u8>();
+                            let len9 = vec9.len();
+                            ::core::mem::forget(vec9);
+                            *ptr8.add(8).cast::<usize>() = len9;
+                            *ptr8.add(4).cast::<*mut u8>() = ptr9.cast_mut();
+                        }
+                    };
+                    ptr8
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_customize<T: Guest>(arg0: *mut u8) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => (),
+                        _ => {
+                            let l1 = *arg0.add(4).cast::<*mut u8>();
+                            let l2 = *arg0.add(8).cast::<usize>();
+                            _rt::cabi_dealloc(l1, l2, 1);
+                        }
+                    }
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
                 pub unsafe fn _export_render_cabi<T: Guest>(arg0: *mut u8) -> *mut u8 {
                     let l0 = i32::from(*arg0.add(0).cast::<u8>());
-                    use super::super::super::super::peerpiper::wallet::context_types::Context as V153;
-                    let v153 = match l0 {
+                    use super::super::super::super::peerpiper::wallet::context_types::Context as V157;
+                    let v157 = match l0 {
                         0 => {
-                            let e153 = {
-                                let l1 = *arg0.add(4).cast::<*mut u8>();
-                                let l2 = *arg0.add(8).cast::<usize>();
-                                let len3 = l2;
-                                let bytes3 = _rt::Vec::from_raw_parts(l1.cast(), len3, len3);
-                                let l4 = i32::from(*arg0.add(12).cast::<u8>());
-                                use super::super::super::super::seed_keeper::wit_ui::wurbo_types::Context as V30;
-                                let v30 = match l4 {
-                                    0 => {
-                                        let e30 = {
-                                            let l5 = i32::from(*arg0.add(16).cast::<u8>());
-                                            let l9 = i32::from(*arg0.add(28).cast::<u8>());
-                                            let l17 = i32::from(*arg0.add(52).cast::<u8>());
-
-                                            super::super::super::super::seed_keeper::wit_ui::wurbo_types::Content{
-                      page: match l5 {
-                        0 => None,
-                        1 => {
-                          let e = {
-                            let l6 = *arg0.add(20).cast::<*mut u8>();
-                            let l7 = *arg0.add(24).cast::<usize>();
-                            let len8 = l7;
-                            let bytes8 = _rt::Vec::from_raw_parts(l6.cast(), len8, len8);
-
-                            super::super::super::super::seed_keeper::wit_ui::wurbo_types::Page{
-                              title: _rt::string_lift(bytes8),
-                            }
-                          };
-                          Some(e)
-                        }
-                        _ => _rt::invalid_enum_discriminant(),
-                      },
-                      input: match l9 {
-                        0 => None,
-                        1 => {
-                          let e = {
-                            let l10 = *arg0.add(32).cast::<*mut u8>();
-                            let l11 = *arg0.add(36).cast::<usize>();
-                            let len12 = l11;
-                            let bytes12 = _rt::Vec::from_raw_parts(l10.cast(), len12, len12);
-                            let l13 = i32::from(*arg0.add(40).cast::<u8>());
-
-                            super::super::super::super::seed_keeper::wit_ui::wurbo_types::Input{
-                              placeholder: _rt::string_lift(bytes12),
-                              encrypted_seed: match l13 {
-                                0 => None,
-                                1 => {
-                                  let e = {
-                                    let l14 = *arg0.add(44).cast::<*mut u8>();
-                                    let l15 = *arg0.add(48).cast::<usize>();
-                                    let len16 = l15;
-                                    let bytes16 = _rt::Vec::from_raw_parts(l14.cast(), len16, len16);
-
-                                    _rt::string_lift(bytes16)
-                                  };
-                                  Some(e)
-                                }
-                                _ => _rt::invalid_enum_discriminant(),
-                              },
-                            }
-                          };
-                          Some(e)
-                        }
-                        _ => _rt::invalid_enum_discriminant(),
-                      },
-                      load: match l17 {
-                        0 => None,
-                        1 => {
-                          let e = {
-                            let l18 = *arg0.add(56).cast::<*mut u8>();
-                            let l19 = *arg0.add(60).cast::<usize>();
-                            let len20 = l19;
-                            let bytes20 = _rt::Vec::from_raw_parts(l18.cast(), len20, len20);
-
-                            _rt::string_lift(bytes20)
-                          };
-                          Some(e)
-                        }
-                        _ => _rt::invalid_enum_discriminant(),
-                      },
-                    }
-                                        };
-                                        V30::AllContent(e30)
-                                    }
-                                    1 => {
-                                        let e30 = {
-                                            let l21 = *arg0.add(16).cast::<*mut u8>();
-                                            let l22 = *arg0.add(20).cast::<usize>();
-                                            let len23 = l22;
-                                            let bytes23 =
-                                                _rt::Vec::from_raw_parts(l21.cast(), len23, len23);
-
-                                            _rt::string_lift(bytes23)
-                                        };
-                                        V30::Username(e30)
-                                    }
-                                    2 => {
-                                        let e30 = {
-                                            let l24 = *arg0.add(16).cast::<*mut u8>();
-                                            let l25 = *arg0.add(20).cast::<usize>();
-                                            let len26 = l25;
-                                            let bytes26 =
-                                                _rt::Vec::from_raw_parts(l24.cast(), len26, len26);
-
-                                            _rt::string_lift(bytes26)
-                                        };
-                                        V30::Password(e30)
-                                    }
-                                    3 => {
-                                        let e30 = {
-                                            let l27 = *arg0.add(16).cast::<*mut u8>();
-                                            let l28 = *arg0.add(20).cast::<usize>();
-                                            let len29 = l28;
-                                            let bytes29 =
-                                                _rt::Vec::from_raw_parts(l27.cast(), len29, len29);
-
-                                            _rt::string_lift(bytes29)
-                                        };
-                                        V30::Encrypted(e30)
-                                    }
-                                    n => {
-                                        debug_assert_eq!(n, 4, "invalid enum discriminant");
-                                        V30::Submit
-                                    }
-                                };
-                                let l31 = i32::from(*arg0.add(64).cast::<u8>());
-                                use super::super::super::super::delano::wit_ui::context_types::Context as V66;
-                                let v66 = match l31 {
-                                    0 => {
-                                        let e66 = {
-                                            let l32 = i32::from(*arg0.add(68).cast::<u8>());
-                                            let l42 = i32::from(*arg0.add(96).cast::<u8>());
-
-                                            super::super::super::super::delano::wit_ui::context_types::Everything{
-                      page: match l32 {
-                        0 => None,
-                        1 => {
-                          let e = {
-                            let l33 = *arg0.add(72).cast::<*mut u8>();
-                            let l34 = *arg0.add(76).cast::<usize>();
-                            let len35 = l34;
-                            let bytes35 = _rt::Vec::from_raw_parts(l33.cast(), len35, len35);
-                            let l36 = *arg0.add(80).cast::<*mut u8>();
-                            let l37 = *arg0.add(84).cast::<usize>();
-                            let len38 = l37;
-                            let bytes38 = _rt::Vec::from_raw_parts(l36.cast(), len38, len38);
-                            let l39 = *arg0.add(88).cast::<*mut u8>();
-                            let l40 = *arg0.add(92).cast::<usize>();
-                            let len41 = l40;
-                            let bytes41 = _rt::Vec::from_raw_parts(l39.cast(), len41, len41);
-
-                            super::super::super::super::delano::wit_ui::context_types::Page{
-                              name: _rt::string_lift(bytes35),
-                              version: _rt::string_lift(bytes38),
-                              description: _rt::string_lift(bytes41),
-                            }
-                          };
-                          Some(e)
-                        }
-                        _ => _rt::invalid_enum_discriminant(),
-                      },
-                      load: match l42 {
-                        0 => None,
-                        1 => {
-                          let e = {
-                            let l43 = *arg0.add(100).cast::<*mut u8>();
-                            let l44 = *arg0.add(104).cast::<usize>();
-                            let len45 = l44;
-                            let bytes45 = _rt::Vec::from_raw_parts(l43.cast(), len45, len45);
-
-                            _rt::string_lift(bytes45)
-                          };
-                          Some(e)
-                        }
-                        _ => _rt::invalid_enum_discriminant(),
-                      },
-                    }
-                                        };
-                                        V66::AllContent(e66)
-                                    }
-                                    1 => V66::Addattribute,
-                                    2 => V66::Newentry,
-                                    3 => {
-                                        let e66 = {
-                                            let l46 = *arg0.add(68).cast::<i32>();
-                                            let l47 = i32::from(*arg0.add(72).cast::<u8>());
-                                            use super::super::super::super::delano::wit_ui::context_types::Kovindex as V52;
-                                            let v52 = match l47 {
-                                                0 => {
-                                                    let e52 = {
-                                                        let l48 = *arg0.add(76).cast::<i32>();
-
-                                                        l48 as u32
-                                                    };
-                                                    V52::Key(e52)
-                                                }
-                                                1 => {
-                                                    let e52 = {
-                                                        let l49 = *arg0.add(76).cast::<i32>();
-
-                                                        l49 as u32
-                                                    };
-                                                    V52::Op(e52)
-                                                }
-                                                2 => {
-                                                    let e52 = {
-                                                        let l50 = *arg0.add(76).cast::<i32>();
-
-                                                        l50 as u32
-                                                    };
-                                                    V52::Value(e52)
-                                                }
-                                                n => {
-                                                    debug_assert_eq!(
-                                                        n, 3,
-                                                        "invalid enum discriminant"
-                                                    );
-                                                    let e52 = {
-                                                        let l51 = *arg0.add(76).cast::<i32>();
-
-                                                        l51 as u32
-                                                    };
-                                                    V52::Selected(e52)
-                                                }
-                                            };
-                                            let l53 = *arg0.add(80).cast::<*mut u8>();
-                                            let l54 = *arg0.add(84).cast::<usize>();
-                                            let len55 = l54;
-                                            let bytes55 =
-                                                _rt::Vec::from_raw_parts(l53.cast(), len55, len55);
-
-                                            super::super::super::super::delano::wit_ui::context_types::Kvctx{
-                      ctx: super::super::super::super::delano::wit_ui::context_types::Entry{
-                        idx: l46 as u32,
-                        val: v52,
-                      },
-                      value: _rt::string_lift(bytes55),
-                    }
-                                        };
-                                        V66::Editattribute(e66)
-                                    }
-                                    4 => {
-                                        let e66 = {
-                                            let l56 = i32::from(*arg0.add(68).cast::<u8>());
-
-                                            l56 as u8
-                                        };
-                                        V66::Editmaxentries(e66)
-                                    }
-                                    5 => V66::Generateoffer,
-                                    6 => V66::Generateproof,
-                                    7 => V66::Publishproof,
-                                    n => {
-                                        debug_assert_eq!(n, 8, "invalid enum discriminant");
-                                        let e66 = {
-                                            let l57 = *arg0.add(68).cast::<*mut u8>();
-                                            let l58 = *arg0.add(72).cast::<usize>();
-                                            let len59 = l58;
-                                            let bytes59 =
-                                                _rt::Vec::from_raw_parts(l57.cast(), len59, len59);
-                                            let l60 = *arg0.add(76).cast::<*mut u8>();
-                                            let l61 = *arg0.add(80).cast::<usize>();
-                                            let len62 = l61;
-                                            let bytes62 =
-                                                _rt::Vec::from_raw_parts(l60.cast(), len62, len62);
-                                            let l63 = *arg0.add(84).cast::<*mut u8>();
-                                            let l64 = *arg0.add(88).cast::<usize>();
-                                            let len65 = l64;
-
-                                            super::super::super::super::delano::wit_ui::context_types::Message{
-                      peer: _rt::string_lift(bytes59),
-                      topic: _rt::string_lift(bytes62),
-                      data: _rt::Vec::from_raw_parts(l63.cast(), len65, len65),
-                    }
-                                        };
-                                        V66::Networkevent(e66)
-                                    }
-                                };
+                            let e157 = {
+                                let l1 = i32::from(*arg0.add(4).cast::<u8>());
+                                let l6 = i32::from(*arg0.add(20).cast::<u8>());
+                                let l34 = i32::from(*arg0.add(76).cast::<u8>());
 
                                 super::super::super::super::peerpiper::wallet::context_types::Content{
-                app: super::super::super::super::peerpiper::wallet::context_types::App{
-                  title: _rt::string_lift(bytes3),
-                },
-                seed_ui: v30,
-                delano_ui: v66,
-              }
-                            };
-                            V153::AllContent(e153)
-                        }
-                        1 => {
-                            let e153 = {
-                                let l67 = i32::from(*arg0.add(4).cast::<u8>());
-                                use super::super::super::super::seed_keeper::wit_ui::wurbo_types::Context as V93;
-                                let v93 = match l67 {
-                                    0 => {
-                                        let e93 = {
-                                            let l68 = i32::from(*arg0.add(8).cast::<u8>());
-                                            let l72 = i32::from(*arg0.add(20).cast::<u8>());
-                                            let l80 = i32::from(*arg0.add(44).cast::<u8>());
+              app: match l1 {
+                0 => None,
+                1 => {
+                  let e = {
+                    let l2 = i32::from(*arg0.add(8).cast::<u8>());
 
-                                            super::super::super::super::seed_keeper::wit_ui::wurbo_types::Content{
-                      page: match l68 {
+                    super::super::super::super::peerpiper::wallet::context_types::App{
+                      title: match l2 {
                         0 => None,
                         1 => {
                           let e = {
-                            let l69 = *arg0.add(12).cast::<*mut u8>();
-                            let l70 = *arg0.add(16).cast::<usize>();
-                            let len71 = l70;
-                            let bytes71 = _rt::Vec::from_raw_parts(l69.cast(), len71, len71);
+                            let l3 = *arg0.add(12).cast::<*mut u8>();
+                            let l4 = *arg0.add(16).cast::<usize>();
+                            let len5 = l4;
+                            let bytes5 = _rt::Vec::from_raw_parts(l3.cast(), len5, len5);
 
-                            super::super::super::super::seed_keeper::wit_ui::wurbo_types::Page{
-                              title: _rt::string_lift(bytes71),
-                            }
-                          };
-                          Some(e)
-                        }
-                        _ => _rt::invalid_enum_discriminant(),
-                      },
-                      input: match l72 {
-                        0 => None,
-                        1 => {
-                          let e = {
-                            let l73 = *arg0.add(24).cast::<*mut u8>();
-                            let l74 = *arg0.add(28).cast::<usize>();
-                            let len75 = l74;
-                            let bytes75 = _rt::Vec::from_raw_parts(l73.cast(), len75, len75);
-                            let l76 = i32::from(*arg0.add(32).cast::<u8>());
-
-                            super::super::super::super::seed_keeper::wit_ui::wurbo_types::Input{
-                              placeholder: _rt::string_lift(bytes75),
-                              encrypted_seed: match l76 {
-                                0 => None,
-                                1 => {
-                                  let e = {
-                                    let l77 = *arg0.add(36).cast::<*mut u8>();
-                                    let l78 = *arg0.add(40).cast::<usize>();
-                                    let len79 = l78;
-                                    let bytes79 = _rt::Vec::from_raw_parts(l77.cast(), len79, len79);
-
-                                    _rt::string_lift(bytes79)
-                                  };
-                                  Some(e)
-                                }
-                                _ => _rt::invalid_enum_discriminant(),
-                              },
-                            }
-                          };
-                          Some(e)
-                        }
-                        _ => _rt::invalid_enum_discriminant(),
-                      },
-                      load: match l80 {
-                        0 => None,
-                        1 => {
-                          let e = {
-                            let l81 = *arg0.add(48).cast::<*mut u8>();
-                            let l82 = *arg0.add(52).cast::<usize>();
-                            let len83 = l82;
-                            let bytes83 = _rt::Vec::from_raw_parts(l81.cast(), len83, len83);
-
-                            _rt::string_lift(bytes83)
+                            _rt::string_lift(bytes5)
                           };
                           Some(e)
                         }
                         _ => _rt::invalid_enum_discriminant(),
                       },
                     }
+                  };
+                  Some(e)
+                }
+                _ => _rt::invalid_enum_discriminant(),
+              },
+              seed_ui: match l6 {
+                0 => None,
+                1 => {
+                  let e = {
+                    let l7 = i32::from(*arg0.add(24).cast::<u8>());
+                    use super::super::super::super::seed_keeper::wit_ui::wurbo_types::Context as V33;
+                    let v33 = match l7 {
+                      0 => {
+                        let e33 = {
+                          let l8 = i32::from(*arg0.add(28).cast::<u8>());
+                          let l12 = i32::from(*arg0.add(40).cast::<u8>());
+                          let l20 = i32::from(*arg0.add(64).cast::<u8>());
+
+                          super::super::super::super::seed_keeper::wit_ui::wurbo_types::Content{
+                            page: match l8 {
+                              0 => None,
+                              1 => {
+                                let e = {
+                                  let l9 = *arg0.add(32).cast::<*mut u8>();
+                                  let l10 = *arg0.add(36).cast::<usize>();
+                                  let len11 = l10;
+                                  let bytes11 = _rt::Vec::from_raw_parts(l9.cast(), len11, len11);
+
+                                  super::super::super::super::seed_keeper::wit_ui::wurbo_types::Page{
+                                    title: _rt::string_lift(bytes11),
+                                  }
+                                };
+                                Some(e)
+                              }
+                              _ => _rt::invalid_enum_discriminant(),
+                            },
+                            input: match l12 {
+                              0 => None,
+                              1 => {
+                                let e = {
+                                  let l13 = *arg0.add(44).cast::<*mut u8>();
+                                  let l14 = *arg0.add(48).cast::<usize>();
+                                  let len15 = l14;
+                                  let bytes15 = _rt::Vec::from_raw_parts(l13.cast(), len15, len15);
+                                  let l16 = i32::from(*arg0.add(52).cast::<u8>());
+
+                                  super::super::super::super::seed_keeper::wit_ui::wurbo_types::Input{
+                                    placeholder: _rt::string_lift(bytes15),
+                                    encrypted_seed: match l16 {
+                                      0 => None,
+                                      1 => {
+                                        let e = {
+                                          let l17 = *arg0.add(56).cast::<*mut u8>();
+                                          let l18 = *arg0.add(60).cast::<usize>();
+                                          let len19 = l18;
+                                          let bytes19 = _rt::Vec::from_raw_parts(l17.cast(), len19, len19);
+
+                                          _rt::string_lift(bytes19)
                                         };
-                                        V93::AllContent(e93)
+                                        Some(e)
+                                      }
+                                      _ => _rt::invalid_enum_discriminant(),
+                                    },
+                                  }
+                                };
+                                Some(e)
+                              }
+                              _ => _rt::invalid_enum_discriminant(),
+                            },
+                            load: match l20 {
+                              0 => None,
+                              1 => {
+                                let e = {
+                                  let l21 = *arg0.add(68).cast::<*mut u8>();
+                                  let l22 = *arg0.add(72).cast::<usize>();
+                                  let len23 = l22;
+                                  let bytes23 = _rt::Vec::from_raw_parts(l21.cast(), len23, len23);
+
+                                  _rt::string_lift(bytes23)
+                                };
+                                Some(e)
+                              }
+                              _ => _rt::invalid_enum_discriminant(),
+                            },
+                          }
+                        };
+                        V33::AllContent(e33)
+                      }
+                      1 => {
+                        let e33 = {
+                          let l24 = *arg0.add(28).cast::<*mut u8>();
+                          let l25 = *arg0.add(32).cast::<usize>();
+                          let len26 = l25;
+                          let bytes26 = _rt::Vec::from_raw_parts(l24.cast(), len26, len26);
+
+                          _rt::string_lift(bytes26)
+                        };
+                        V33::Username(e33)
+                      }
+                      2 => {
+                        let e33 = {
+                          let l27 = *arg0.add(28).cast::<*mut u8>();
+                          let l28 = *arg0.add(32).cast::<usize>();
+                          let len29 = l28;
+                          let bytes29 = _rt::Vec::from_raw_parts(l27.cast(), len29, len29);
+
+                          _rt::string_lift(bytes29)
+                        };
+                        V33::Password(e33)
+                      }
+                      3 => {
+                        let e33 = {
+                          let l30 = *arg0.add(28).cast::<*mut u8>();
+                          let l31 = *arg0.add(32).cast::<usize>();
+                          let len32 = l31;
+                          let bytes32 = _rt::Vec::from_raw_parts(l30.cast(), len32, len32);
+
+                          _rt::string_lift(bytes32)
+                        };
+                        V33::Encrypted(e33)
+                      }
+                      n => {
+                        debug_assert_eq!(n, 4, "invalid enum discriminant");
+                        V33::Submit
+                      }
+                    };
+
+                    v33
+                  };
+                  Some(e)
+                }
+                _ => _rt::invalid_enum_discriminant(),
+              },
+              delano_ui: match l34 {
+                0 => None,
+                1 => {
+                  let e = {
+                    let l35 = i32::from(*arg0.add(80).cast::<u8>());
+                    use super::super::super::super::delano::wit_ui::context_types::Context as V70;
+                    let v70 = match l35 {
+                      0 => {
+                        let e70 = {
+                          let l36 = i32::from(*arg0.add(84).cast::<u8>());
+                          let l46 = i32::from(*arg0.add(112).cast::<u8>());
+
+                          super::super::super::super::delano::wit_ui::context_types::Everything{
+                            page: match l36 {
+                              0 => None,
+                              1 => {
+                                let e = {
+                                  let l37 = *arg0.add(88).cast::<*mut u8>();
+                                  let l38 = *arg0.add(92).cast::<usize>();
+                                  let len39 = l38;
+                                  let bytes39 = _rt::Vec::from_raw_parts(l37.cast(), len39, len39);
+                                  let l40 = *arg0.add(96).cast::<*mut u8>();
+                                  let l41 = *arg0.add(100).cast::<usize>();
+                                  let len42 = l41;
+                                  let bytes42 = _rt::Vec::from_raw_parts(l40.cast(), len42, len42);
+                                  let l43 = *arg0.add(104).cast::<*mut u8>();
+                                  let l44 = *arg0.add(108).cast::<usize>();
+                                  let len45 = l44;
+                                  let bytes45 = _rt::Vec::from_raw_parts(l43.cast(), len45, len45);
+
+                                  super::super::super::super::delano::wit_ui::context_types::Page{
+                                    name: _rt::string_lift(bytes39),
+                                    version: _rt::string_lift(bytes42),
+                                    description: _rt::string_lift(bytes45),
+                                  }
+                                };
+                                Some(e)
+                              }
+                              _ => _rt::invalid_enum_discriminant(),
+                            },
+                            load: match l46 {
+                              0 => None,
+                              1 => {
+                                let e = {
+                                  let l47 = *arg0.add(116).cast::<*mut u8>();
+                                  let l48 = *arg0.add(120).cast::<usize>();
+                                  let len49 = l48;
+                                  let bytes49 = _rt::Vec::from_raw_parts(l47.cast(), len49, len49);
+
+                                  _rt::string_lift(bytes49)
+                                };
+                                Some(e)
+                              }
+                              _ => _rt::invalid_enum_discriminant(),
+                            },
+                          }
+                        };
+                        V70::AllContent(e70)
+                      }
+                      1 => {
+                        V70::Addattribute
+                      }
+                      2 => {
+                        V70::Newentry
+                      }
+                      3 => {
+                        let e70 = {
+                          let l50 = *arg0.add(84).cast::<i32>();
+                          let l51 = i32::from(*arg0.add(88).cast::<u8>());
+                          use super::super::super::super::delano::wit_ui::context_types::Kovindex as V56;
+                          let v56 = match l51 {
+                            0 => {
+                              let e56 = {
+                                let l52 = *arg0.add(92).cast::<i32>();
+
+                                l52 as u32
+                              };
+                              V56::Key(e56)
+                            }
+                            1 => {
+                              let e56 = {
+                                let l53 = *arg0.add(92).cast::<i32>();
+
+                                l53 as u32
+                              };
+                              V56::Op(e56)
+                            }
+                            2 => {
+                              let e56 = {
+                                let l54 = *arg0.add(92).cast::<i32>();
+
+                                l54 as u32
+                              };
+                              V56::Value(e56)
+                            }
+                            n => {
+                              debug_assert_eq!(n, 3, "invalid enum discriminant");
+                              let e56 = {
+                                let l55 = *arg0.add(92).cast::<i32>();
+
+                                l55 as u32
+                              };
+                              V56::Selected(e56)
+                            }
+                          };
+                          let l57 = *arg0.add(96).cast::<*mut u8>();
+                          let l58 = *arg0.add(100).cast::<usize>();
+                          let len59 = l58;
+                          let bytes59 = _rt::Vec::from_raw_parts(l57.cast(), len59, len59);
+
+                          super::super::super::super::delano::wit_ui::context_types::Kvctx{
+                            ctx: super::super::super::super::delano::wit_ui::context_types::Entry{
+                              idx: l50 as u32,
+                              val: v56,
+                            },
+                            value: _rt::string_lift(bytes59),
+                          }
+                        };
+                        V70::Editattribute(e70)
+                      }
+                      4 => {
+                        let e70 = {
+                          let l60 = i32::from(*arg0.add(84).cast::<u8>());
+
+                          l60 as u8
+                        };
+                        V70::Editmaxentries(e70)
+                      }
+                      5 => {
+                        V70::Generateoffer
+                      }
+                      6 => {
+                        V70::Generateproof
+                      }
+                      7 => {
+                        V70::Publishproof
+                      }
+                      n => {
+                        debug_assert_eq!(n, 8, "invalid enum discriminant");
+                        let e70 = {
+                          let l61 = *arg0.add(84).cast::<*mut u8>();
+                          let l62 = *arg0.add(88).cast::<usize>();
+                          let len63 = l62;
+                          let bytes63 = _rt::Vec::from_raw_parts(l61.cast(), len63, len63);
+                          let l64 = *arg0.add(92).cast::<*mut u8>();
+                          let l65 = *arg0.add(96).cast::<usize>();
+                          let len66 = l65;
+                          let bytes66 = _rt::Vec::from_raw_parts(l64.cast(), len66, len66);
+                          let l67 = *arg0.add(100).cast::<*mut u8>();
+                          let l68 = *arg0.add(104).cast::<usize>();
+                          let len69 = l68;
+
+                          super::super::super::super::delano::wit_ui::context_types::Message{
+                            peer: _rt::string_lift(bytes63),
+                            topic: _rt::string_lift(bytes66),
+                            data: _rt::Vec::from_raw_parts(l67.cast(), len69, len69),
+                          }
+                        };
+                        V70::Networkevent(e70)
+                      }
+                    };
+
+                    v70
+                  };
+                  Some(e)
+                }
+                _ => _rt::invalid_enum_discriminant(),
+              },
+            }
+                            };
+                            V157::AllContent(e157)
+                        }
+                        1 => {
+                            let e157 = {
+                                let l71 = i32::from(*arg0.add(4).cast::<u8>());
+                                use super::super::super::super::seed_keeper::wit_ui::wurbo_types::Context as V97;
+                                let v97 = match l71 {
+                                    0 => {
+                                        let e97 = {
+                                            let l72 = i32::from(*arg0.add(8).cast::<u8>());
+                                            let l76 = i32::from(*arg0.add(20).cast::<u8>());
+                                            let l84 = i32::from(*arg0.add(44).cast::<u8>());
+
+                                            super::super::super::super::seed_keeper::wit_ui::wurbo_types::Content{
+                    page: match l72 {
+                      0 => None,
+                      1 => {
+                        let e = {
+                          let l73 = *arg0.add(12).cast::<*mut u8>();
+                          let l74 = *arg0.add(16).cast::<usize>();
+                          let len75 = l74;
+                          let bytes75 = _rt::Vec::from_raw_parts(l73.cast(), len75, len75);
+
+                          super::super::super::super::seed_keeper::wit_ui::wurbo_types::Page{
+                            title: _rt::string_lift(bytes75),
+                          }
+                        };
+                        Some(e)
+                      }
+                      _ => _rt::invalid_enum_discriminant(),
+                    },
+                    input: match l76 {
+                      0 => None,
+                      1 => {
+                        let e = {
+                          let l77 = *arg0.add(24).cast::<*mut u8>();
+                          let l78 = *arg0.add(28).cast::<usize>();
+                          let len79 = l78;
+                          let bytes79 = _rt::Vec::from_raw_parts(l77.cast(), len79, len79);
+                          let l80 = i32::from(*arg0.add(32).cast::<u8>());
+
+                          super::super::super::super::seed_keeper::wit_ui::wurbo_types::Input{
+                            placeholder: _rt::string_lift(bytes79),
+                            encrypted_seed: match l80 {
+                              0 => None,
+                              1 => {
+                                let e = {
+                                  let l81 = *arg0.add(36).cast::<*mut u8>();
+                                  let l82 = *arg0.add(40).cast::<usize>();
+                                  let len83 = l82;
+                                  let bytes83 = _rt::Vec::from_raw_parts(l81.cast(), len83, len83);
+
+                                  _rt::string_lift(bytes83)
+                                };
+                                Some(e)
+                              }
+                              _ => _rt::invalid_enum_discriminant(),
+                            },
+                          }
+                        };
+                        Some(e)
+                      }
+                      _ => _rt::invalid_enum_discriminant(),
+                    },
+                    load: match l84 {
+                      0 => None,
+                      1 => {
+                        let e = {
+                          let l85 = *arg0.add(48).cast::<*mut u8>();
+                          let l86 = *arg0.add(52).cast::<usize>();
+                          let len87 = l86;
+                          let bytes87 = _rt::Vec::from_raw_parts(l85.cast(), len87, len87);
+
+                          _rt::string_lift(bytes87)
+                        };
+                        Some(e)
+                      }
+                      _ => _rt::invalid_enum_discriminant(),
+                    },
+                  }
+                                        };
+                                        V97::AllContent(e97)
                                     }
                                     1 => {
-                                        let e93 = {
-                                            let l84 = *arg0.add(8).cast::<*mut u8>();
-                                            let l85 = *arg0.add(12).cast::<usize>();
-                                            let len86 = l85;
-                                            let bytes86 =
-                                                _rt::Vec::from_raw_parts(l84.cast(), len86, len86);
+                                        let e97 = {
+                                            let l88 = *arg0.add(8).cast::<*mut u8>();
+                                            let l89 = *arg0.add(12).cast::<usize>();
+                                            let len90 = l89;
+                                            let bytes90 =
+                                                _rt::Vec::from_raw_parts(l88.cast(), len90, len90);
 
-                                            _rt::string_lift(bytes86)
+                                            _rt::string_lift(bytes90)
                                         };
-                                        V93::Username(e93)
+                                        V97::Username(e97)
                                     }
                                     2 => {
-                                        let e93 = {
-                                            let l87 = *arg0.add(8).cast::<*mut u8>();
-                                            let l88 = *arg0.add(12).cast::<usize>();
-                                            let len89 = l88;
-                                            let bytes89 =
-                                                _rt::Vec::from_raw_parts(l87.cast(), len89, len89);
+                                        let e97 = {
+                                            let l91 = *arg0.add(8).cast::<*mut u8>();
+                                            let l92 = *arg0.add(12).cast::<usize>();
+                                            let len93 = l92;
+                                            let bytes93 =
+                                                _rt::Vec::from_raw_parts(l91.cast(), len93, len93);
 
-                                            _rt::string_lift(bytes89)
+                                            _rt::string_lift(bytes93)
                                         };
-                                        V93::Password(e93)
+                                        V97::Password(e97)
                                     }
                                     3 => {
-                                        let e93 = {
-                                            let l90 = *arg0.add(8).cast::<*mut u8>();
-                                            let l91 = *arg0.add(12).cast::<usize>();
-                                            let len92 = l91;
-                                            let bytes92 =
-                                                _rt::Vec::from_raw_parts(l90.cast(), len92, len92);
+                                        let e97 = {
+                                            let l94 = *arg0.add(8).cast::<*mut u8>();
+                                            let l95 = *arg0.add(12).cast::<usize>();
+                                            let len96 = l95;
+                                            let bytes96 =
+                                                _rt::Vec::from_raw_parts(l94.cast(), len96, len96);
 
-                                            _rt::string_lift(bytes92)
+                                            _rt::string_lift(bytes96)
                                         };
-                                        V93::Encrypted(e93)
+                                        V97::Encrypted(e97)
                                     }
                                     n => {
                                         debug_assert_eq!(n, 4, "invalid enum discriminant");
-                                        V93::Submit
+                                        V97::Submit
                                     }
                                 };
 
-                                v93
+                                v97
                             };
-                            V153::Seed(e153)
+                            V157::Seed(e157)
                         }
                         2 => {
-                            let e153 = {
-                                let l94 = i32::from(*arg0.add(4).cast::<u8>());
-                                use super::super::super::super::delano::wit_ui::context_types::Context as V129;
-                                let v129 = match l94 {
+                            let e157 = {
+                                let l98 = i32::from(*arg0.add(4).cast::<u8>());
+                                use super::super::super::super::delano::wit_ui::context_types::Context as V133;
+                                let v133 = match l98 {
                                     0 => {
-                                        let e129 = {
-                                            let l95 = i32::from(*arg0.add(8).cast::<u8>());
-                                            let l105 = i32::from(*arg0.add(36).cast::<u8>());
+                                        let e133 = {
+                                            let l99 = i32::from(*arg0.add(8).cast::<u8>());
+                                            let l109 = i32::from(*arg0.add(36).cast::<u8>());
 
                                             super::super::super::super::delano::wit_ui::context_types::Everything{
-                      page: match l95 {
-                        0 => None,
-                        1 => {
-                          let e = {
-                            let l96 = *arg0.add(12).cast::<*mut u8>();
-                            let l97 = *arg0.add(16).cast::<usize>();
-                            let len98 = l97;
-                            let bytes98 = _rt::Vec::from_raw_parts(l96.cast(), len98, len98);
-                            let l99 = *arg0.add(20).cast::<*mut u8>();
-                            let l100 = *arg0.add(24).cast::<usize>();
-                            let len101 = l100;
-                            let bytes101 = _rt::Vec::from_raw_parts(l99.cast(), len101, len101);
-                            let l102 = *arg0.add(28).cast::<*mut u8>();
-                            let l103 = *arg0.add(32).cast::<usize>();
-                            let len104 = l103;
-                            let bytes104 = _rt::Vec::from_raw_parts(l102.cast(), len104, len104);
+                    page: match l99 {
+                      0 => None,
+                      1 => {
+                        let e = {
+                          let l100 = *arg0.add(12).cast::<*mut u8>();
+                          let l101 = *arg0.add(16).cast::<usize>();
+                          let len102 = l101;
+                          let bytes102 = _rt::Vec::from_raw_parts(l100.cast(), len102, len102);
+                          let l103 = *arg0.add(20).cast::<*mut u8>();
+                          let l104 = *arg0.add(24).cast::<usize>();
+                          let len105 = l104;
+                          let bytes105 = _rt::Vec::from_raw_parts(l103.cast(), len105, len105);
+                          let l106 = *arg0.add(28).cast::<*mut u8>();
+                          let l107 = *arg0.add(32).cast::<usize>();
+                          let len108 = l107;
+                          let bytes108 = _rt::Vec::from_raw_parts(l106.cast(), len108, len108);
 
-                            super::super::super::super::delano::wit_ui::context_types::Page{
-                              name: _rt::string_lift(bytes98),
-                              version: _rt::string_lift(bytes101),
-                              description: _rt::string_lift(bytes104),
-                            }
-                          };
-                          Some(e)
-                        }
-                        _ => _rt::invalid_enum_discriminant(),
-                      },
-                      load: match l105 {
-                        0 => None,
-                        1 => {
-                          let e = {
-                            let l106 = *arg0.add(40).cast::<*mut u8>();
-                            let l107 = *arg0.add(44).cast::<usize>();
-                            let len108 = l107;
-                            let bytes108 = _rt::Vec::from_raw_parts(l106.cast(), len108, len108);
+                          super::super::super::super::delano::wit_ui::context_types::Page{
+                            name: _rt::string_lift(bytes102),
+                            version: _rt::string_lift(bytes105),
+                            description: _rt::string_lift(bytes108),
+                          }
+                        };
+                        Some(e)
+                      }
+                      _ => _rt::invalid_enum_discriminant(),
+                    },
+                    load: match l109 {
+                      0 => None,
+                      1 => {
+                        let e = {
+                          let l110 = *arg0.add(40).cast::<*mut u8>();
+                          let l111 = *arg0.add(44).cast::<usize>();
+                          let len112 = l111;
+                          let bytes112 = _rt::Vec::from_raw_parts(l110.cast(), len112, len112);
 
-                            _rt::string_lift(bytes108)
-                          };
-                          Some(e)
-                        }
-                        _ => _rt::invalid_enum_discriminant(),
-                      },
-                    }
+                          _rt::string_lift(bytes112)
+                        };
+                        Some(e)
+                      }
+                      _ => _rt::invalid_enum_discriminant(),
+                    },
+                  }
                                         };
-                                        V129::AllContent(e129)
+                                        V133::AllContent(e133)
                                     }
-                                    1 => V129::Addattribute,
-                                    2 => V129::Newentry,
+                                    1 => V133::Addattribute,
+                                    2 => V133::Newentry,
                                     3 => {
-                                        let e129 = {
-                                            let l109 = *arg0.add(8).cast::<i32>();
-                                            let l110 = i32::from(*arg0.add(12).cast::<u8>());
-                                            use super::super::super::super::delano::wit_ui::context_types::Kovindex as V115;
-                                            let v115 = match l110 {
+                                        let e133 = {
+                                            let l113 = *arg0.add(8).cast::<i32>();
+                                            let l114 = i32::from(*arg0.add(12).cast::<u8>());
+                                            use super::super::super::super::delano::wit_ui::context_types::Kovindex as V119;
+                                            let v119 = match l114 {
                                                 0 => {
-                                                    let e115 = {
-                                                        let l111 = *arg0.add(16).cast::<i32>();
+                                                    let e119 = {
+                                                        let l115 = *arg0.add(16).cast::<i32>();
 
-                                                        l111 as u32
+                                                        l115 as u32
                                                     };
-                                                    V115::Key(e115)
+                                                    V119::Key(e119)
                                                 }
                                                 1 => {
-                                                    let e115 = {
-                                                        let l112 = *arg0.add(16).cast::<i32>();
+                                                    let e119 = {
+                                                        let l116 = *arg0.add(16).cast::<i32>();
 
-                                                        l112 as u32
+                                                        l116 as u32
                                                     };
-                                                    V115::Op(e115)
+                                                    V119::Op(e119)
                                                 }
                                                 2 => {
-                                                    let e115 = {
-                                                        let l113 = *arg0.add(16).cast::<i32>();
+                                                    let e119 = {
+                                                        let l117 = *arg0.add(16).cast::<i32>();
 
-                                                        l113 as u32
+                                                        l117 as u32
                                                     };
-                                                    V115::Value(e115)
+                                                    V119::Value(e119)
                                                 }
                                                 n => {
                                                     debug_assert_eq!(
                                                         n, 3,
                                                         "invalid enum discriminant"
                                                     );
-                                                    let e115 = {
-                                                        let l114 = *arg0.add(16).cast::<i32>();
+                                                    let e119 = {
+                                                        let l118 = *arg0.add(16).cast::<i32>();
 
-                                                        l114 as u32
+                                                        l118 as u32
                                                     };
-                                                    V115::Selected(e115)
+                                                    V119::Selected(e119)
                                                 }
                                             };
-                                            let l116 = *arg0.add(20).cast::<*mut u8>();
-                                            let l117 = *arg0.add(24).cast::<usize>();
-                                            let len118 = l117;
-                                            let bytes118 = _rt::Vec::from_raw_parts(
-                                                l116.cast(),
-                                                len118,
-                                                len118,
-                                            );
-
-                                            super::super::super::super::delano::wit_ui::context_types::Kvctx{
-                      ctx: super::super::super::super::delano::wit_ui::context_types::Entry{
-                        idx: l109 as u32,
-                        val: v115,
-                      },
-                      value: _rt::string_lift(bytes118),
-                    }
-                                        };
-                                        V129::Editattribute(e129)
-                                    }
-                                    4 => {
-                                        let e129 = {
-                                            let l119 = i32::from(*arg0.add(8).cast::<u8>());
-
-                                            l119 as u8
-                                        };
-                                        V129::Editmaxentries(e129)
-                                    }
-                                    5 => V129::Generateoffer,
-                                    6 => V129::Generateproof,
-                                    7 => V129::Publishproof,
-                                    n => {
-                                        debug_assert_eq!(n, 8, "invalid enum discriminant");
-                                        let e129 = {
-                                            let l120 = *arg0.add(8).cast::<*mut u8>();
-                                            let l121 = *arg0.add(12).cast::<usize>();
+                                            let l120 = *arg0.add(20).cast::<*mut u8>();
+                                            let l121 = *arg0.add(24).cast::<usize>();
                                             let len122 = l121;
                                             let bytes122 = _rt::Vec::from_raw_parts(
                                                 l120.cast(),
                                                 len122,
                                                 len122,
                                             );
-                                            let l123 = *arg0.add(16).cast::<*mut u8>();
-                                            let l124 = *arg0.add(20).cast::<usize>();
-                                            let len125 = l124;
-                                            let bytes125 = _rt::Vec::from_raw_parts(
-                                                l123.cast(),
-                                                len125,
-                                                len125,
+
+                                            super::super::super::super::delano::wit_ui::context_types::Kvctx{
+                    ctx: super::super::super::super::delano::wit_ui::context_types::Entry{
+                      idx: l113 as u32,
+                      val: v119,
+                    },
+                    value: _rt::string_lift(bytes122),
+                  }
+                                        };
+                                        V133::Editattribute(e133)
+                                    }
+                                    4 => {
+                                        let e133 = {
+                                            let l123 = i32::from(*arg0.add(8).cast::<u8>());
+
+                                            l123 as u8
+                                        };
+                                        V133::Editmaxentries(e133)
+                                    }
+                                    5 => V133::Generateoffer,
+                                    6 => V133::Generateproof,
+                                    7 => V133::Publishproof,
+                                    n => {
+                                        debug_assert_eq!(n, 8, "invalid enum discriminant");
+                                        let e133 = {
+                                            let l124 = *arg0.add(8).cast::<*mut u8>();
+                                            let l125 = *arg0.add(12).cast::<usize>();
+                                            let len126 = l125;
+                                            let bytes126 = _rt::Vec::from_raw_parts(
+                                                l124.cast(),
+                                                len126,
+                                                len126,
                                             );
-                                            let l126 = *arg0.add(24).cast::<*mut u8>();
-                                            let l127 = *arg0.add(28).cast::<usize>();
-                                            let len128 = l127;
+                                            let l127 = *arg0.add(16).cast::<*mut u8>();
+                                            let l128 = *arg0.add(20).cast::<usize>();
+                                            let len129 = l128;
+                                            let bytes129 = _rt::Vec::from_raw_parts(
+                                                l127.cast(),
+                                                len129,
+                                                len129,
+                                            );
+                                            let l130 = *arg0.add(24).cast::<*mut u8>();
+                                            let l131 = *arg0.add(28).cast::<usize>();
+                                            let len132 = l131;
 
                                             super::super::super::super::delano::wit_ui::context_types::Message{
-                      peer: _rt::string_lift(bytes122),
-                      topic: _rt::string_lift(bytes125),
-                      data: _rt::Vec::from_raw_parts(l126.cast(), len128, len128),
-                    }
+                    peer: _rt::string_lift(bytes126),
+                    topic: _rt::string_lift(bytes129),
+                    data: _rt::Vec::from_raw_parts(l130.cast(), len132, len132),
+                  }
                                         };
-                                        V129::Networkevent(e129)
+                                        V133::Networkevent(e133)
                                     }
                                 };
 
-                                v129
+                                v133
                             };
-                            V153::Delano(e153)
+                            V157::Delano(e157)
                         }
                         n => {
                             debug_assert_eq!(n, 3, "invalid enum discriminant");
-                            let e153 = {
-                                let l130 = i32::from(*arg0.add(4).cast::<u8>());
-                                use super::super::super::super::peerpiper::wallet::context_types::Events as V152;
-                                let v152 = match l130 {
+                            let e157 = {
+                                let l134 = i32::from(*arg0.add(4).cast::<u8>());
+                                use super::super::super::super::peerpiper::wallet::context_types::Events as V156;
+                                let v156 = match l134 {
                                     0 => {
-                                        let e152 = {
-                                            let l131 = *arg0.add(8).cast::<*mut u8>();
-                                            let l132 = *arg0.add(12).cast::<usize>();
-                                            let len133 = l132;
-                                            let bytes133 = _rt::Vec::from_raw_parts(
-                                                l131.cast(),
-                                                len133,
-                                                len133,
+                                        let e156 = {
+                                            let l135 = *arg0.add(8).cast::<*mut u8>();
+                                            let l136 = *arg0.add(12).cast::<usize>();
+                                            let len137 = l136;
+                                            let bytes137 = _rt::Vec::from_raw_parts(
+                                                l135.cast(),
+                                                len137,
+                                                len137,
                                             );
 
                                             super::super::super::super::peerpiper::wallet::context_types::Seed{
-                      seed: _rt::string_lift(bytes133),
-                    }
+                    seed: _rt::string_lift(bytes137),
+                  }
                                         };
-                                        V152::Encrypted(e152)
+                                        V156::Encrypted(e156)
                                     }
                                     1 => {
-                                        let e152 = {
-                                            let l134 = *arg0.add(8).cast::<*mut u8>();
-                                            let l135 = *arg0.add(12).cast::<usize>();
-                                            let len136 = l135;
-                                            let bytes136 = _rt::Vec::from_raw_parts(
-                                                l134.cast(),
-                                                len136,
-                                                len136,
+                                        let e156 = {
+                                            let l138 = *arg0.add(8).cast::<*mut u8>();
+                                            let l139 = *arg0.add(12).cast::<usize>();
+                                            let len140 = l139;
+                                            let bytes140 = _rt::Vec::from_raw_parts(
+                                                l138.cast(),
+                                                len140,
+                                                len140,
                                             );
-                                            let l137 = *arg0.add(16).cast::<*mut u8>();
-                                            let l138 = *arg0.add(20).cast::<usize>();
-                                            let len139 = l138;
-                                            let bytes139 = _rt::Vec::from_raw_parts(
-                                                l137.cast(),
-                                                len139,
-                                                len139,
+                                            let l141 = *arg0.add(16).cast::<*mut u8>();
+                                            let l142 = *arg0.add(20).cast::<usize>();
+                                            let len143 = l142;
+                                            let bytes143 = _rt::Vec::from_raw_parts(
+                                                l141.cast(),
+                                                len143,
+                                                len143,
                                             );
-                                            let l140 = *arg0.add(24).cast::<*mut u8>();
-                                            let l141 = *arg0.add(28).cast::<usize>();
-                                            let len142 = l141;
+                                            let l144 = *arg0.add(24).cast::<*mut u8>();
+                                            let l145 = *arg0.add(28).cast::<usize>();
+                                            let len146 = l145;
 
                                             super::super::super::super::peerpiper::wallet::context_types::Message{
-                      peer: _rt::string_lift(bytes136),
-                      topic: _rt::string_lift(bytes139),
-                      data: _rt::Vec::from_raw_parts(l140.cast(), len142, len142),
-                    }
+                    peer: _rt::string_lift(bytes140),
+                    topic: _rt::string_lift(bytes143),
+                    data: _rt::Vec::from_raw_parts(l144.cast(), len146, len146),
+                  }
                                         };
-                                        V152::Message(e152)
+                                        V156::Message(e156)
                                     }
                                     2 => {
-                                        let e152 = {
-                                            let l143 = *arg0.add(8).cast::<*mut u8>();
-                                            let l144 = *arg0.add(12).cast::<usize>();
-                                            let len145 = l144;
-                                            let bytes145 = _rt::Vec::from_raw_parts(
-                                                l143.cast(),
-                                                len145,
-                                                len145,
+                                        let e156 = {
+                                            let l147 = *arg0.add(8).cast::<*mut u8>();
+                                            let l148 = *arg0.add(12).cast::<usize>();
+                                            let len149 = l148;
+                                            let bytes149 = _rt::Vec::from_raw_parts(
+                                                l147.cast(),
+                                                len149,
+                                                len149,
                                             );
-                                            let l146 = *arg0.add(16).cast::<*mut u8>();
-                                            let l147 = *arg0.add(20).cast::<usize>();
-                                            let len148 = l147;
+                                            let l150 = *arg0.add(16).cast::<*mut u8>();
+                                            let l151 = *arg0.add(20).cast::<usize>();
+                                            let len152 = l151;
 
                                             super::super::super::super::peerpiper::wallet::context_types::PublishMessage{
-                      key: _rt::string_lift(bytes145),
-                      value: _rt::Vec::from_raw_parts(l146.cast(), len148, len148),
-                    }
+                    key: _rt::string_lift(bytes149),
+                    value: _rt::Vec::from_raw_parts(l150.cast(), len152, len152),
+                  }
                                         };
-                                        V152::Publish(e152)
+                                        V156::Publish(e156)
                                     }
                                     n => {
                                         debug_assert_eq!(n, 3, "invalid enum discriminant");
-                                        let e152 = {
-                                            let l149 = *arg0.add(8).cast::<*mut u8>();
-                                            let l150 = *arg0.add(12).cast::<usize>();
-                                            let len151 = l150;
-                                            let bytes151 = _rt::Vec::from_raw_parts(
-                                                l149.cast(),
-                                                len151,
-                                                len151,
+                                        let e156 = {
+                                            let l153 = *arg0.add(8).cast::<*mut u8>();
+                                            let l154 = *arg0.add(12).cast::<usize>();
+                                            let len155 = l154;
+                                            let bytes155 = _rt::Vec::from_raw_parts(
+                                                l153.cast(),
+                                                len155,
+                                                len155,
                                             );
 
                                             super::super::super::super::peerpiper::wallet::context_types::SubscribeTopic{
-                      key: _rt::string_lift(bytes151),
-                    }
+                    key: _rt::string_lift(bytes155),
+                  }
                                         };
-                                        V152::Subscribe(e152)
+                                        V156::Subscribe(e156)
                                     }
                                 };
 
-                                v152
+                                v156
                             };
-                            V153::Event(e153)
+                            V157::Event(e157)
                         }
                     };
-                    let result154 = T::render(v153);
-                    _rt::cabi_dealloc(arg0, 108, 4);
-                    let ptr155 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
-                    match result154 {
+                    let result158 = T::render(v157);
+                    _rt::cabi_dealloc(arg0, 124, 4);
+                    let ptr159 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result158 {
                         Ok(e) => {
-                            *ptr155.add(0).cast::<u8>() = (0i32) as u8;
-                            let vec156 = (e.into_bytes()).into_boxed_slice();
-                            let ptr156 = vec156.as_ptr().cast::<u8>();
-                            let len156 = vec156.len();
-                            ::core::mem::forget(vec156);
-                            *ptr155.add(8).cast::<usize>() = len156;
-                            *ptr155.add(4).cast::<*mut u8>() = ptr156.cast_mut();
+                            *ptr159.add(0).cast::<u8>() = (0i32) as u8;
+                            let vec160 = (e.into_bytes()).into_boxed_slice();
+                            let ptr160 = vec160.as_ptr().cast::<u8>();
+                            let len160 = vec160.len();
+                            ::core::mem::forget(vec160);
+                            *ptr159.add(8).cast::<usize>() = len160;
+                            *ptr159.add(4).cast::<*mut u8>() = ptr160.cast_mut();
                         }
                         Err(e) => {
-                            *ptr155.add(0).cast::<u8>() = (1i32) as u8;
-                            let vec157 = (e.into_bytes()).into_boxed_slice();
-                            let ptr157 = vec157.as_ptr().cast::<u8>();
-                            let len157 = vec157.len();
-                            ::core::mem::forget(vec157);
-                            *ptr155.add(8).cast::<usize>() = len157;
-                            *ptr155.add(4).cast::<*mut u8>() = ptr157.cast_mut();
+                            *ptr159.add(0).cast::<u8>() = (1i32) as u8;
+                            let vec161 = (e.into_bytes()).into_boxed_slice();
+                            let ptr161 = vec161.as_ptr().cast::<u8>();
+                            let len161 = vec161.len();
+                            ::core::mem::forget(vec161);
+                            *ptr159.add(8).cast::<usize>() = len161;
+                            *ptr159.add(4).cast::<*mut u8>() = ptr161.cast_mut();
                         }
                     };
-                    ptr155
+                    ptr159
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
@@ -1981,6 +2083,10 @@ pub mod exports {
                     });
                 }
                 pub trait Guest {
+                    /// Optionally customize the configuration of the templates used to render the component
+                    fn customize(
+                        templates: _rt::Vec<(_rt::String, _rt::String)>,
+                    ) -> Result<(), _rt::String>;
                     /// renders the initial Web component with the given data
                     fn render(ctx: Context) -> Result<_rt::String, _rt::String>;
                     /// activate listening
@@ -1989,22 +2095,30 @@ pub mod exports {
                 #[doc(hidden)]
 
                 macro_rules! __export_peerpiper_wallet_wurbo_out_0_1_0_cabi{
-      ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+    ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-        #[export_name = "peerpiper:wallet/wurbo-out@0.1.0#render"]
-        unsafe extern "C" fn export_render(arg0: *mut u8,) -> *mut u8 {
-          $($path_to_types)*::_export_render_cabi::<$ty>(arg0)
-        }
-        #[export_name = "cabi_post_peerpiper:wallet/wurbo-out@0.1.0#render"]
-        unsafe extern "C" fn _post_return_render(arg0: *mut u8,) {
-          $($path_to_types)*::__post_return_render::<$ty>(arg0)
-        }
-        #[export_name = "peerpiper:wallet/wurbo-out@0.1.0#activate"]
-        unsafe extern "C" fn export_activate(arg0: i32,arg1: *mut u8,arg2: usize,) {
-          $($path_to_types)*::_export_activate_cabi::<$ty>(arg0, arg1, arg2)
-        }
-      };);
-    }
+      #[export_name = "peerpiper:wallet/wurbo-out@0.1.0#customize"]
+      unsafe extern "C" fn export_customize(arg0: *mut u8,arg1: usize,) -> *mut u8 {
+        $($path_to_types)*::_export_customize_cabi::<$ty>(arg0, arg1)
+      }
+      #[export_name = "cabi_post_peerpiper:wallet/wurbo-out@0.1.0#customize"]
+      unsafe extern "C" fn _post_return_customize(arg0: *mut u8,) {
+        $($path_to_types)*::__post_return_customize::<$ty>(arg0)
+      }
+      #[export_name = "peerpiper:wallet/wurbo-out@0.1.0#render"]
+      unsafe extern "C" fn export_render(arg0: *mut u8,) -> *mut u8 {
+        $($path_to_types)*::_export_render_cabi::<$ty>(arg0)
+      }
+      #[export_name = "cabi_post_peerpiper:wallet/wurbo-out@0.1.0#render"]
+      unsafe extern "C" fn _post_return_render(arg0: *mut u8,) {
+        $($path_to_types)*::__post_return_render::<$ty>(arg0)
+      }
+      #[export_name = "peerpiper:wallet/wurbo-out@0.1.0#activate"]
+      unsafe extern "C" fn export_activate(arg0: i32,arg1: *mut u8,arg2: usize,) {
+        $($path_to_types)*::_export_activate_cabi::<$ty>(arg0, arg1, arg2)
+      }
+    };);
+  }
                 #[doc(hidden)]
                 pub(crate) use __export_peerpiper_wallet_wurbo_out_0_1_0_cabi;
                 #[repr(align(4))]
@@ -2063,14 +2177,14 @@ pub mod exports {
                 #[doc(hidden)]
 
                 macro_rules! __export_peerpiper_wallet_aggregation_0_1_0_cabi{
-    ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-      #[export_name = "peerpiper:wallet/aggregation@0.1.0#activates"]
-      unsafe extern "C" fn export_activates(arg0: i32,arg1: *mut u8,arg2: usize,) {
-        $($path_to_types)*::_export_activates_cabi::<$ty>(arg0, arg1, arg2)
-      }
-    };);
-  }
+    #[export_name = "peerpiper:wallet/aggregation@0.1.0#activates"]
+    unsafe extern "C" fn export_activates(arg0: i32,arg1: *mut u8,arg2: usize,) {
+      $($path_to_types)*::_export_activates_cabi::<$ty>(arg0, arg1, arg2)
+    }
+  };);
+}
                 #[doc(hidden)]
                 pub(crate) use __export_peerpiper_wallet_aggregation_0_1_0_cabi;
             }
@@ -2207,8 +2321,8 @@ pub(crate) use __export_peerpiper_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.21.0:peerpiper:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1990] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc6\x0e\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2045] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xfd\x0e\x01A\x02\x01\
 A\x16\x01B\x0f\x01s\x04\0\x09encrypted\x03\0\0\x01r\x02\x08selectors\x02tys\x04\0\
 \x0elisten-details\x03\0\x02\x01r\x01\x05titles\x04\0\x04page\x03\0\x04\x01ks\x01\
 r\x02\x0bplaceholders\x0eencrypted-seed\x06\x04\0\x05input\x03\0\x07\x01k\x05\x01\
@@ -2232,28 +2346,29 @@ ntext-types@0.1.0\x05\x03\x02\x03\0\x02\x07context\x01B\x09\x02\x03\x02\x01\x04\
 \0\x07context\x03\0\0\x01j\x01s\x01s\x01@\x01\x03ctx\x01\0\x02\x04\0\x06render\x01\
 \x03\x01ps\x01k\x04\x01@\x01\x09selectors\x05\x01\0\x04\0\x08activate\x01\x06\x03\
 \x01\x1ddelano:wit-ui/wurbo-out@0.1.0\x05\x05\x02\x03\0\x01\x07context\x02\x03\0\
-\x03\x07context\x01B\x17\x02\x03\x02\x01\x06\x04\0\x0cseed-context\x03\0\0\x02\x03\
+\x03\x07context\x01B\x1b\x02\x03\x02\x01\x06\x04\0\x0cseed-context\x03\0\0\x02\x03\
 \x02\x01\x07\x04\0\x0edelano-context\x03\0\x02\x01r\x02\x08selectors\x02tys\x04\0\
-\x0elisten-details\x03\0\x04\x01r\x01\x05titles\x04\0\x03app\x03\0\x06\x01r\x03\x03\
-app\x07\x07seed-ui\x01\x09delano-ui\x03\x04\0\x07content\x03\0\x08\x01r\x01\x04s\
-eeds\x04\0\x04seed\x03\0\x0a\x01p}\x01r\x03\x04peers\x05topics\x04data\x0c\x04\0\
-\x07message\x03\0\x0d\x01r\x02\x03keys\x05value\x0c\x04\0\x0fpublish-message\x03\
-\0\x0f\x01r\x01\x03keys\x04\0\x0fsubscribe-topic\x03\0\x11\x01q\x04\x09encrypted\
-\x01\x0b\0\x07message\x01\x0e\0\x07publish\x01\x10\0\x09subscribe\x01\x12\0\x04\0\
-\x06events\x03\0\x13\x01q\x04\x0ball-content\x01\x09\0\x04seed\x01\x01\0\x06dela\
-no\x01\x03\0\x05event\x01\x14\0\x04\0\x07context\x03\0\x15\x03\x01$peerpiper:wal\
-let/context-types@0.1.0\x05\x08\x02\x03\0\x04\x0elisten-details\x01B\x08\x02\x03\
-\x02\x01\x09\x04\0\x0elisten-details\x03\0\0\x01@\x01\x07details\x01\x01\0\x04\0\
-\x10addeventlistener\x01\x02\x01@\x01\x07messages\x01\0\x04\0\x04emit\x01\x03\x01\
-@\x01\x04hashs\x01\0\x04\0\x08set-hash\x01\x04\x03\x01\x1fpeerpiper:wallet/wurbo\
--in@0.1.0\x05\x0a\x02\x03\0\x04\x07context\x01B\x09\x02\x03\x02\x01\x0b\x04\0\x07\
-context\x03\0\0\x01j\x01s\x01s\x01@\x01\x03ctx\x01\0\x02\x04\0\x06render\x01\x03\
-\x01ps\x01k\x04\x01@\x01\x09selectors\x05\x01\0\x04\0\x08activate\x01\x06\x04\x01\
-\x20peerpiper:wallet/wurbo-out@0.1.0\x05\x0c\x01B\x04\x01ps\x01k\0\x01@\x01\x09s\
-electors\x01\x01\0\x04\0\x09activates\x01\x02\x04\x01\"peerpiper:wallet/aggregat\
-ion@0.1.0\x05\x0d\x04\x01\x20peerpiper:wallet/peerpiper@0.1.0\x04\0\x0b\x0f\x01\0\
-\x09peerpiper\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x07\
-0.201.0\x10wit-bindgen-rust\x060.21.0";
+\x0elisten-details\x03\0\x04\x01ks\x01r\x01\x05title\x06\x04\0\x03app\x03\0\x07\x01\
+k\x08\x01k\x01\x01k\x03\x01r\x03\x03app\x09\x07seed-ui\x0a\x09delano-ui\x0b\x04\0\
+\x07content\x03\0\x0c\x01r\x01\x04seeds\x04\0\x04seed\x03\0\x0e\x01p}\x01r\x03\x04\
+peers\x05topics\x04data\x10\x04\0\x07message\x03\0\x11\x01r\x02\x03keys\x05value\
+\x10\x04\0\x0fpublish-message\x03\0\x13\x01r\x01\x03keys\x04\0\x0fsubscribe-topi\
+c\x03\0\x15\x01q\x04\x09encrypted\x01\x0f\0\x07message\x01\x12\0\x07publish\x01\x14\
+\0\x09subscribe\x01\x16\0\x04\0\x06events\x03\0\x17\x01q\x04\x0ball-content\x01\x0d\
+\0\x04seed\x01\x01\0\x06delano\x01\x03\0\x05event\x01\x18\0\x04\0\x07context\x03\
+\0\x19\x03\x01$peerpiper:wallet/context-types@0.1.0\x05\x08\x02\x03\0\x04\x0elis\
+ten-details\x01B\x08\x02\x03\x02\x01\x09\x04\0\x0elisten-details\x03\0\0\x01@\x01\
+\x07details\x01\x01\0\x04\0\x10addeventlistener\x01\x02\x01@\x01\x07messages\x01\
+\0\x04\0\x04emit\x01\x03\x01@\x01\x04hashs\x01\0\x04\0\x08set-hash\x01\x04\x03\x01\
+\x1fpeerpiper:wallet/wurbo-in@0.1.0\x05\x0a\x02\x03\0\x04\x07context\x01B\x0e\x02\
+\x03\x02\x01\x0b\x04\0\x07context\x03\0\0\x01o\x02ss\x01p\x02\x01j\0\x01s\x01@\x01\
+\x09templates\x03\0\x04\x04\0\x09customize\x01\x05\x01j\x01s\x01s\x01@\x01\x03ct\
+x\x01\0\x06\x04\0\x06render\x01\x07\x01ps\x01k\x08\x01@\x01\x09selectors\x09\x01\
+\0\x04\0\x08activate\x01\x0a\x04\x01\x20peerpiper:wallet/wurbo-out@0.1.0\x05\x0c\
+\x01B\x04\x01ps\x01k\0\x01@\x01\x09selectors\x01\x01\0\x04\0\x09activates\x01\x02\
+\x04\x01\"peerpiper:wallet/aggregation@0.1.0\x05\x0d\x04\x01\x20peerpiper:wallet\
+/peerpiper@0.1.0\x04\0\x0b\x0f\x01\0\x09peerpiper\x03\0\0\0G\x09producers\x01\x0c\
+processed-by\x02\x0dwit-component\x070.201.0\x10wit-bindgen-rust\x060.21.0";
 
 #[inline(never)]
 #[doc(hidden)]

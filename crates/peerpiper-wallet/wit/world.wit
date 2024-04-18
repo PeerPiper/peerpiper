@@ -18,16 +18,16 @@ interface context-types {
 
   // Context for the minijinja rendering
   record app {
-    title: string
+    title: option<string>
   }
 
   // Content record for the initial content of the entire app
   record content {
     // pass in props like title, etc.
-    app: app,
+    app: option<app>,
     // optionally pass in an encrypted seed to load
-    seed-ui: seed-context,
-    delano-ui: delano-context,
+    seed-ui: option<seed-context>,
+    delano-ui: option<delano-context>,
     // optionally pass in a message to sign or verify
     // edwards-ui: edwards-context
   }
@@ -91,6 +91,9 @@ interface wurbo-in {
 interface wurbo-out {
 
   use context-types.{context};
+
+  // Optionally customize the configuration of the templates used to render the component
+  customize: func(templates: list<tuple<string, string>>) -> result<_, string>;
 
   // renders the initial Web component with the given data
   render: func(ctx: context) -> result<string, string>;
