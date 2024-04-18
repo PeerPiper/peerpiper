@@ -9,7 +9,8 @@ jobs:
   release:
     name: Build then upload release asset
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -50,4 +51,7 @@ jobs:
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         with:
-          files: peerpiper_wallet_aggregate.wasm
+          files: dist/peerpiper_wallet_aggregate.wasm
+          tag_name: prerelease
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
