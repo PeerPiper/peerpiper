@@ -3072,6 +3072,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "memo-map"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "374c335b2df19e62d4cb323103473cbc6510980253119180de862d89184f6a83"
+
+[[package]]
 name = "memoffset"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3111,6 +3117,8 @@ version = "1.0.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6fe0ff215195a22884d867b547c70a0c4815cbbcc70991f281dca604b20d10ce"
 dependencies = [
+ "memo-map",
+ "self_cell",
  "serde",
  "serde_json",
 ]
@@ -3747,7 +3755,7 @@ dependencies = [
  "wasmtime",
  "wasmtime-wasi",
  "wit-bindgen-rt",
- "wurbo",
+ "wurbo 0.3.2",
 ]
 
 [[package]]
@@ -4633,8 +4641,14 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_with",
- "wurbo",
+ "wurbo 0.2.0",
 ]
+
+[[package]]
+name = "self_cell"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58bf37232d3bb9a2c4e641ca2a11d83b5062066f88df7fed36c28772046d65ba"
 
 [[package]]
 name = "semver"
@@ -6923,6 +6937,25 @@ name = "wurbo"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "373d302e1aecbfdba6ddfe1860d3385d34f181f854c4493725555d7a988a57f1"
+dependencies = [
+ "base64ct",
+ "convert_case",
+ "lazy_static",
+ "minijinja",
+ "nanoid",
+ "pest",
+ "pest_derive",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "wit-parser",
+]
+
+[[package]]
+name = "wurbo"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "929c1a2b099cbbcf3e8df0051d339dd0df17a9983193337c9a1814303e327a1a"
 dependencies = [
  "base64ct",
  "convert_case",
