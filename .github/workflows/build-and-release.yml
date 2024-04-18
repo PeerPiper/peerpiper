@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    name: Upload Release Asset
+    name: Build then upload release asset
     runs-on: ubuntu-latest
 
     steps:
@@ -16,8 +16,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Just
-        run: cargo install just
+      - name: Install Binstall
+        uses: cargo-bins/cargo-binstall@main
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          targets: wasm32-unknown-unknown, wasm32-wasi
+          toolchain: nightly-x86_64-unknown-linux-gnu
+          components: rust-src, rustfmt
+
+      - name: Install cargo component
+        run: echo yes | cargo binstall cargo-component@0.10.1
+
+      - name: Run binstall just
+        run: |
+          # Run binstall just with the --no-confirm flag
+          cargo binstall just --no-confirm
 
       - name: Build and Compose Wasm
         run: just compose
