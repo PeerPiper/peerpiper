@@ -30,10 +30,11 @@ jobs:
       - name: Install cargo component
         run: echo yes | cargo binstall cargo-component@0.10.1
 
-      - name: Run binstall just
+      - name: Run binstall just, wasm-tools
         run: |
           # Run binstall just with the --no-confirm flag
           cargo binstall just --no-confirm
+          cargo install wasm-tools
 
       - name: Build and Compose Wasm
         run: just compose
