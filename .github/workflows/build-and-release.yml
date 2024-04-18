@@ -1,0 +1,38 @@
+name: Build and Release
+
+on:
+  release:
+    types: [created] # Trigger when a new release is created
+
+jobs:
+  release:
+    name: Upload Release Asset
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Just
+        run: cargo install just
+
+      - name: Build and Compose Wasm
+        run: just compose
+
+      - name: Archive build
+        uses: actions/upload-artifact@v2
+        with:
+          name: wasm-artifact
+          path: dist/peerpiper_wallet_aggregate.wasm
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: dist/peerpiper_wallet_aggregate.wasm
+          asset_name: peerpiper_wallet_aggregate.wasm
+          asset_content_type: application/wasm
