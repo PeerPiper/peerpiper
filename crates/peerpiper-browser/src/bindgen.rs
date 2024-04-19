@@ -102,11 +102,6 @@ pub async fn connect(libp2p_endpoint: &str, on_event: &js_sys::Function) -> Resu
 pub async fn command(json: &str) -> Result<JsValue, JsError> {
     tracing::trace!("Received command.");
 
-    let example_publish = PeerPiperCommand::Publish {
-        topic: "example".to_string(),
-        data: vec![1, 2, 3],
-    };
-
     let example_put = PeerPiperCommand::System(SystemCommand::Put {
         bytes: vec![1, 2, 3],
     });
