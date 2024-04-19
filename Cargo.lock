@@ -469,18 +469,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "blastkids"
-version = "0.1.7"
-source = "git+https://github.com/DougAnderson444/blastkids.git#f8363709ec1354cce152d1cb670aa6200ac837ae"
-dependencies = [
- "bls12_381_plus",
- "hkdf",
- "secrecy",
- "sha2",
- "thiserror",
-]
-
-[[package]]
 name = "block-buffer"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -496,23 +484,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8894febbff9f758034a5b8e12d87918f56dfc64a8e1fe757d65e29041538d93"
 dependencies = [
  "generic-array",
-]
-
-[[package]]
-name = "bls12_381_plus"
-version = "0.8.13"
-source = "git+https://github.com/mikelodder7/bls12_381_plus.git?rev=91a399e9a5f326816f13a0feab898ff40a7a1599#91a399e9a5f326816f13a0feab898ff40a7a1599"
-dependencies = [
- "arrayref",
- "elliptic-curve",
- "ff",
- "group",
- "hex",
- "pairing",
- "rand_core",
- "serde",
- "subtle",
- "zeroize",
 ]
 
 [[package]]
@@ -714,33 +685,6 @@ dependencies = [
  "serde",
  "wasm-bindgen",
  "windows-targets 0.52.3",
-]
-
-[[package]]
-name = "ciborium"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42e69ffd6f0917f5c029256a24d0161db17cea3997d185db0d35926308770f0e"
-dependencies = [
- "ciborium-io",
- "ciborium-ll",
- "serde",
-]
-
-[[package]]
-name = "ciborium-io"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05afea1e0a06c9be33d539b876f1ce3692f4afea2cb41f740e7743225ed1c757"
-
-[[package]]
-name = "ciborium-ll"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57663b653d948a338bfb3eeba9bb2fd5fcfaecb9e199e87e1eda4d9e8b240fd9"
-dependencies = [
- "ciborium-io",
- "half",
 ]
 
 [[package]]
@@ -1205,55 +1149,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "delano-events"
-version = "0.1.0"
-dependencies = [
- "base64ct",
- "ciborium",
- "delano-keys",
- "delanocreds",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "delano-keys"
-version = "0.1.0"
-dependencies = [
- "blastkids",
- "bls12_381_plus",
- "cid 0.10.1",
- "getrandom",
- "rand",
- "secrecy",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "delanocreds"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "bls12_381_plus",
- "ciborium",
- "cid 0.10.1",
- "delano-keys",
- "env_logger",
- "getrandom",
- "lazy_static",
- "log",
- "rand",
- "rayon",
- "secrecy",
- "serde",
- "serde_json",
- "sha2",
- "thiserror",
- "wasm-bindgen-test",
-]
-
-[[package]]
 name = "der"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1473,19 +1368,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "env_logger"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cd405aab171cb85d6735e5c8d9db038c17d3ca007a4d2c25f337935c3d90580"
-dependencies = [
- "humantime",
- "is-terminal",
- "log",
- "regex",
- "termcolor",
-]
-
-[[package]]
 name = "equivalent"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1567,7 +1449,6 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ded41244b729663b1e574f1b4fb731469f69f79c17667b5d776b16cda0479449"
 dependencies = [
- "bitvec",
  "rand_core",
  "subtle",
 ]
@@ -1886,16 +1767,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "half"
-version = "2.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5eceaaeec696539ddaf7b333340f1af35a5aa87ae3e4f3ead0532f72affab2e"
-dependencies = [
- "cfg-if",
- "crunchy",
-]
-
-[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2058,12 +1929,6 @@ name = "httpdate"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
-
-[[package]]
-name = "humantime"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
 name = "hyper"
@@ -2318,17 +2183,6 @@ name = "ipnet"
 version = "2.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f518f335dce6725a761382244631d86cf0ccb2863413590b31338feb467f9c3"
-
-[[package]]
-name = "is-terminal"
-version = "0.4.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f23ff5ef2b80d608d61efee834934d862cd92461afc0560dedf493e4c033738b"
-dependencies = [
- "hermit-abi",
- "libc",
- "windows-sys 0.52.0",
-]
 
 [[package]]
 name = "itertools"
@@ -3569,15 +3423,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pairing"
-version = "0.23.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81fec4625e73cf41ef4bb6846cafa6d44736525f442ba45e407c4a000a13996f"
-dependencies = [
- "group",
-]
-
-[[package]]
 name = "parking"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3745,9 +3590,7 @@ version = "0.1.0"
 dependencies = [
  "base64ct",
  "bitflags 2.5.0",
- "delano-events",
  "peerpiper",
- "seed-keeper-events",
  "serde",
  "serde_json",
  "serde_with",
@@ -3755,7 +3598,7 @@ dependencies = [
  "wasmtime",
  "wasmtime-wasi",
  "wit-bindgen-rt",
- "wurbo 0.3.2",
+ "wurbo",
 ]
 
 [[package]]
@@ -4604,15 +4447,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "secrecy"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9bd1c54ea06cfd2f6b63219704de0b9b4f72dcc2b8fdef820be6cd799780e91e"
-dependencies = [
- "zeroize",
-]
-
-[[package]]
 name = "security-framework"
 version = "2.9.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4633,15 +4467,6 @@ checksum = "e932934257d3b408ed8f30db49d85ea163bfe74961f017f405b025af298f0c7a"
 dependencies = [
  "core-foundation-sys",
  "libc",
-]
-
-[[package]]
-name = "seed-keeper-events"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_with",
- "wurbo 0.2.0",
 ]
 
 [[package]]
@@ -5152,15 +4977,6 @@ name = "target-lexicon"
 version = "0.12.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1fc403891a21bcfb7c37834ba66a547a8f402146eba7265b5a6d88059c9ff2f"
-
-[[package]]
-name = "termcolor"
-version = "1.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
-dependencies = [
- "winapi-util",
-]
 
 [[package]]
 name = "testresult"
@@ -6770,8 +6586,9 @@ dependencies = [
 
 [[package]]
 name = "wit-bindgen-rt"
-version = "0.22.0"
-source = "git+https://github.com/bytecodealliance/wit-bindgen.git?rev=9c913f6#9c913f6d119739a09b521deed89743b4a001aae1"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b0780cf7046630ed70f689a098cd8d56c5c3b22f2a7379bbdb088879963ff96"
 
 [[package]]
 name = "wit-parser"
@@ -6930,25 +6747,6 @@ dependencies = [
  "testresult",
  "tokio",
  "wnfs-common",
-]
-
-[[package]]
-name = "wurbo"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "373d302e1aecbfdba6ddfe1860d3385d34f181f854c4493725555d7a988a57f1"
-dependencies = [
- "base64ct",
- "convert_case",
- "lazy_static",
- "minijinja",
- "nanoid",
- "pest",
- "pest_derive",
- "serde",
- "serde_json",
- "thiserror",
- "wit-parser",
 ]
 
 [[package]]
