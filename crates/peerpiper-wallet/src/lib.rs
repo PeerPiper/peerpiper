@@ -39,7 +39,6 @@ use wurbo::jinja::{error::RenderError, Entry, Index, Rest, Templates};
 use wurbo::prelude::*;
 
 use base64ct::{Base64Url, Base64UrlUnpadded, Encoding};
-use peerpiper::core::events::PeerPiperCommand;
 use std::ops::Deref;
 use std::sync::{LazyLock, Mutex};
 
@@ -48,6 +47,18 @@ static APP_CONTEXT: LazyLock<Mutex<Option<AppContext>>> = LazyLock::new(|| Mutex
 struct Component;
 
 bindings::export!(Component with_types_in bindings);
+
+/// Emit a message to the user
+#[derive(serde::Serialize)]
+struct Publish {
+    topic: String,
+    data: Vec<u8>,
+}
+
+#[derive(serde::Serialize)]
+struct Subscribe {
+    topic: String,
+}
 
 /// We need to provide the templates for the macro to pull in
 fn get_templates() -> Templates {
@@ -127,10 +138,9 @@ impl WurboGuest for Component {
                 println!("Received PUBLISH message: key: {:#?}", key);
                 // TODO: UI feedback for the user. Toast?
 
-                // Send message to PeerPiper network as pubsub msg.
-                // needs to emit stringified peerpiper::core::PeerPiperCommand
+                // Emit message to the consumer
                 wurbo_in::emit(
-                    &serde_json::to_string(&PeerPiperCommand::Publish {
+                    &serde_json::to_string(&Publish {
                         topic: key,
                         data: value,
                     })
@@ -142,11 +152,8 @@ impl WurboGuest for Component {
                 // We can do something with the message here
                 println!("Received SUBSCRIBE message: key: {:#?}", key);
 
-                // Send message to PeerPiper network as pubsub msg.
-                // needs to emit stringified peerpiper::core::PeerPiperCommand
                 wurbo_in::emit(
-                    &serde_json::to_string(&PeerPiperCommand::Subscribe { topic: key })
-                        .map_err(|e| e.to_string())?,
+                    &serde_json::to_string(&Subscribe { topic: key }).map_err(|e| e.to_string())?,
                 );
                 "".to_string()
             }
