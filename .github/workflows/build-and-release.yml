@@ -61,6 +61,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build_site:
+    needs: build_release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
