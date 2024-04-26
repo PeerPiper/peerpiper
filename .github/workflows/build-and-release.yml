@@ -1,4 +1,4 @@
-name: Build and Release
+name: Build, Release, Deploy
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ on:
       - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
-  release:
+  build_release:
     name: Build then upload release asset
     runs-on: ubuntu-latest
     permissions:
@@ -59,3 +59,66 @@ jobs:
           tag_name: prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build_site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set VITE_BASE
+        run: |
+          echo "VITE_BASE=https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
+
+      - name: Set BASE_PATH
+        run: |
+          echo "BASE_PATH=/${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          cd packages/integrity-wallet
+          npm install
+          cd inner-app
+          npm install
+
+      - name: build
+        env:
+          BASE_PATH: ${{ env.BASE_PATH }}
+          VITE_BASE: ${{ env.VITE_BASE }}
+        run: |
+          cd packages/integrity-wallet/inner-app
+          npm run build
+          cd .. 
+          npm run build
+          touch docs/.nojekyll
+
+      - name: Upload Artifacts
+        uses: actions/upload-pages-artifact@v1
+        with:
+          # this should match the `pages` option in your adapter-static options
+          path: "docs/"
+
+  deploy:
+    needs: build_site
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/configure-pages@v3
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v2

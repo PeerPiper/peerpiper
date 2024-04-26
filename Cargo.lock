@@ -3590,7 +3590,6 @@ version = "0.1.0"
 dependencies = [
  "base64ct",
  "bitflags 2.5.0",
- "peerpiper",
  "serde",
  "serde_json",
  "serde_with",
