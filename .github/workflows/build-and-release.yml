@@ -11,7 +11,7 @@ on:
 
 jobs:
   build_release:
-    name: Build then upload release asset
+    name: Build release
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -80,6 +80,7 @@ jobs:
         with:
           node-version: "lts/*"
           cache: npm
+          cache-dependency-path: "./packages/integrity-wallet/package-lock.json"
 
       - name: Install dependencies
         run: |
