@@ -91,7 +91,7 @@ jobs:
           npm run build
           cd .. 
           npm run build
-          # touch docs/.nojekyll
+          touch docs/.nojekyll
 
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v1
