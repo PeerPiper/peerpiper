@@ -100,7 +100,7 @@ jobs:
           path: "docs/"
 
   deploy:
-    needs: build_site
+    needs: build_release
     runs-on: ubuntu-latest
 
     permissions:
