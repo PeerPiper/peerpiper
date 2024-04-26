@@ -67,6 +67,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Download .artifact files
+        uses: actions/download-artifact@v4
+
       - name: Set VITE_BASE
         run: |
           echo "VITE_BASE=https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}" >> $GITHUB_ENV
