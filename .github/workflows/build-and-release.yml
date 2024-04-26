@@ -97,7 +97,7 @@ jobs:
         uses: actions/upload-pages-artifact@v1
         with:
           # this should match the `pages` option in your adapter-static options
-          path: "docs/"
+          path: "packages/integrity-wallet/docs/"
 
   deploy:
     needs: build_release
