@@ -94,7 +94,7 @@ jobs:
           # touch docs/.nojekyll
 
       - name: Upload Artifacts
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v1
         with:
           # this should match the `pages` option in your adapter-static options
           path: "packages/integrity-wallet/docs/"
