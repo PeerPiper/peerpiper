@@ -1,2 +1,4 @@
 /target
 dist/peerpiper_wallet_aggregate.wasm
+packages/integrity-wallet/docs
+packages/integrity-wallet/static
