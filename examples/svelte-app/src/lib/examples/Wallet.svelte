@@ -155,7 +155,6 @@
 
 <svelte:head>
 	<title>Seed Keeper</title>
-	<script src="https://cdn.tailwindcss.com"></script>
 </svelte:head>
 <div>
 	<h1>Aggregate User Interfaces</h1>
