@@ -8,7 +8,9 @@ The idea is to put all the reusable code in this repo so it can be linked and te
 
 # Goals
 
-### 🔗 [PeerPiper Protocol GreenPaper](https://peerpiper.io/paper)
+PeerPiper is an contacts network based on the `PeerWise Protocol` that allows you to share data with others in a peer-to-peer fashion. It's a bit like a social network, but you own your data and can share it with others in a more granular way.
+
+### 🔗 [PeerPiper PeerWise Protocol GreenPaper](https://peerpiper.io/paper)
 
 - [x] No blockchain required
 - [x] Default [Peer-to-peer](https://en.wikipedia.org/wiki/Peer-to-peer) networking via [rust-libp2p](https://libp2p.io/)
