@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/*"]
+members = ["crates/*", "tauri-app/src-tauri"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -11,7 +11,7 @@ futures = "0.3.29"
 rand = "0.8"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-libp2p = { git = "https://github.com/libp2p/rust-libp2p.git" }
+libp2p = { git = "https://github.com/libp2p/rust-libp2p.git", rev = "a91c48f" }
 bitflags = "2.5.0"
 wit-bindgen-rt = "0.24.0"
 

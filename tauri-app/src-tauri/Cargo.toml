@@ -1,0 +1,33 @@
+[package]
+name = "local-llama"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+license = ""
+repository = ""
+default-run = "local-llama"
+edition = "2021"
+rust-version = "1.60"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+tauri-build = { version = "1.5.1", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tauri = { version = "1.6.2", features = [ "fs-all", "shell-open", "shell-sidecar", "process-command-api", "devtools"] }
+ollama-rs = { version = "0.1.9", features = ["stream"] }
+tokio = { version = "1.29.1", features = ["full"] }
+log = "0.4.19"
+futures = { version = "0.3.28", default-features = false }
+tauri-plugin-log = { git = "https://github.com/lencx/tauri-plugins-workspace", branch = "dev", features = ["colored"] }
+dirs = "5.0.1"
+peerpiper = { workspace = true }
+
+[features]
+# this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
+# If you use cargo directly instead of tauri's cli you can use this feature flag to switch between tauri's `dev` and `build` modes.
+# DO NOT REMOVE!!
+custom-protocol = [ "tauri/custom-protocol" ]

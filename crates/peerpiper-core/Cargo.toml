@@ -15,9 +15,9 @@ serde = { version = "1.0", features = ["derive"] }
 wnfs-common = "0.2.0"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "wasm-bindgen", "gossipsub", "identify", "kad"] }
-libp2p-webrtc-websys = { git = "https://github.com/libp2p/rust-libp2p.git" }
+libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "wasm-bindgen", "gossipsub", "identify", "kad", "request-response", "cbor"] }
+libp2p-webrtc-websys = { git = "https://github.com/libp2p/rust-libp2p.git", rev = "a91c48f" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "quic", "tokio", "gossipsub", "identify", "kad"]}
-libp2p-webrtc = { git = "https://github.com/libp2p/rust-libp2p.git" }
+libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "quic", "tokio", "gossipsub", "identify", "kad", "request-response", "cbor"]}
+libp2p-webrtc = { git = "https://github.com/libp2p/rust-libp2p.git", rev = "a91c48f", features = ["tokio"] }
