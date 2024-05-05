@@ -27,7 +27,7 @@ The core library should include wrappers so that it can be deployed to various i
 
 - [x] Browser via [WebAssembly](https://en.wikipedia.org/wiki/WebAssembly), [Vite](https://vitejs.dev/) & [`wasm-bindgen`](https://rustwasm.github.io/docs/wasm-bindgen/)
 - [x] [Command Line](https://en.wikipedia.org/wiki/Command-line_interface) via Rust
-- [ ] [Tauri](https://tauri.studio/) home, mobile, and desktop
+- [x] 🚧 [Tauri](https://tauri.studio/) home, mobile, and desktop
 - [ ] [Shuttle](https://shuttle.dev/) via Rust
 - [ ] [Fly.io](https://fly.io/) via Docker
 - [ ] [Cloudflare Workers](https://workers.cloudflare.com/) via WebAssembly
