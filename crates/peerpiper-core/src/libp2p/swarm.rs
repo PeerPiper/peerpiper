@@ -16,7 +16,9 @@ pub fn create<B: NetworkBehaviour>(
             .expect("infalliable to never exist")
             // Ping does not KeepAlive, so we set the idle connection timeout to 32_212_254u64,
             // which is the largest value that works with the wasm32 target.
-            .with_swarm_config(|c| c.with_idle_connection_timeout(Duration::from_secs(30u64)))
+            .with_swarm_config(|c| {
+                c.with_idle_connection_timeout(Duration::from_secs(32_212_254u64))
+            })
             .build())
     }
     #[cfg(not(target_arch = "wasm32"))]
@@ -36,7 +38,9 @@ pub fn create<B: NetworkBehaviour>(
             .map_err(|e| e.to_string())?
             .with_behaviour(behaviour_constructor)
             .map_err(|e| e.to_string())?
-            .with_swarm_config(|cfg| cfg.with_idle_connection_timeout(Duration::from_secs(30u64)))
+            .with_swarm_config(|cfg| {
+                cfg.with_idle_connection_timeout(Duration::from_secs(32_212_254u64))
+            })
             .build())
     }
 }
