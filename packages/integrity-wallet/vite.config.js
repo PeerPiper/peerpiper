@@ -3,6 +3,8 @@ import { defineConfig } from 'vite';
 import { loadEnv } from 'vite';
 import fs from 'fs';
 import { devConfig } from './config.js';
+import rust from '@wasm-tool/rollup-plugin-rust';
+
 const strictPort = true;
 
 let index = fs.readFileSync('./inner-app/dist/index.html', 'utf-8');
@@ -64,7 +66,7 @@ export default defineConfig(({ command, mode }) => {
 	});
 
 	return {
-		plugins: [sveltekit()],
+		plugins: [sveltekit(), rust()],
 		test: {
 			include: ['src/**/*.{test,spec}.{js,ts}']
 		},
