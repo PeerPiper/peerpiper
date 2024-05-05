@@ -6,7 +6,7 @@
 	import { page } from '$app/stores';
 
 	// Import wasm component bytes as a url
-	import wasmURL from '../../../../../target/wasm32-wasi/debug/form.wasm?url';
+	// import wasmURL from '../../../../../target/wasm32-wasi/debug/form.wasm?url';
 
 	/**
 	 * The rendered component as a string of HTML
