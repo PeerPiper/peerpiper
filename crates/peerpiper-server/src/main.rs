@@ -74,8 +74,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 /// Serve the Multiaddr we are listening on and the host files.
 pub(crate) async fn serve(libp2p_transport: Multiaddr) {
-    let Some(Protocol::Ip4(listen_addr)) = libp2p_transport.iter().next() else {
-        panic!("Expected 1st protocol to be IP4")
+    let Some(Protocol::Ip6(listen_addr)) = libp2p_transport.iter().next() else {
+        panic!("Expected 1st protocol to be IP6")
     };
 
     // Serve the addr as a string over HTTP.
