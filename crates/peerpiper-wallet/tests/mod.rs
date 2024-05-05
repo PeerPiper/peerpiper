@@ -220,11 +220,11 @@ mod aggregate_peerpiper_tests {
             });
 
         let all_context = WalletContext::AllContent(Content {
-            app: App {
-                title: "a title for the app".to_string(),
-            },
-            seed_ui: seed_ui.clone(),
-            delano_ui: delano_ui.clone(),
+            app: Some(App {
+                title: Some("a title for the app".to_string()),
+            }),
+            seed_ui: Some(seed_ui.clone()),
+            delano_ui: Some(delano_ui.clone()),
         });
 
         let result = bindings

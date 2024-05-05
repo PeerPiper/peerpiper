@@ -39,6 +39,7 @@ use wurbo::jinja::{error::RenderError, Entry, Index, Rest, Templates};
 use wurbo::prelude::*;
 
 use base64ct::{Base64Url, Base64UrlUnpadded, Encoding};
+use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 use std::sync::{LazyLock, Mutex};
 
@@ -49,15 +50,12 @@ struct Component;
 bindings::export!(Component with_types_in bindings);
 
 /// Emit a message to the user
-#[derive(serde::Serialize)]
-struct Publish {
-    topic: String,
-    data: Vec<u8>,
-}
-
-#[derive(serde::Serialize)]
-struct Subscribe {
-    topic: String,
+#[derive(Debug, Serialize, Deserialize)]
+#[non_exhaustive]
+pub enum PeerPiperCommand {
+    Publish { topic: String, data: Vec<u8> },
+    Subscribe { topic: String },
+    Unsubscribe { topic: String },
 }
 
 /// We need to provide the templates for the macro to pull in
@@ -140,7 +138,7 @@ impl WurboGuest for Component {
 
                 // Emit message to the consumer
                 wurbo_in::emit(
-                    &serde_json::to_string(&Publish {
+                    &serde_json::to_string(&PeerPiperCommand::Publish {
                         topic: key,
                         data: value,
                     })
@@ -153,7 +151,8 @@ impl WurboGuest for Component {
                 println!("Received SUBSCRIBE message: key: {:#?}", key);
 
                 wurbo_in::emit(
-                    &serde_json::to_string(&Subscribe { topic: key }).map_err(|e| e.to_string())?,
+                    &serde_json::to_string(&PeerPiperCommand::Subscribe { topic: key })
+                        .map_err(|e| e.to_string())?,
                 );
                 "".to_string()
             }
