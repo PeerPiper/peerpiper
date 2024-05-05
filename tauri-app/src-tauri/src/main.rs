@@ -12,12 +12,12 @@ use std::sync::{Arc, Mutex};
 
 use tauri::api::process::{Command, CommandEvent};
 // use tauri::async_runtime::block_on;
-use tauri::async_runtime::{block_on, Mutex as AsyncMutex};
+use tauri::async_runtime::Mutex as AsyncMutex;
+use tauri::Manager;
 use tauri::State;
-use tauri::{Manager, WindowEvent};
 
 use std::env;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::mpsc;
 
 struct AsyncProcInputTx {
     // This is how we communicate with the streaming chat
@@ -151,7 +151,7 @@ fn main() {
         ])
         .level(log::LevelFilter::Debug);
 
-    let (ollama_port, child) = spawn_ollama("ollama");
+    let (ollama_port, _child) = spawn_ollama("ollama");
 
     tauri::Builder::default()
         .manage(DbConnection {
@@ -180,36 +180,7 @@ fn main() {
             tauri::async_runtime::spawn(async move {
                 // loop over select of 
                 // 1) if let Some(event) = pp_rx.next().await {
-                        // match event {
-                        //     NetworkEvent::ConnectionClosed { peer, cause } => {
-                        //         info!("ConnectionClosed: {:?} {:?}", peer, cause);
-                        //         app_handle.emit_all("connectionClosed", peer).unwrap();
                 // 2) if let Some(output) = async_proc_output_rx.recv().await
-                //  ...
-                // loop {
-                //     if let Some(output) = async_proc_output_rx.recv().await {
-                //         match output {
-                //             Signal::ChatToken(output) => chat_token(output, &app_handle),
-                //             Signal::RequestMultiaddr => {
-                //                 let _ = commander
-                //                     .send(PeerPiperCommand::ShareAddress)
-                //                     .await
-                //                     .map_err(|e| e.to_string());
-                //
-                //                 let address: String = loop {
-                //                     if let Some(event) = pp_rx.next().await {
-                //                         if let NetworkEvent::ListenAddr { address, .. } = event {
-                //                             break address.to_string();
-                //                         }
-                //                     }
-                //                 };
-                //
-                //                 app_handle.emit_all("serverMultiaddr", address).unwrap()
-                //             }
-                //         }
-                //         //                        chat_token(output, &app_handle);
-                //     }
-                // }
                 loop {
                     tokio::select! {
                         Some(event) = pp_rx.next() => {
@@ -221,6 +192,7 @@ fn main() {
                                 NetworkEvent::ListenAddr { address, .. } => {
                                     app_handle.emit_all("serverMultiaddr", address.to_string()).unwrap();
                                 }
+                                // TODO: Handle LLM Generation requests from the network
                                 _ => {}
                             }
                         }
@@ -246,22 +218,6 @@ fn main() {
                             }
                         }
                     }
-                }
-            });
-
-            // TODO: Close only when closing the main window
-            let main_window = app.get_window("main").unwrap();
-            main_window.on_window_event({
-                let main_window = main_window.clone();
-                move |event| match event {
-                    // When we click X, stop gracefully first
-                    WindowEvent::Destroyed => {
-                        block_on(async {
-                            // kill child processes
-                            // child.kill().unwrap();
-                        })
-                    }
-                    _ => {}
                 }
             });
 
