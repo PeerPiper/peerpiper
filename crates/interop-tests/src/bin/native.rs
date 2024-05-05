@@ -11,6 +11,7 @@ use futures::channel::mpsc;
 use futures::{SinkExt, StreamExt};
 use libp2p::multiaddr::{Multiaddr, Protocol};
 use std::net::SocketAddr;
+use std::net::{Ipv4Addr, Ipv6Addr};
 use tower_http::cors::{Any, CorsLayer};
 
 // use std::process::Stdio;
@@ -94,8 +95,8 @@ struct StaticFiles;
 
 /// Serve the Multiaddr we are listening on and the host files.
 pub(crate) async fn serve(libp2p_transport: Multiaddr) {
-    let Some(Protocol::Ip4(listen_addr)) = libp2p_transport.iter().next() else {
-        panic!("Expected 1st protocol to be IP4")
+    let Some(Protocol::Ip6(listen_addr)) = libp2p_transport.iter().next() else {
+        panic!("Expected 1st protocol to be IP6")
     };
 
     // let (results_tx, mut results_rx) = mpsc::channel(1);
@@ -114,7 +115,9 @@ pub(crate) async fn serve(libp2p_transport: Multiaddr) {
                 .allow_methods([Method::GET]),
         );
 
-    let addr = SocketAddr::new(listen_addr.into(), 8080);
+    let serve_addr_ipv4 = Ipv4Addr::new(127, 0, 0, 1);
+
+    let addr = SocketAddr::new(serve_addr_ipv4.into(), 8080);
 
     tracing::info!(url=%format!("http://{addr}"), "Serving client files at url");
 

@@ -6,4 +6,4 @@ pack:
 serve:
   cargo run --bin interop-tests-native
 
-all: pack serve
+serve-interop: pack serve
