@@ -1,6 +1,6 @@
 use futures::channel::mpsc;
 use libp2p::multiaddr::{Multiaddr, Protocol};
-use std::net::Ipv4Addr;
+use std::net::Ipv6Addr;
 
 use peerpiper_core::{
     error::Error,
@@ -22,7 +22,7 @@ pub async fn start(
     // We need to start the network event loop first in order to listen for our address
     tokio::spawn(async move { network_event_loop.run().await });
 
-    let address_webrtc = Multiaddr::from(Ipv4Addr::UNSPECIFIED)
+    let address_webrtc = Multiaddr::from(Ipv6Addr::UNSPECIFIED)
         .with(Protocol::Udp(0))
         .with(Protocol::WebRTCDirect);
 
