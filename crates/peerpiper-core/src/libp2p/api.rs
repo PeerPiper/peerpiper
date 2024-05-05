@@ -114,7 +114,7 @@ impl Client {
                     }
                 },
                 command = command_receiver.next() => {
-                    tracing::trace!("WASM Received command");
+                    tracing::trace!("Received command");
                     if let Some(pp_cmd) = command {
                         self.command(pp_cmd).await;
                     }
@@ -147,6 +147,7 @@ enum Command {
     AddPeer {
         peer_id: PeerId,
     },
+    ShareMultiaddr,
 }
 
 impl From<PeerPiperCommand> for Command {
@@ -158,6 +159,7 @@ impl From<PeerPiperCommand> for Command {
             },
             PeerPiperCommand::Subscribe { topic } => Command::Subscribe { topic },
             PeerPiperCommand::Unsubscribe { topic } => Command::Unsubscribe { topic },
+            PeerPiperCommand::ShareAddress => Command::ShareMultiaddr,
             _ => unimplemented!(),
         }
     }
@@ -238,6 +240,7 @@ impl EventLoop {
     async fn handle_event(&mut self, event: SwarmEvent<BehaviourEvent>) {
         match event {
             SwarmEvent::NewListenAddr { address, .. } => {
+                tracing::info!("🌐  Listen address: {address}");
                 let mut addr_handler = || {
                     let p2p_addr = address
                         .clone()
@@ -246,6 +249,9 @@ impl EventLoop {
                     // info!("Listen p2p address: \n\x1b[30;1;42m{p2p_addr}\x1b[0m");
                     // This address is reachable, add it
                     self.swarm.add_external_address(p2p_addr.clone());
+
+                    // check off adding this address
+                    tracing::info!("👉  Added {p2p_addr}");
 
                     // pass the address back to the other task, for display, etc.
                     self.event_sender.try_send(NetworkEvent::ListenAddr {
@@ -257,7 +263,11 @@ impl EventLoop {
                 match address.iter().next() {
                     Some(Protocol::Ip6(ip6)) => {
                         // Only add our globally available IPv6 addresses to the external addresses list.
-                        if !ip6.is_loopback() && !ip6.is_unspecified() {
+                        if !ip6.is_loopback()
+                            && !ip6.is_unspecified()
+                            && !ip6.is_unicast_link_local()
+                        // no fe80::/10 addresses
+                        {
                             if let Err(e) = addr_handler() {
                                 tracing::error!("Failed to send listen address: {:?}", e);
                             }
@@ -321,7 +331,18 @@ impl EventLoop {
                 }
             }
             SwarmEvent::ConnectionClosed { peer_id, cause, .. } => {
-                tracing::debug!("Connection to {peer_id} closed: {cause:?}");
+                tracing::info!("Connection to {peer_id} closed: {cause:?}");
+                // send an event
+                self.event_sender
+                    .send(NetworkEvent::ConnectionClosed {
+                        peer: peer_id.to_string(),
+                        // unwrap cause if is Some, otherwise return "Unknown cause"
+                        cause: cause
+                            .map(|c| c.to_string())
+                            .unwrap_or_else(|| "Unknown cause".to_string()),
+                    })
+                    .await
+                    .expect("Event receiver not to be dropped.");
             }
             // Ping event
             SwarmEvent::Behaviour(BehaviourEvent::Ping(ping::Event {
@@ -591,6 +612,24 @@ impl EventLoop {
                     .gossipsub
                     .add_explicit_peer(&peer_id);
                 tracing::info!("API: Added Peer {peer_id} to the routing table.");
+            }
+            // Share the current Multiaddr for the server
+            Command::ShareMultiaddr => {
+                let p2p_addr = self
+                    .swarm
+                    .external_addresses()
+                    .next()
+                    .expect("Expected at least one external address.")
+                    .clone()
+                    .with(Protocol::P2p(*self.swarm.local_peer_id()));
+
+                // emit as NetworkEvent
+                if let Err(e) = self.event_sender.try_send(NetworkEvent::ListenAddr {
+                    address: p2p_addr.clone(),
+                    network: Network::Libp2p,
+                }) {
+                    tracing::error!("Failed to send share address event: {e}");
+                }
             }
         }
     }
