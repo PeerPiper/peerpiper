@@ -1,4 +1,4 @@
-dev:
+tauri:
   npm run tauri dev
 
 install_ollama:

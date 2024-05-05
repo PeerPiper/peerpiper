@@ -5,6 +5,7 @@
 	import { Command } from '@tauri-apps/api/shell';
 	import Chat from '$lib/Chat.svelte';
 	import Spinner from '$lib/Spinner.svelte';
+	import NodeControl from '$lib/NodeControl.svelte';
 
 	let ignore = false;
 	let ollamaLoaded = false;
@@ -65,12 +66,9 @@
 		{:else if ollamaLoaded && !llama3Downloaded}
 			<div class="text-sm text-gray-300 mb-1">Downloading Llama3...</div>
 		{/if}
-
-		<!-- {#if !fastembedLoaded} -->
-		<!-- 	<div class="text-sm text-gray-300 mb-1">Loading FastEmbed...</div> -->
-		<!-- {/if} -->
 		<Spinner />
 	</div>
 {:else}
-	<Chat />
+	<!-- <Chat /> -->
+	<NodeControl />
 {/if}

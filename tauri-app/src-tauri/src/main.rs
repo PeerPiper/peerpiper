@@ -2,7 +2,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use futures::stream::StreamExt;
-use log::info;
+use futures::SinkExt;
+use log::{debug, info};
 use ollama_rs::{generation::completion::request::GenerationRequest, Ollama};
 use peerpiper::core::events::{NetworkEvent, PeerPiperCommand};
 use std::collections::HashMap;
@@ -16,11 +17,11 @@ use tauri::State;
 use tauri::{Manager, WindowEvent};
 
 use std::env;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, oneshot};
 
 struct AsyncProcInputTx {
     // This is how we communicate with the streaming chat
-    inner: AsyncMutex<mpsc::Sender<String>>,
+    inner: AsyncMutex<mpsc::Sender<Signal>>,
 
     // Whether we should stop the chat or not
     flag: AsyncMutex<bool>,
@@ -31,6 +32,12 @@ use tauri_plugin_log::LogTarget;
 
 // This package
 mod utils;
+
+/// The various output types that this app can generate.
+enum Signal {
+    ChatToken(String),
+    RequestMultiaddr,
+}
 
 /// This is the global connection to Ollama
 struct DbConnection {
@@ -87,10 +94,10 @@ async fn start_chat(
 
         match res {
             Ok(responses) => {
-                info!("responses: {:?}", responses);
+                // info!("responses: {:?}", responses);
                 for resp in responses {
                     let _ = async_proc_input_tx
-                        .send(resp.response)
+                        .send(Signal::ChatToken(resp.response))
                         .await
                         .map_err(|e| e.to_string());
                 }
@@ -115,6 +122,18 @@ async fn stop_chat(state: tauri::State<'_, AsyncProcInputTx>) -> Result<(), Stri
     Ok(())
 }
 
+/// Short for JavaScript to Rust.
+/// This is the function that receives messages from the frontend
+#[tauri::command]
+async fn client_ready(state: tauri::State<'_, AsyncProcInputTx>) -> Result<(), String> {
+    debug!("client_ready");
+    let async_proc_input_tx = state.inner.lock().await;
+    async_proc_input_tx
+        .send(Signal::RequestMultiaddr)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 fn main() {
     // I/O with the frontend
     let (async_proc_input_tx, async_proc_input_rx) = mpsc::channel(1);
@@ -122,8 +141,7 @@ fn main() {
 
     // I/O with the peerpiper node
     let (pp_tx, mut pp_rx) = futures::channel::mpsc::channel::<NetworkEvent>(8);
-    let (mut command_sender, command_receiver) =
-        futures::channel::mpsc::channel::<PeerPiperCommand>(8);
+    let (mut commander, command_receiver) = futures::channel::mpsc::channel::<PeerPiperCommand>(8);
 
     let log = tauri_plugin_log::Builder::default()
         .targets([
@@ -160,9 +178,73 @@ fn main() {
 
             let app_handle = app.handle();
             tauri::async_runtime::spawn(async move {
+                // loop over select of 
+                // 1) if let Some(event) = pp_rx.next().await {
+                        // match event {
+                        //     NetworkEvent::ConnectionClosed { peer, cause } => {
+                        //         info!("ConnectionClosed: {:?} {:?}", peer, cause);
+                        //         app_handle.emit_all("connectionClosed", peer).unwrap();
+                // 2) if let Some(output) = async_proc_output_rx.recv().await
+                //  ...
+                // loop {
+                //     if let Some(output) = async_proc_output_rx.recv().await {
+                //         match output {
+                //             Signal::ChatToken(output) => chat_token(output, &app_handle),
+                //             Signal::RequestMultiaddr => {
+                //                 let _ = commander
+                //                     .send(PeerPiperCommand::ShareAddress)
+                //                     .await
+                //                     .map_err(|e| e.to_string());
+                //
+                //                 let address: String = loop {
+                //                     if let Some(event) = pp_rx.next().await {
+                //                         if let NetworkEvent::ListenAddr { address, .. } = event {
+                //                             break address.to_string();
+                //                         }
+                //                     }
+                //                 };
+                //
+                //                 app_handle.emit_all("serverMultiaddr", address).unwrap()
+                //             }
+                //         }
+                //         //                        chat_token(output, &app_handle);
+                //     }
+                // }
                 loop {
-                    if let Some(output) = async_proc_output_rx.recv().await {
-                        chat_token(output, &app_handle);
+                    tokio::select! {
+                        Some(event) = pp_rx.next() => {
+                            match event {
+                                NetworkEvent::ConnectionClosed { peer, cause } => {
+                                    info!("ConnectionClosed: {:?} {:?}", peer, cause);
+                                    app_handle.emit_all("connectionClosed", peer).unwrap();
+                                }
+                                NetworkEvent::ListenAddr { address, .. } => {
+                                    app_handle.emit_all("serverMultiaddr", address.to_string()).unwrap();
+                                }
+                                _ => {}
+                            }
+                        }
+                        Some(output) = async_proc_output_rx.recv() => {
+                            match output {
+                                Signal::ChatToken(output) => chat_token(output, &app_handle),
+                                Signal::RequestMultiaddr => {
+                                    let _ = commander
+                                        .send(PeerPiperCommand::ShareAddress)
+                                        .await
+                                        .map_err(|e| e.to_string());
+
+                                    let address: String = loop {
+                                        if let Some(event) = pp_rx.next().await {
+                                            if let NetworkEvent::ListenAddr { address, .. } = event {
+                                                break address.to_string();
+                                            }
+                                        }
+                                    };
+
+                                    app_handle.emit_all("serverMultiaddr", address).unwrap()
+                                }
+                            }
+                        }
                     }
                 }
             });
@@ -188,14 +270,14 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             tauri_init_command,
             start_chat,
-            stop_chat
+            stop_chat,
+            client_ready
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
 fn chat_token<R: tauri::Runtime>(message: String, manager: &impl Manager<R>) {
-    info!("rs2js");
     info!("{}", message);
     manager.emit_all("chatToken", message).unwrap();
 }
@@ -268,8 +350,9 @@ fn spawn_ollama(ollama_name: &str) -> (u16, tauri::api::process::CommandChild) {
 }
 
 async fn async_process_model(
-    mut input_rx: mpsc::Receiver<String>,
-    output_tx: mpsc::Sender<String>,
+    mut input_rx: mpsc::Receiver<Signal>,
+    output_tx: mpsc::Sender<Signal>,
+    // piper_sendr: futures::channel::mpsc::Sender<PeerPiperCommand>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     while let Some(input) = input_rx.recv().await {
         let output = input;
@@ -284,6 +367,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    #[ignore = "spawns a ollama in a thread that never gets shut down"]
     /// Postgres test database creation, querying and destructuring
     async fn test_ollama() {
         use log::info;

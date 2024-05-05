@@ -38,3 +38,10 @@ serve:
   cargo run --bin peerpiper-server
 
 all: update-build preview
+
+test:
+  # cargo test --workspace
+  cargo test --workspace --all-targets
+
+tauri:
+  cd tauri-app && npm run tauri dev
