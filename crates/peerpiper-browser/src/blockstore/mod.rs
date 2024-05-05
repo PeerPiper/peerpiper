@@ -13,7 +13,7 @@ use wnfs::common::utils::Arc;
 use wnfs::common::libipld::Cid;
 use wnfs_unixfs_file::unixfs::UnixFsFile;
 
-#[wasm_bindgen(module = "/src/blockstore/blockstore-idb.js")]
+#[wasm_bindgen(module = "/blockstore-idb.js")]
 extern "C" {
 
     /// CID Class

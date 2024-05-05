@@ -91,7 +91,7 @@ pub async fn connect(libp2p_endpoint: &str, on_event: &js_sys::Function) -> Resu
         let _ = on_event.call1(&this, &evt);
     }
 
-    tracing::info!("Done test");
+    tracing::info!("Done connecting.");
     Ok(())
 }
 
