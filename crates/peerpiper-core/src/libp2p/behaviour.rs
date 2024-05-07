@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use libp2p::{gossipsub, identify, identity::Keypair, kad, ping, swarm::NetworkBehaviour};
+use libp2p_stream as stream;
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -9,10 +10,16 @@ use std::hash::{Hash, Hasher};
 /// handle events from the behaviour.
 #[derive(NetworkBehaviour)]
 pub struct Behaviour {
+    /// Ping remote peers
     pub(crate) ping: ping::Behaviour,
+    /// Publish subscribe to topics
     pub(crate) gossipsub: gossipsub::Behaviour,
+    /// Identify ourselves to other peers
     pub(crate) identify: identify::Behaviour,
+    /// Kademlia DHT for Peer management
     pub(crate) kad: kad::Behaviour<kad::store::MemoryStore>,
+    /// Stream responses
+    pub(crate) stream: stream::Behaviour,
 }
 
 pub fn build(key: &Keypair) -> Behaviour {
@@ -54,5 +61,6 @@ pub fn build(key: &Keypair) -> Behaviour {
         )),
         gossipsub,
         kad,
+        stream: stream::Behaviour::new(),
     }
 }
