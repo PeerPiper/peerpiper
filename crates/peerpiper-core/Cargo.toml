@@ -14,6 +14,7 @@ tracing = "0.1.37"
 serde = { version = "1.0", features = ["derive"] }
 wnfs-common = "0.2.0"
 libp2p-stream = { git = "https://github.com/libp2p/rust-libp2p.git", tag = "libp2p-webrtc-v0.7.1-alpha" }
+multibase = { version ="0.9", default-features = false }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "wasm-bindgen", "gossipsub", "identify", "kad", "request-response", "cbor"] }
