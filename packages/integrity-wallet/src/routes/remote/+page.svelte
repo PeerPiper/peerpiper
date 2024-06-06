@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import peerpiper from '../../../../../crates/peerpiper-browser/Cargo.toml';
+	import Ask from './Ask.svelte';
 
 	let dialAddr = '';
 	let errorConnecting = null;
@@ -46,6 +47,7 @@
 				class="p-2 border border-slate-500 rounded"
 				bind:value={dialAddr}
 				placeholder="Enter a Peer's Multiaddr"
+				disabled={connectingState !== 'idle'}
 			/>
 			<button
 				class="mt-2 p-2 text-white font-semibold rounded"
@@ -69,4 +71,8 @@
 			{/if}
 		</div>
 	</div>
+	{#if connectingState === 'connected' || true}
+		<!-- peerid is the dialAddr last element after the last "/" -->
+		<Ask {pipernet} peerid={dialAddr.split('/').pop()} />
+	{/if}
 </div>

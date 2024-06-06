@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Set body to min-h-screen */
+body {
+	@apply min-h-screen;
+}
