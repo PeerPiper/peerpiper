@@ -99,7 +99,7 @@ pub async fn connect(libp2p_endpoint: &str, on_event: &js_sys::Function) -> Resu
 
     while let Some(event) = rx_evts.next().await {
         match event {
-            peerpiper_core::events::Events::Outter(event) => {
+            peerpiper_core::events::Events::Outer(event) => {
                 let evt = JsValue::from_serde(&event).unwrap();
                 let _ = on_event.call1(&this, &evt);
             }
