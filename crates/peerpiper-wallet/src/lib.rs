@@ -164,7 +164,7 @@ impl WurboGuest for Component {
     /// and if this is missing there's a console error. It is benign, but it's annoying.
     fn activate(_selectors: Option<Vec<String>>) {}
 
-    fn customize(templates: Vec<(String, String)>) -> Result<(), String> {
+    fn customize(_templates: Vec<(String, String)>) -> Result<(), String> {
         return Ok(());
     }
 }
