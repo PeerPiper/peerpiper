@@ -1,4 +1,7 @@
-use futures::{channel::mpsc, StreamExt};
+use futures::{
+    channel::{mpsc, oneshot},
+    StreamExt,
+};
 
 const MAX_CHANNELS: usize = 16;
 
@@ -12,7 +15,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (tx, mut rx) = mpsc::channel(MAX_CHANNELS);
     let (_command_sender, command_receiver) = mpsc::channel(8);
-    peerpiper_native::start(tx, command_receiver).await?;
+    let (tx_client, _rx_client) = oneshot::channel();
+    peerpiper_native::start(tx, command_receiver, tx_client).await?;
 
     loop {
         tokio::select! {

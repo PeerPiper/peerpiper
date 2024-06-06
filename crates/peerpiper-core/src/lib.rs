@@ -3,27 +3,40 @@ pub mod error;
 pub mod events;
 pub mod libp2p;
 
+use crate::libp2p::api::Client;
+use ::libp2p::PeerId;
 use events::{PeerPiperCommand, SystemCommand};
 use futures::channel::mpsc;
 use futures::SinkExt;
+use std::str::FromStr;
 use wnfs_common::libipld::Cid;
 use wnfs_common::utils::CondSend;
 
 pub struct Commander<H: SystemCommandHandler> {
     network: Option<mpsc::Sender<PeerPiperCommand>>,
     system_command_handler: H,
+    client: Option<Client>,
 }
 
 impl<H: SystemCommandHandler> Commander<H> {
     pub fn new(system_command_handler: H) -> Self {
         Self {
             network: None,
+            client: None,
             system_command_handler,
         }
     }
 
-    pub fn with_network(&mut self, network: mpsc::Sender<PeerPiperCommand>) {
+    /// Set the network sender, the channel used to send commands to the network
+    pub fn with_network(&mut self, network: mpsc::Sender<PeerPiperCommand>) -> &mut Self {
         self.network = Some(network);
+        self
+    }
+
+    /// Set the [Client] which accesses the `api` module for the network
+    pub fn with_client(&mut self, client: Client) -> &mut Self {
+        self.client = Some(client);
+        self
     }
 }
 
@@ -55,6 +68,29 @@ impl<H: SystemCommandHandler> Commander<H> {
                 })?;
                 Ok(ReturnValues::Data(bytes))
             }
+            PeerPiperCommand::RequestResponse { request, peer_id } => match &mut self.client {
+                Some(client) => {
+                    let peer_id = PeerId::from_str(&peer_id).map_err(|err| {
+                        error::Error::String(format!("Failed to create PeerId: {}", err))
+                    })?;
+                    let response = match client.request_response(request, peer_id).await {
+                        Ok(response) => response,
+                        Err(err) => {
+                            return Err(error::Error::String(format!(
+                                "Failed to send request: {}",
+                                err.to_string()
+                            )));
+                        }
+                    };
+                    Ok(ReturnValues::Data(response))
+                }
+                None => {
+                    return Err(error::Error::String(
+                        "Tried to send a network command, but network nor client is not initialized"
+                            .to_string(),
+                    ));
+                }
+            },
             _ => {
                 match &mut self.network {
                     Some(network) => network.send(command).await?,
@@ -82,4 +118,16 @@ pub trait SystemCommandHandler {
         &self,
         key: String,
     ) -> impl std::future::Future<Output = Result<Vec<u8>, Self::Error>> + CondSend;
+}
+
+#[cfg(test)]
+mod test {
+    use libp2p::PeerId;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_decode_peer_id() {
+        let peer_id = PeerId::from_str("12D3KooWMZpk755dsWe8yiefX93rQgpqUegcjoFEZMKRKUMc7Sab");
+        assert!(peer_id.is_ok());
+    }
 }

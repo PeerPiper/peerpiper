@@ -3,9 +3,12 @@
 //! as Wurbo).
 //! That wat the WIT interface can simply import the same API and use it to communicate with the
 
-use futures::{channel::mpsc, StreamExt};
+use futures::{
+    channel::{mpsc, oneshot},
+    StreamExt,
+};
 use gloo_utils::format::JsValueSerdeExt;
-pub use peerpiper_core::events::{PeerPiperCommand, SystemCommand};
+use peerpiper_core::events::{PeerPiperCommand, SystemCommand};
 use peerpiper_core::Commander;
 use std::sync::Mutex;
 use std::sync::OnceLock;
@@ -64,31 +67,44 @@ pub async fn start() -> Result<(), JsValue> {
 pub async fn connect(libp2p_endpoint: &str, on_event: &js_sys::Function) -> Result<(), JsError> {
     let (tx_evts, mut rx_evts) = mpsc::channel(MAX_CHANNELS);
 
+    // client sync oneshot
+    let (tx_client, rx_client) = oneshot::channel();
+
     // command_sender will be used by other wasm_bindgen functions to send commands to the network
     // so we will need to wrap it in a Mutex or something to make it thread safe.
     let (command_sender, command_receiver) = mpsc::channel(8);
-    // move command_sender into COMMANDER
+
+    let endpoint = libp2p_endpoint.to_string().clone();
+
+    spawn_local(async move {
+        crate::start(tx_evts, command_receiver, tx_client, endpoint)
+            .await
+            .expect("never end")
+    });
+
+    // wait on rx_client to get the client handle
+    let client_handle = rx_client
+        .await
+        .map_err(|err| JsError::new(&format!("Failed to get client handle: {}", err)))?;
+
     COMMANDER
         .get()
         .ok_or_else(|| JsError::new("Commander not initialized. Did `start()` complete?"))?
         .lock()
         .map_err(|err| JsError::new(&format!("Failed to lock commander: {}", err)))?
-        .with_network(command_sender);
-
-    let endpoint = libp2p_endpoint.to_string().clone();
-
-    spawn_local(async move {
-        crate::start(tx_evts, command_receiver, endpoint)
-            .await
-            .expect("never end")
-    });
+        .with_network(command_sender)
+        .with_client(client_handle);
 
     let this = JsValue::null();
 
     while let Some(event) = rx_evts.next().await {
-        // tracing::trace!("Rx BINDGEN Event: {:?}", event);
-        let evt = JsValue::from_serde(&event).unwrap();
-        let _ = on_event.call1(&this, &evt);
+        match event {
+            peerpiper_core::events::Events::Outter(event) => {
+                let evt = JsValue::from_serde(&event).unwrap();
+                let _ = on_event.call1(&this, &evt);
+            }
+            _ => {}
+        }
     }
 
     tracing::info!("Done connecting.");
@@ -111,6 +127,15 @@ pub async fn command(json: &str) -> Result<JsValue, JsError> {
         serde_json::to_string(&example_put).unwrap()
     );
 
+    tracing::info!(
+        "Example RequestResponse Command: {:?}",
+        serde_json::to_string(&PeerPiperCommand::RequestResponse {
+            request: "what is your fave colour?".to_string(),
+            peer_id: "123DfQm3...".to_string(),
+        })
+        .unwrap()
+    );
+
     let command: PeerPiperCommand = serde_json::from_str(json).map_err(|err| {
         let err_str = format!("Failed to parse command from JSON: {}", err);
         tracing::error!(err_str);
@@ -122,6 +147,8 @@ pub async fn command(json: &str) -> Result<JsValue, JsError> {
             serde_json::to_string(&example_put).unwrap()
         ))
     })?;
+
+    tracing::info!("This Command: {:?}", command);
 
     let maybe_result = COMMANDER
         .get()

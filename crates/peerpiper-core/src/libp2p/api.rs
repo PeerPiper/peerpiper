@@ -1,4 +1,4 @@
-use crate::events::{Network, NetworkError, NetworkEvent, PeerPiperCommand};
+use crate::events::{Events, Network, NetworkError, PeerPiperCommand, PublicEvent};
 use crate::libp2p::behaviour::{Behaviour, BehaviourEvent};
 use futures::StreamExt;
 use futures::{
@@ -11,8 +11,11 @@ use futures::{
 use libp2p::core::transport::ListenerId;
 use libp2p::core::ConnectedPoint;
 use libp2p::multiaddr::Protocol;
+use libp2p::request_response::{self, OutboundRequestId, ResponseChannel};
 use libp2p::swarm::{Swarm, SwarmEvent};
 use libp2p::{ping, Multiaddr, PeerId};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::error::Error;
 use std::net::Ipv4Addr;
 use std::time::Duration;
@@ -25,14 +28,13 @@ const TICK_INTERVAL: Duration = Duration::from_secs(15);
 ///
 /// - Network Client: Interact with the netowrk by sending
 /// - Network Event Loop: Start the network event loop
-pub async fn new(swarm: Swarm<Behaviour>) -> (Client, Receiver<NetworkEvent>, EventLoop) {
+pub async fn new(swarm: Swarm<Behaviour>) -> (Client, Receiver<Events>, EventLoop) {
+    // These command senders/recvr are used to pass along parsed generic commands to the network event loop
     let (command_sender, command_receiver) = mpsc::channel(8);
     let (event_sender, event_receiver) = mpsc::channel(8);
 
     (
-        Client {
-            sender: command_sender,
-        },
+        Client { command_sender },
         event_receiver,
         EventLoop::new(swarm, command_receiver, event_sender),
     )
@@ -40,7 +42,7 @@ pub async fn new(swarm: Swarm<Behaviour>) -> (Client, Receiver<NetworkEvent>, Ev
 
 #[derive(Clone)]
 pub struct Client {
-    sender: mpsc::Sender<Command>,
+    command_sender: mpsc::Sender<Command>,
 }
 
 impl Client {
@@ -50,7 +52,7 @@ impl Client {
         addr: Multiaddr,
     ) -> Result<ListenerId, Box<dyn Error + Send>> {
         let (sender, receiver) = oneshot::channel();
-        self.sender
+        self.command_sender
             .send(Command::StartListening { addr, sender })
             .await
             .expect("Command receiver not to be dropped.");
@@ -59,20 +61,58 @@ impl Client {
     // Dial
     pub async fn dial(&mut self, addr: Multiaddr) -> Result<(), Box<dyn Error + Send>> {
         let (sender, receiver) = oneshot::channel();
-        self.sender
+        self.command_sender
             .send(Command::Dial { addr, sender })
             .await
             .expect("Command receiver not to be dropped.");
         receiver.await.expect("Sender not to be dropped.")
     }
+    /// Request a response from a PeerId
+    pub async fn request_response(
+        &mut self,
+        request: String,
+        peer: PeerId,
+    ) -> Result<Vec<u8>, Box<dyn Error + Send>> {
+        tracing::trace!("Sending request {request} to {peer}");
+        let (sender, receiver) = oneshot::channel();
+        if let Err(e) = self
+            .command_sender
+            .send(Command::RequestResponse {
+                request,
+                peer,
+                sender,
+            })
+            .await
+        {
+            tracing::error!("Failed to send request response command: {:?}", e);
+        }
+
+        tracing::trace!("Awaiting response");
+
+        match receiver.await {
+            Ok(response) => response,
+            Err(e) => {
+                // "Receiver oneshot was canceled."
+                tracing::error!("Oneshot was canceled: {:?}", e);
+                Err(Box::new(e))
+            }
+        }
+    }
+    /// Respond with a file to a request
+    pub async fn respond_file(&mut self, file: Vec<u8>, channel: ResponseChannel<FileResponse>) {
+        self.command_sender
+            .send(Command::RespondFile { file, channel })
+            .await
+            .expect("Command receiver not to be dropped.");
+    }
     pub async fn add_peer(&mut self, peer_id: PeerId) {
-        self.sender
+        self.command_sender
             .send(Command::AddPeer { peer_id })
             .await
             .expect("Command receiver not to be dropped.");
     }
     pub async fn publish(&mut self, message: impl AsRef<[u8]>, topic: String) {
-        self.sender
+        self.command_sender
             .send(Command::Publish {
                 message: message.as_ref().to_vec(),
                 topic,
@@ -81,14 +121,14 @@ impl Client {
             .expect("Command receiver not to be dropped.");
     }
     pub async fn subscribe(&mut self, topic: String) {
-        self.sender
+        self.command_sender
             .send(Command::Subscribe { topic })
             .await
             .expect("Command receiver not to be dropped.");
     }
     /// General command PeerPiperCommand parsed into Command then called
     pub async fn command(&mut self, command: PeerPiperCommand) {
-        self.sender
+        self.command_sender
             .send(command.into())
             .await
             .expect("Command receiver not to be dropped.");
@@ -99,9 +139,9 @@ impl Client {
     // 2) Recieved Network Commands via `command_receiver`, passing along PeerPiperCommand to network_client.command(pp_cmd)
     pub async fn run(
         &mut self,
-        mut network_events: Receiver<NetworkEvent>,
+        mut network_events: Receiver<Events>,
         mut command_receiver: Receiver<PeerPiperCommand>,
-        mut tx: mpsc::Sender<NetworkEvent>,
+        mut tx: mpsc::Sender<Events>,
     ) {
         loop {
             futures::select! {
@@ -115,6 +155,8 @@ impl Client {
                 },
                 command = command_receiver.next() => {
                     tracing::trace!("Received command");
+                    // PeerPiperCommands cannot have channels in them, as they are not serializable
+                    // So here we have to match on those with channels (.request_response), versus those without
                     if let Some(pp_cmd) = command {
                         self.command(pp_cmd).await;
                     }
@@ -124,6 +166,7 @@ impl Client {
     }
 }
 
+/// Libp2p Commands
 #[derive(Debug)]
 enum Command {
     StartListening {
@@ -148,7 +191,34 @@ enum Command {
         peer_id: PeerId,
     },
     ShareMultiaddr,
+    RequestResponse {
+        request: String,
+        peer: PeerId,
+        sender: oneshot::Sender<Result<Vec<u8>, Box<dyn Error + Send>>>,
+    },
+    RespondFile {
+        file: Vec<u8>,
+        channel: ResponseChannel<FileResponse>,
+    },
 }
+
+/// Libp2p Events
+#[derive(Debug)]
+pub enum Libp2pEvent {
+    /// The unique Event to this api file that never leaves; all other events propagate out
+    InboundRequest {
+        request: String,
+        channel: ResponseChannel<FileResponse>,
+    },
+}
+
+/// Simple file exchange protocol
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct JeevesRequest(String);
+
+/// Jeeves Response Bytes
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FileResponse(Vec<u8>);
 
 impl From<PeerPiperCommand> for Command {
     fn from(command: PeerPiperCommand) -> Self {
@@ -175,7 +245,10 @@ pub struct EventLoop {
     /// Channel to send commands to the network event loop.
     command_receiver: mpsc::Receiver<Command>,
     /// Channel to send events from the network event loop to the user.
-    event_sender: mpsc::Sender<NetworkEvent>,
+    event_sender: mpsc::Sender<Events>,
+    /// Jeeeves Tracking
+    pending_jeeves_request:
+        HashMap<OutboundRequestId, oneshot::Sender<Result<Vec<u8>, Box<dyn Error + Send>>>>,
 }
 
 impl EventLoop {
@@ -183,13 +256,14 @@ impl EventLoop {
     fn new(
         swarm: Swarm<Behaviour>,
         command_receiver: mpsc::Receiver<Command>,
-        event_sender: mpsc::Sender<NetworkEvent>,
+        event_sender: mpsc::Sender<Events>,
     ) -> Self {
         Self {
             tick: delay::Delay::new(TICK_INTERVAL),
             swarm,
             command_receiver,
             event_sender,
+            pending_jeeves_request: HashMap::new(),
         }
     }
 
@@ -254,10 +328,11 @@ impl EventLoop {
                     tracing::info!("👉  Added {p2p_addr}");
 
                     // pass the address back to the other task, for display, etc.
-                    self.event_sender.try_send(NetworkEvent::ListenAddr {
-                        address: p2p_addr.clone(),
-                        network: Network::Libp2p,
-                    })
+                    self.event_sender
+                        .try_send(Events::Outer(PublicEvent::ListenAddr {
+                            address: p2p_addr.clone(),
+                            network: Network::Libp2p,
+                        }))
                 };
                 // Protocol::Ip is the first item in the address vector
                 match address.iter().next() {
@@ -299,9 +374,9 @@ impl EventLoop {
 
                 if let Err(e) = self
                     .event_sender
-                    .send(NetworkEvent::NewConnection {
+                    .send(Events::Outer(PublicEvent::NewConnection {
                         peer: peer_id.to_string(),
-                    })
+                    }))
                     .await
                 {
                     tracing::error!("Failed to send NewConnection event: {e}");
@@ -334,13 +409,13 @@ impl EventLoop {
                 tracing::info!("Connection to {peer_id} closed: {cause:?}");
                 // send an event
                 self.event_sender
-                    .send(NetworkEvent::ConnectionClosed {
+                    .send(Events::Outer(PublicEvent::ConnectionClosed {
                         peer: peer_id.to_string(),
                         // unwrap cause if is Some, otherwise return "Unknown cause"
                         cause: cause
                             .map(|c| c.to_string())
                             .unwrap_or_else(|| "Unknown cause".to_string()),
-                    })
+                    }))
                     .await
                     .expect("Event receiver not to be dropped.");
             }
@@ -353,10 +428,10 @@ impl EventLoop {
                 tracing::debug!("🏓 Ping {peer} in {rtt:?}");
                 // send msg
                 self.event_sender
-                    .send(NetworkEvent::Pong {
+                    .send(Events::Outer(PublicEvent::Pong {
                         peer: peer.to_string(),
                         rtt: rtt.as_millis() as u64,
-                    })
+                    }))
                     .await
                     .expect("Event receiver not to be dropped.");
             }
@@ -373,11 +448,11 @@ impl EventLoop {
                 tracing::info!("📨 Received message from {:?}", message.source);
 
                 self.event_sender
-                    .send(NetworkEvent::Message {
+                    .send(Events::Outer(PublicEvent::Message {
                         peer: peer_id.to_string(),
                         topic: message.topic.to_string(),
                         data: message.data,
-                    })
+                    }))
                     .await
                     .expect("Event receiver not to be dropped.");
             }
@@ -418,6 +493,48 @@ impl EventLoop {
                 {
                     tracing::error!("Failed to publish welcome message: {err}")
                 }
+            }
+            SwarmEvent::Behaviour(BehaviourEvent::Jeeves(request_response::Event::Message {
+                message,
+                ..
+            })) => match message {
+                request_response::Message::Request {
+                    request, channel, ..
+                } => {
+                    tracing::info!("Received request: {:?}", request.0);
+                    self.event_sender
+                        .send(Events::Inner(Libp2pEvent::InboundRequest {
+                            request: request.0,
+                            channel,
+                        }))
+                        .await
+                        .expect("Event receiver not to be dropped.");
+
+                    // Fulfill the request
+                }
+                request_response::Message::Response {
+                    request_id,
+                    response,
+                } => {
+                    tracing::info!("Received response: {:?}", response.0);
+                    let _ = self
+                        .pending_jeeves_request
+                        .remove(&request_id)
+                        .expect("Request to still be pending.")
+                        .send(Ok(response.0));
+                }
+            },
+            SwarmEvent::Behaviour(BehaviourEvent::Jeeves(
+                request_response::Event::OutboundFailure {
+                    request_id, error, ..
+                },
+            )) => {
+                tracing::error!("Request failed, couldn't SEND JEEVES: {error} on {request_id}");
+                let _ = self
+                    .pending_jeeves_request
+                    .remove(&request_id)
+                    .expect("Request to still be pending.")
+                    .send(Err(Box::new(error)));
             }
             // SwarmEvent::Behaviour(BehaviourEvent::Identify(identify::Event::Error {
             //     peer_id,
@@ -564,7 +681,7 @@ impl EventLoop {
 
                     // let _ = self
                     //     .event_sender
-                    //     .send(NetworkEvent::Error {
+                    //     .send(Event::Error {
                     //         error: NetworkError::PublishFailed,
                     //     })
                     //     .await;
@@ -582,9 +699,9 @@ impl EventLoop {
                     tracing::error!("Failed to subscribe to topic: {err}");
                     let _ = self
                         .event_sender
-                        .send(NetworkEvent::Error {
+                        .send(Events::Outer(PublicEvent::Error {
                             error: NetworkError::SubscribeFailed,
-                        })
+                        }))
                         .await;
                 }
                 tracing::info!("API: Successfully Subscribed to {topic}");
@@ -599,9 +716,9 @@ impl EventLoop {
                     tracing::error!("Failed to unsubscribe from topic: {err}");
                     let _ = self
                         .event_sender
-                        .send(NetworkEvent::Error {
+                        .send(Events::Outer(PublicEvent::Error {
                             error: NetworkError::UnsubscribeFailed,
-                        })
+                        }))
                         .await;
                 }
             }
@@ -623,13 +740,37 @@ impl EventLoop {
                     .clone()
                     .with(Protocol::P2p(*self.swarm.local_peer_id()));
 
-                // emit as NetworkEvent
-                if let Err(e) = self.event_sender.try_send(NetworkEvent::ListenAddr {
-                    address: p2p_addr.clone(),
-                    network: Network::Libp2p,
-                }) {
+                // emit as Event
+                if let Err(e) = self
+                    .event_sender
+                    .try_send(Events::Outer(PublicEvent::ListenAddr {
+                        address: p2p_addr.clone(),
+                        network: Network::Libp2p,
+                    }))
+                {
                     tracing::error!("Failed to send share address event: {e}");
                 }
+            }
+            Command::RequestResponse {
+                request,
+                peer,
+                sender,
+            } => {
+                tracing::info!("API: Handling RequestResponse command to {peer}");
+                let response_id = self
+                    .swarm
+                    .behaviour_mut()
+                    .jeeves
+                    .send_request(&peer, JeevesRequest(request));
+                self.pending_jeeves_request.insert(response_id, sender);
+            }
+            Command::RespondFile { file, channel } => {
+                tracing::info!("API: Handling RespondFile command");
+                self.swarm
+                    .behaviour_mut()
+                    .jeeves
+                    .send_response(channel, FileResponse(file))
+                    .expect("Connection to peer to be still open.");
             }
         }
     }

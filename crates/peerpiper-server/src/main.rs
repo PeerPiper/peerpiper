@@ -1,15 +1,16 @@
 use anyhow::Result;
-use axum::extract::{Path, State};
-use axum::http::header::CONTENT_TYPE;
-use axum::http::StatusCode;
+use axum::extract::State;
+// use axum::http::header::CONTENT_TYPE;
+// use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse};
 // use axum::routing::post;
 use axum::{http::Method, routing::get};
 // use axum::{Json};
 use axum::Router;
-use futures::channel::mpsc;
+use futures::channel::{mpsc, oneshot};
 use futures::StreamExt;
 use libp2p::multiaddr::{Multiaddr, Protocol};
+use peerpiper::core::events::{Events, PublicEvent};
 use std::net::{Ipv4Addr, SocketAddr};
 use tower_http::cors::{Any, CorsLayer};
 
@@ -17,8 +18,6 @@ use tower_http::cors::{Any, CorsLayer};
 // use thirtyfour::prelude::*;
 // use tokio::io::{AsyncBufReadExt, BufReader};
 // use tokio::process::Child;
-
-use peerpiper::core::events::NetworkEvent;
 
 const MAX_CHANNELS: usize = 16;
 
@@ -33,17 +32,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Starting peerpiper-native TESTS");
 
     let (tx, mut rx) = mpsc::channel(MAX_CHANNELS);
-    let (mut command_sender, command_receiver) = mpsc::channel(8);
+    let (_command_sender, command_receiver) = mpsc::channel(8);
     let tx_clone = tx.clone();
+    let (tx_client, _rx_client) = oneshot::channel();
 
     tokio::spawn(async move {
-        peerpiper::start(tx_clone, command_receiver).await.unwrap();
+        peerpiper::start(tx_clone, command_receiver, tx_client)
+            .await
+            .unwrap();
     });
 
     tracing::info!("Started.");
 
     let address = loop {
-        if let NetworkEvent::ListenAddr { address, .. } = rx.next().await.unwrap() {
+        if let Events::Outer(PublicEvent::ListenAddr { address, .. }) = rx.next().await.unwrap() {
             tracing::info!(%address, "RXD Address");
             break address;
         }
@@ -56,7 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tokio::select! {
             Some(msg) = rx.next() => {
                 match msg {
-                    NetworkEvent::Message { topic, peer, .. } => {
+                    Events::Outer(PublicEvent::Message { topic, peer, .. }) => {
                         tracing::info!("Received msg on topic {:?} from peer: {:?}", topic, peer);
                     }
                     _ => {}
@@ -74,7 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 /// Serve the Multiaddr we are listening on and the host files.
 pub(crate) async fn serve(libp2p_transport: Multiaddr) {
-    let Some(Protocol::Ip6(listen_addr)) = libp2p_transport.iter().next() else {
+    let Some(Protocol::Ip6(_listen_addr)) = libp2p_transport.iter().next() else {
         panic!("Expected 1st protocol to be IP6")
     };
 

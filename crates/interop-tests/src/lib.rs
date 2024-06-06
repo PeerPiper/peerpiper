@@ -1,5 +1,8 @@
 #![cfg(target_arch = "wasm32")]
-use futures::{channel::mpsc, StreamExt};
+use futures::{
+    channel::{mpsc, oneshot},
+    StreamExt,
+};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 
@@ -10,9 +13,10 @@ pub async fn run_test_wasm(libp2p_endpoint: String) -> Result<(), JsError> {
 
     let (tx, mut rx) = mpsc::channel(16);
     let (mut command_sender, command_receiver) = mpsc::channel(8);
+    let (tx_client, _rx_client) = oneshot::channel();
 
     spawn_local(async move {
-        peerpiper::start(tx, command_receiver, libp2p_endpoint)
+        peerpiper::start(tx, command_receiver, tx_client, libp2p_endpoint)
             .await
             .expect("never end")
     });

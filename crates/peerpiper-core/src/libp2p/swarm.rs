@@ -6,6 +6,8 @@ pub fn create<B: NetworkBehaviour>(
 ) -> Result<libp2p::Swarm<B>, String> {
     #[cfg(target_arch = "wasm32")]
     {
+        use libp2p::{core::muxing::StreamMuxerBox, Transport};
+
         Ok(libp2p::SwarmBuilder::with_new_identity()
             .with_wasm_bindgen()
             .with_other_transport(|key| {
@@ -23,8 +25,10 @@ pub fn create<B: NetworkBehaviour>(
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        use libp2p::{core::muxing::StreamMuxerBox, core::Transport};
+        // use libp2p::core::muxing::StreamMuxerBox;
+        use libp2p::core::transport::Transport;
         use rand::thread_rng;
+
         Ok(libp2p::SwarmBuilder::with_new_identity()
             .with_tokio()
             .with_quic()
@@ -32,8 +36,7 @@ pub fn create<B: NetworkBehaviour>(
                 Ok(libp2p_webrtc::tokio::Transport::new(
                     id_keys.clone(),
                     libp2p_webrtc::tokio::Certificate::generate(&mut thread_rng())?,
-                )
-                .map(|(peer_id, conn), _| (peer_id, StreamMuxerBox::new(conn))))
+                ))
             })
             .map_err(|e| e.to_string())?
             .with_behaviour(behaviour_constructor)

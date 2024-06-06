@@ -7,7 +7,7 @@ use axum::response::{Html, IntoResponse};
 use axum::{http::Method, routing::get};
 // use axum::{Json};
 use axum::Router;
-use futures::channel::mpsc;
+use futures::channel::{mpsc, oneshot};
 use futures::{SinkExt, StreamExt};
 use libp2p::multiaddr::{Multiaddr, Protocol};
 use std::net::Ipv4Addr;
@@ -19,7 +19,7 @@ use tower_http::cors::{Any, CorsLayer};
 // use tokio::io::{AsyncBufReadExt, BufReader};
 // use tokio::process::Child;
 
-use peerpiper::core::events::{NetworkEvent, PeerPiperCommand};
+use peerpiper::core::events::{Events, PeerPiperCommand, PublicEvent};
 
 const MAX_CHANNELS: usize = 16;
 
@@ -37,8 +37,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (mut command_sender, command_receiver) = mpsc::channel(8);
     let tx_net_evt_clone = tx_net_evt.clone();
 
+    let (tx_client, _rx_client) = oneshot::channel();
+
     tokio::spawn(async move {
-        peerpiper::start(tx_net_evt_clone, command_receiver)
+        peerpiper::start(tx_net_evt_clone, command_receiver, tx_client)
             .await
             .unwrap();
     });
@@ -46,7 +48,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Started.");
 
     let address = loop {
-        if let NetworkEvent::ListenAddr { address, .. } = rx_net_evt.next().await.unwrap() {
+        if let Events::Outer(PublicEvent::ListenAddr { address, .. }) =
+            rx_net_evt.next().await.unwrap()
+        {
             tracing::info!(%address, "RXD Address");
             break address;
         }
@@ -60,7 +64,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(msg) = rx_net_evt.next() => {
                 tracing::info!("Received msg: {:?}", msg);
                 match msg {
-                    NetworkEvent::NewConnection { peer } => {
+                    Events::Outer(PublicEvent::NewConnection { peer }) => {
                        // Once connection establish, subscribe to "test" topic
                         tracing::info!("New connection from {}, subscribing to test topic", peer);
                         command_sender
@@ -70,10 +74,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             .await
                             .expect("Failed to send subscribe command");
                     }
-                    NetworkEvent::Message { peer, topic, data } => {
+                    Events::Outer(PublicEvent::Message { peer, topic, data }) => {
                         tracing::info!("Received message from {} on topic {}: {:?}", peer, topic, data);
                     }
-                    NetworkEvent::Pong { peer, rtt } => {
+                    Events::Outer(PublicEvent::Pong { peer, rtt }) => {
                         tracing::info!("Received pong from {} with rtt: {}", peer, rtt);
                     }
                     _ => {}
@@ -95,7 +99,7 @@ struct StaticFiles;
 
 /// Serve the Multiaddr we are listening on and the host files.
 pub(crate) async fn serve(libp2p_transport: Multiaddr) {
-    let Some(Protocol::Ip6(listen_addr)) = libp2p_transport.iter().next() else {
+    let Some(Protocol::Ip6(_listen_addr)) = libp2p_transport.iter().next() else {
         panic!("Expected 1st protocol to be IP6")
     };
 

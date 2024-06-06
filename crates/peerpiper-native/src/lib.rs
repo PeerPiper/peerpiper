@@ -1,18 +1,30 @@
-use futures::channel::mpsc;
+mod error;
+
+use error::Error;
+use futures::channel::{mpsc, oneshot};
 use libp2p::multiaddr::{Multiaddr, Protocol};
 use std::net::Ipv6Addr;
 
 use peerpiper_core::{
-    error::Error,
-    events::{NetworkEvent, PeerPiperCommand},
-    libp2p::{api, behaviour, swarm},
+    error::Error as CoreError,
+    events::{Events, PeerPiperCommand},
+    libp2p::{
+        api::{self, Client},
+        behaviour, swarm,
+    },
 };
 
 pub async fn start(
-    tx: mpsc::Sender<NetworkEvent>,
+    tx: mpsc::Sender<Events>,
     command_receiver: mpsc::Receiver<PeerPiperCommand>,
+    tx_client: oneshot::Sender<Client>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let swarm = swarm::create(behaviour::build).map_err(Error::CreateSwarm)?;
+    let mut swarm = swarm::create(behaviour::build).map_err(CoreError::CreateSwarm)?;
+
+    swarm
+        .behaviour_mut()
+        .kad
+        .set_mode(Some(libp2p::kad::Mode::Server));
 
     let peer_id = *swarm.local_peer_id();
     tracing::info!("Local peer id: {:?}", peer_id);
@@ -36,6 +48,13 @@ pub async fn start(
             .await
             .expect("Listening not to fail.");
     }
+
+    tx_client.send(network_client.clone()).map_err(|_e| {
+        tracing::error!("Failed to send network client to client");
+        Error::Core(CoreError::String(
+            "Failed to send network client to client".to_string(),
+        ))
+    })?;
 
     network_client
         .run(network_events, command_receiver, tx)

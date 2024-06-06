@@ -7,20 +7,21 @@ pub mod blockstore;
 mod error;
 
 use crate::error::Error;
-use peerpiper_core::events::{NetworkEvent, PeerPiperCommand};
-use peerpiper_core::libp2p::api;
+use peerpiper_core::events::{Events, PeerPiperCommand};
+use peerpiper_core::libp2p::api::{self, Client};
 use peerpiper_core::libp2p::{
     behaviour::{self},
     swarm,
 };
 
-use futures::channel::mpsc;
+use futures::channel::{mpsc, oneshot};
 use libp2p::core::Multiaddr;
 use wasm_bindgen_futures::spawn_local;
 
 pub async fn start(
-    tx: mpsc::Sender<NetworkEvent>,
+    tx: mpsc::Sender<Events>,
     command_receiver: mpsc::Receiver<PeerPiperCommand>,
+    tx_client: oneshot::Sender<Client>,
     libp2p_endpoint: String,
 ) -> Result<(), Error> {
     tracing::info!("Spawning swarm. Using multiaddr {:?}", libp2p_endpoint);
@@ -57,6 +58,13 @@ pub async fn start(
             tracing::info!("ADDED remote peer_id as explicit peer: {:?}", rpid);
         }
     }
+
+    tx_client.send(network_client.clone()).map_err(|_e| {
+        tracing::error!("Failed to send network client to user");
+        Error::Core(peerpiper_core::error::Error::String(
+            "Failed to send network client to client".to_string(),
+        ))
+    })?;
 
     network_client
         .run(network_events, command_receiver, tx)

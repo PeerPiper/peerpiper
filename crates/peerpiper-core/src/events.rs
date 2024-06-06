@@ -1,3 +1,4 @@
+use crate::libp2p::api::Libp2pEvent;
 use libp2p::Multiaddr;
 use serde::{Deserialize, Serialize};
 
@@ -18,12 +19,18 @@ pub enum Network {
 
 /// The Context of the event. This is essentially a serde wrapper to ensure that any JSON string is
 /// formatted correctly, as WIT expects variants to be {tag: _, val: _} in lower kebab-case.
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-#[serde(tag = "tag", content = "val")]
-#[non_exhaustive]
-pub enum Context {
-    Event(NetworkEvent),
+// #[derive(Debug, Serialize, Deserialize)]
+// #[serde(rename_all = "kebab-case")]
+// #[serde(tag = "tag", content = "val")]
+// #[non_exhaustive]
+// pub enum Context {
+//     Event(NetworkEvent),
+// }
+
+#[derive(Debug)]
+pub enum Events {
+    Inner(Libp2pEvent),
+    Outer(PublicEvent),
 }
 
 /// Events from the Peerpiper network.
@@ -34,7 +41,7 @@ pub enum Context {
 #[serde(rename_all = "kebab-case")]
 #[serde(tag = "tag", content = "val")]
 #[non_exhaustive]
-pub enum NetworkEvent {
+pub enum PublicEvent {
     ListenAddr {
         address: Multiaddr,
         network: Network,
@@ -60,6 +67,8 @@ pub enum NetworkEvent {
     },
 }
 
+// futures::futures_channel::mpsc::Sender<NetworkEvent>: From<futures::futures_channel::mpsc::Sender<peerpiper_core::events::Event>>
+
 /// Command Events to the PeerPiper network.
 /// They should be network, transport, and protocol agnostic. Could be libp2p, Nostr or HTTPS
 /// publish, for example.
@@ -84,6 +93,12 @@ pub enum PeerPiperCommand {
     System(SystemCommand),
     /// Request the server to emit the Multiaddr that it is listening on
     ShareAddress,
+    RequestResponse {
+        request: String,
+        peer_id: String,
+    },
+    /// Request a Streamed Response
+    RequestStream(String),
 }
 
 /// System Commands that do not go to the network, but come from componets to direct
