@@ -16,8 +16,6 @@
 //! Each child component takes care of its own inputs/output, so the Router doesn't
 //! need to worry about it.
 //!
-#![feature(lazy_cell)]
-
 mod bindings;
 
 mod state;
