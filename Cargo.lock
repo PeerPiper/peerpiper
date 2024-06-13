@@ -2575,33 +2575,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "libp2p-core"
-version = "0.41.2"
-source = "git+https://github.com/libp2p/rust-libp2p.git#68301b8db54816a616900d088342010fd0493a29"
-dependencies = [
- "either",
- "fnv",
- "futures",
- "futures-timer",
- "instant",
- "libp2p-identity",
- "multiaddr",
- "multihash 0.19.1",
- "multistream-select 0.13.0 (git+https://github.com/libp2p/rust-libp2p.git)",
- "once_cell",
- "parking_lot",
- "pin-project",
- "quick-protobuf",
- "rand",
- "rw-stream-sink 0.4.0 (git+https://github.com/libp2p/rust-libp2p.git)",
- "smallvec",
- "thiserror",
- "tracing",
- "unsigned-varint 0.8.0",
- "void",
-]
-
-[[package]]
 name = "libp2p-dns"
 version = "0.41.1"
 source = "git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending#971a765e81050f02bb7c545c2886445155630154"
@@ -2637,7 +2610,7 @@ dependencies = [
  "libp2p-swarm",
  "prometheus-client",
  "quick-protobuf",
- "quick-protobuf-codec 0.3.1 (git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending)",
+ "quick-protobuf-codec",
  "rand",
  "regex",
  "sha2",
@@ -2661,7 +2634,7 @@ dependencies = [
  "libp2p-swarm",
  "lru",
  "quick-protobuf",
- "quick-protobuf-codec 0.3.1 (git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending)",
+ "quick-protobuf-codec",
  "smallvec",
  "thiserror",
  "tracing",
@@ -2704,7 +2677,7 @@ dependencies = [
  "libp2p-identity",
  "libp2p-swarm",
  "quick-protobuf",
- "quick-protobuf-codec 0.3.1 (git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending)",
+ "quick-protobuf-codec",
  "rand",
  "sha2",
  "smallvec",
@@ -2762,31 +2735,6 @@ dependencies = [
  "curve25519-dalek",
  "futures",
  "libp2p-core 0.41.2 (git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending)",
- "libp2p-identity",
- "multiaddr",
- "multihash 0.19.1",
- "once_cell",
- "quick-protobuf",
- "rand",
- "sha2",
- "snow",
- "static_assertions",
- "thiserror",
- "tracing",
- "x25519-dalek",
- "zeroize",
-]
-
-[[package]]
-name = "libp2p-noise"
-version = "0.44.0"
-source = "git+https://github.com/libp2p/rust-libp2p.git#68301b8db54816a616900d088342010fd0493a29"
-dependencies = [
- "asynchronous-codec",
- "bytes",
- "curve25519-dalek",
- "futures",
- "libp2p-core 0.41.2 (git+https://github.com/libp2p/rust-libp2p.git)",
  "libp2p-identity",
  "multiaddr",
  "multihash 0.19.1",
@@ -2962,8 +2910,8 @@ dependencies = [
  "if-watch",
  "libp2p-core 0.41.2 (git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending)",
  "libp2p-identity",
- "libp2p-noise 0.44.0 (git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending)",
- "libp2p-webrtc-utils 0.2.1",
+ "libp2p-noise",
+ "libp2p-webrtc-utils",
  "multihash 0.19.1",
  "rand",
  "rcgen",
@@ -2975,56 +2923,6 @@ dependencies = [
  "tokio-util",
  "tracing",
  "webrtc",
-]
-
-[[package]]
-name = "libp2p-webrtc"
-version = "0.7.1-alpha"
-source = "git+https://github.com/libp2p/rust-libp2p.git#68301b8db54816a616900d088342010fd0493a29"
-dependencies = [
- "async-trait",
- "bytes",
- "futures",
- "futures-timer",
- "hex",
- "if-watch",
- "libp2p-core 0.41.2 (git+https://github.com/libp2p/rust-libp2p.git)",
- "libp2p-identity",
- "libp2p-noise 0.44.0 (git+https://github.com/libp2p/rust-libp2p.git)",
- "libp2p-webrtc-utils 0.2.0",
- "multihash 0.19.1",
- "rand",
- "rcgen",
- "serde",
- "stun",
- "thiserror",
- "tinytemplate",
- "tokio",
- "tokio-util",
- "tracing",
- "webrtc",
-]
-
-[[package]]
-name = "libp2p-webrtc-utils"
-version = "0.2.0"
-source = "git+https://github.com/libp2p/rust-libp2p.git#68301b8db54816a616900d088342010fd0493a29"
-dependencies = [
- "asynchronous-codec",
- "bytes",
- "futures",
- "hex",
- "libp2p-core 0.41.2 (git+https://github.com/libp2p/rust-libp2p.git)",
- "libp2p-identity",
- "libp2p-noise 0.44.0 (git+https://github.com/libp2p/rust-libp2p.git)",
- "quick-protobuf",
- "quick-protobuf-codec 0.3.1 (git+https://github.com/libp2p/rust-libp2p.git)",
- "rand",
- "serde",
- "sha2",
- "thiserror",
- "tinytemplate",
- "tracing",
 ]
 
 [[package]]
@@ -3038,9 +2936,9 @@ dependencies = [
  "hex",
  "libp2p-core 0.41.2 (git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending)",
  "libp2p-identity",
- "libp2p-noise 0.44.0 (git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending)",
+ "libp2p-noise",
  "quick-protobuf",
- "quick-protobuf-codec 0.3.1 (git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending)",
+ "quick-protobuf-codec",
  "rand",
  "serde",
  "sha2",
@@ -3061,28 +2959,7 @@ dependencies = [
  "js-sys",
  "libp2p-core 0.41.2 (git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending)",
  "libp2p-identity",
- "libp2p-webrtc-utils 0.2.1",
- "send_wrapper 0.6.0",
- "thiserror",
- "tracing",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
-name = "libp2p-webrtc-websys"
-version = "0.3.0-alpha"
-source = "git+https://github.com/libp2p/rust-libp2p.git#68301b8db54816a616900d088342010fd0493a29"
-dependencies = [
- "bytes",
- "futures",
- "getrandom",
- "hex",
- "js-sys",
- "libp2p-core 0.41.2 (git+https://github.com/libp2p/rust-libp2p.git)",
- "libp2p-identity",
- "libp2p-webrtc-utils 0.2.0",
+ "libp2p-webrtc-utils",
  "send_wrapper 0.6.0",
  "thiserror",
  "tracing",
@@ -3421,19 +3298,6 @@ dependencies = [
 name = "multistream-select"
 version = "0.13.0"
 source = "git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending#971a765e81050f02bb7c545c2886445155630154"
-dependencies = [
- "bytes",
- "futures",
- "pin-project",
- "smallvec",
- "tracing",
- "unsigned-varint 0.8.0",
-]
-
-[[package]]
-name = "multistream-select"
-version = "0.13.0"
-source = "git+https://github.com/libp2p/rust-libp2p.git#68301b8db54816a616900d088342010fd0493a29"
 dependencies = [
  "bytes",
  "futures",
@@ -3813,7 +3677,6 @@ dependencies = [
  "gloo-utils",
  "js-sys",
  "libp2p",
- "libp2p-webrtc-websys 0.3.0-alpha (git+https://github.com/libp2p/rust-libp2p.git)",
  "multihash-codetable",
  "parking_lot",
  "peerpiper-core",
@@ -3841,8 +3704,8 @@ dependencies = [
  "futures",
  "futures-timer",
  "libp2p",
- "libp2p-webrtc 0.7.1-alpha (git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending)",
- "libp2p-webrtc-websys 0.3.0-alpha (git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending)",
+ "libp2p-webrtc",
+ "libp2p-webrtc-websys",
  "multibase",
  "rand",
  "serde",
@@ -3885,7 +3748,6 @@ version = "0.1.0"
 dependencies = [
  "futures",
  "libp2p",
- "libp2p-webrtc 0.7.1-alpha (git+https://github.com/libp2p/rust-libp2p.git)",
  "peerpiper-core",
  "rand",
  "thiserror",
@@ -4228,18 +4090,6 @@ dependencies = [
 name = "quick-protobuf-codec"
 version = "0.3.1"
 source = "git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending#971a765e81050f02bb7c545c2886445155630154"
-dependencies = [
- "asynchronous-codec",
- "bytes",
- "quick-protobuf",
- "thiserror",
- "unsigned-varint 0.8.0",
-]
-
-[[package]]
-name = "quick-protobuf-codec"
-version = "0.3.1"
-source = "git+https://github.com/libp2p/rust-libp2p.git#68301b8db54816a616900d088342010fd0493a29"
 dependencies = [
  "asynchronous-codec",
  "bytes",
@@ -4750,16 +4600,6 @@ dependencies = [
 name = "rw-stream-sink"
 version = "0.4.0"
 source = "git+https://github.com/DougAnderson444/rust-libp2p.git?branch=webrtc-utils-fix-stream-ending#971a765e81050f02bb7c545c2886445155630154"
-dependencies = [
- "futures",
- "pin-project",
- "static_assertions",
-]
-
-[[package]]
-name = "rw-stream-sink"
-version = "0.4.0"
-source = "git+https://github.com/libp2p/rust-libp2p.git#68301b8db54816a616900d088342010fd0493a29"
 dependencies = [
  "futures",
  "pin-project",

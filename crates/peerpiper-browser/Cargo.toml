@@ -17,7 +17,6 @@ thiserror = "1.0.50"
 js-sys = "0.3.66"
 peerpiper-core = { workspace = true }
 libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "wasm-bindgen"] }
-libp2p-webrtc-websys = { git = "https://github.com/libp2p/rust-libp2p.git" }
 wasm-bindgen = "0.2.89"
 wasm-bindgen-futures = "0.4.38"
 gloo-utils = "0.2.0"

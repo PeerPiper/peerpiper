@@ -26,10 +26,6 @@ peerpiper-core = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 peerpiper-browser = { workspace = true }
-# libp2p = { workspace = true, optional = true, features = [ "ed25519", "macros", "ping", "wasm-bindgen"] }
-# libp2p-webrtc-websys = { git = "https://github.com/libp2p/rust-libp2p.git", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 peerpiper-native = { workspace = true }
-# libp2p = { workspace = true, optional = true, features = [ "ed25519", "macros", "ping", "quic", "tokio"]}
-# libp2p-webrtc = { git = "https://github.com/libp2p/rust-libp2p.git", optional = true }

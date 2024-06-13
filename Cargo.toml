@@ -1,6 +1,7 @@
 [workspace]
 members = ["crates/*"]
 resolver = "2"
+rust = "1.80-nightly"
 
 [workspace.dependencies]
 peerpiper = { path = "crates/peerpiper" }
