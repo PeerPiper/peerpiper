@@ -25,8 +25,6 @@ pub fn create<B: NetworkBehaviour>(
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        // use libp2p::core::muxing::StreamMuxerBox;
-        use libp2p::core::transport::Transport;
         use rand::thread_rng;
 
         Ok(libp2p::SwarmBuilder::with_new_identity()
