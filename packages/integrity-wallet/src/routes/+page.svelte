@@ -1,11 +1,12 @@
 <script>
+	import { assets, base, resolveRoute } from '$app/paths';
 </script>
 
 <main class="flex flex-col px-8 py-2 w-screen">
 	<h1 class="text-2xl font-semibold mt-4">PeerPiper ToolKit</h1>
 	<div class="mt-4 border border-neutral-50 rounded bg-sky-50 p-2">
 		<a
-			href="/integrity-wallet"
+			href="{base}/integrity-wallet"
 			target="_blank"
 			class="border-2 border-neutral-400 rounded-lg shadow-md outline-lime-50 px-4 py-2 w-fit"
 			>Integrity Wallet</a
@@ -15,7 +16,7 @@
 
 	<div class="mt-4 border border-neutral-50 rounded bg-sky-50 p-2">
 		<a
-			href="/remote"
+			href="{base}/remote"
 			class="border-2 border-neutral-400 rounded-lg shadow-md outline-lime-50 px-4 py-2 w-fit"
 			>Remote Control</a
 		>
