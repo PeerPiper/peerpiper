@@ -7,7 +7,6 @@
 	<div class="mt-4 border border-neutral-50 rounded bg-sky-50 p-2">
 		<a
 			href="{base}/integrity-wallet"
-			target="_blank"
 			class="border-2 border-neutral-400 rounded-lg shadow-md outline-lime-50 px-4 py-2 w-fit"
 			>Integrity Wallet</a
 		>
