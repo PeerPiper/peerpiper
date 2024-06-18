@@ -4,7 +4,7 @@ This crate provides a browser implementation of the PeerPiper protocol in the Br
 
 # wasm-bindgen
 
-Build the wasm file with:
+Build the wasm and js glue with:
 
 ```bash
 wasm-pack build --target web --release
