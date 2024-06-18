@@ -45,9 +45,7 @@
 
 		integrity = algo.toLowerCase().replace('-', '') + `-${encodeURLSafe(hash)}`;
 
-		path =
-			window.location.origin +
-			window.location.pathname.replace('index.html', '').replace(/\/$/, '');
+		path = window.location.origin + base;
 		dataUrl =
 			`data:text/html,<script src="${path}/${name}" integrity="${integrity}" crossorigin></scr` +
 			`ipt><!-` +
