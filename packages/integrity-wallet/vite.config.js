@@ -66,7 +66,7 @@ export default defineConfig(({ command, mode }) => {
 	});
 
 	return {
-		plugins: [sveltekit(), rust()],
+		plugins: [sveltekit(), rust({ verbose: true })],
 		test: {
 			include: ['src/**/*.{test,spec}.{js,ts}']
 		},
