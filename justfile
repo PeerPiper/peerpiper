@@ -39,8 +39,7 @@ serve:
 
 all: update-build preview
 
-test:
-  # cargo test --workspace
+test: update-build
   cargo test --workspace --all-targets
 
 tauri:
