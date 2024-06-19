@@ -8,8 +8,7 @@ rust-version = { workspace = true }
 crate-type = ["cdylib"]
 
 [dependencies]
-bitflags = { workspace = true }
-wit-bindgen-rt = { workspace = true }
+wit-bindgen-rt = { workspace = true, features = ["bitflags"] }
 wurbo = "0.3.2"
 base64ct = { version = "1.6.0", features = ["alloc"] }
 serde = { version = "1.0.130", features = ["derive"] }

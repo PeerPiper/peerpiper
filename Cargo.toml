@@ -15,8 +15,7 @@ rand = "0.8"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 libp2p = "^0.53.2"
-bitflags = "2.5.0"
-wit-bindgen-rt = "0.26.0"
+wit-bindgen-rt = { version = "0.26.0", features = ["bitflags"] }
 
 [profile.release]
 opt-level = "z"          # Optimize for size.
