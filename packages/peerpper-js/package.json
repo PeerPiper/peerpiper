@@ -1,5 +1,5 @@
 {
-	"name": "integrity-wallet",
+	"name": "@peerpiper/core",
 	"version": "0.0.1",
 	"private": true,
 	"scripts": {
