@@ -19,8 +19,8 @@ serde_with = { version = "3.3.0", features = ["base64"] }
 # peerpiper = { workspace = true }
 
 [dev-dependencies]
-wasmtime = { version = "17", features = ['component-model'] }
-wasmtime-wasi = "17.0"
+wasmtime = { version = "21", features = ['component-model'] }
+wasmtime-wasi = "21"
 thiserror = "1.0"
 
 [package.metadata.component]

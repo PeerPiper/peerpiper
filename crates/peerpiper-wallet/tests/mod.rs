@@ -2,9 +2,10 @@
 //!
 //! Note: In order for this to run, we need to include the WIT dependencies in ./wit/deps/*,
 //! which is copy and paste from the source directory.
+
+// name of the world in the .wit file
 mod bindgen {
-    // name of the world in the .wit file
-    wasmtime::component::bindgen!("peerpiper");
+    wasmtime::component::bindgen!();
 }
 
 use std::{
@@ -12,32 +13,24 @@ use std::{
     path::{Path, PathBuf},
 };
 use thiserror::Error;
-use wasmtime::component::{Component, Linker, ResourceTable};
+use wasmtime::component::{Component, Linker};
 use wasmtime::{Config, Engine, Store};
-use wasmtime_wasi::preview2::{WasiCtx, WasiCtxBuilder, WasiView};
+use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};
 
 use bindgen::exports::peerpiper::wallet::wurbo_out::Context as WalletContext;
 
 struct MyCtx {
-    wasi_ctx: Context,
+    table: ResourceTable,
+    ctx: WasiCtx,
 }
 
-struct Context {
-    table: ResourceTable,
-    wasi: WasiCtx,
-}
 impl WasiView for MyCtx {
-    fn table(&self) -> &ResourceTable {
-        &self.wasi_ctx.table
+    fn table(&mut self) -> &mut ResourceTable {
+        &mut self.table
     }
-    fn table_mut(&mut self) -> &mut ResourceTable {
-        &mut self.wasi_ctx.table
-    }
-    fn ctx(&self) -> &WasiCtx {
-        &self.wasi_ctx.wasi
-    }
-    fn ctx_mut(&mut self) -> &mut WasiCtx {
-        &mut self.wasi_ctx.wasi
+
+    fn ctx(&mut self) -> &mut WasiCtx {
+        &mut self.ctx
     }
 }
 
@@ -68,14 +61,12 @@ impl bindgen::seed_keeper::wit_ui::wurbo_out::Host for MyCtx {
     fn render(
         &mut self,
         _ctx: bindgen::seed_keeper::wit_ui::wurbo_out::Context,
-    ) -> wasmtime::Result<Result<String, String>> {
+    ) -> Result<String, String> {
         // return some html as string
-        Ok(Ok("seed keeper ui for testing".to_string()))
+        Ok("seed keeper ui for testing".to_string())
     }
 
-    fn activate(&mut self, _selectors: Option<Vec<String>>) -> wasmtime::Result<()> {
-        Ok(())
-    }
+    fn activate(&mut self, _selectors: Option<Vec<String>>) {}
 }
 
 impl bindgen::delano::wit_ui::context_types::Host for MyCtx {}
@@ -83,34 +74,23 @@ impl bindgen::delano::wit_ui::wurbo_out::Host for MyCtx {
     fn render(
         &mut self,
         _ctx: bindgen::delano::wit_ui::wurbo_out::Context,
-    ) -> wasmtime::Result<Result<String, String>> {
+    ) -> Result<String, String> {
         // return some html as string
-        Ok(Ok("delano ui for testing".to_string()))
+        Ok("delano ui for testing".to_string())
     }
 
-    fn activate(&mut self, _selectors: Option<Vec<String>>) -> wasmtime::Result<()> {
-        Ok(())
-    }
+    fn activate(&mut self, _selectors: Option<Vec<String>>) {}
 }
 
 impl bindgen::peerpiper::wallet::context_types::Host for MyCtx {}
 impl bindgen::peerpiper::wallet::wurbo_in::Host for MyCtx {
-    fn addeventlistener(
-        &mut self,
-        _details: bindgen::peerpiper::wallet::wurbo_in::ListenDetails,
-    ) -> wasmtime::Result<()> {
-        Ok(())
-    }
+    fn addeventlistener(&mut self, _details: bindgen::peerpiper::wallet::wurbo_in::ListenDetails) {}
 
     /// Sets location hash (stub)
-    fn set_hash(&mut self, _hash: String) -> wasmtime::Result<()> {
-        Ok(())
-    }
+    fn set_hash(&mut self, _hash: String) {}
 
     /// Emits an event (stub)
-    fn emit(&mut self, _event: String) -> wasmtime::Result<()> {
-        Ok(())
-    }
+    fn emit(&mut self, _event: String) {}
 }
 
 #[derive(Error, Debug)]
@@ -182,13 +162,11 @@ mod aggregate_peerpiper_tests {
         // link imports like get_seed to our instantiation
         bindgen::Peerpiper::add_to_linker(&mut linker, |state: &mut MyCtx| state)?;
         // link the WASI imports to our instantiation
-        wasmtime_wasi::preview2::command::sync::add_to_linker(&mut linker)?;
+        wasmtime_wasi::add_to_linker_sync(&mut linker)?;
 
         let table = ResourceTable::new();
         let wasi: WasiCtx = WasiCtxBuilder::new().inherit_stdout().args(&[""]).build();
-        let state = MyCtx {
-            wasi_ctx: Context { table, wasi },
-        };
+        let state = MyCtx { table, ctx: wasi };
         let mut store = Store::new(&engine, state);
 
         let (bindings, _) = bindgen::Peerpiper::instantiate(&mut store, &component, &linker)?;
