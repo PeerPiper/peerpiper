@@ -73,11 +73,11 @@ jobs:
         with:
           node-version: "lts/*"
           cache: npm
-          cache-dependency-path: "./packages/peerpiper-js/package-lock.json"
+          cache-dependency-path: "./packages/integrity-wallet/package-lock.json"
 
       - name: Install dependencies
         run: |
-          cd packages/peerpiper-js
+          cd packages/integrity-wallet
           npm install
           cd inner-app
           npm install
@@ -87,7 +87,7 @@ jobs:
           BASE_PATH: ${{ env.BASE_PATH }}
           VITE_BASE: ${{ env.VITE_BASE }}
         run: |
-          cd packages/peerpiper-js/inner-app
+          cd packages/integrity-wallet/inner-app
           npm run build
           cd .. 
           npm run build
@@ -97,7 +97,7 @@ jobs:
         uses: actions/upload-pages-artifact@v1
         with:
           # this should match the `pages` option in your adapter-static options
-          path: "packages/peerpiper-js/docs/"
+          path: "packages/integrity-wallet/docs/"
 
   deploy:
     needs: build_release

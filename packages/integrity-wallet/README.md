@@ -1,7 +1,8 @@
-# Demo websites
+# PeerPiper Intgerity Wallet
 
-- integrity-wallet
-- remote llama
+The main purpose of this JS package is to host a demo of the PeerPiper Integrity Wallet. The Integrity Wallet is a dataurl wallet where the code integrity to verified via SHA hash as a subresource integrity (SRI).
+
+It also hosts a demo for accessing a PeerPiper desktop node via remote connection.
 
 ## Developing
 
