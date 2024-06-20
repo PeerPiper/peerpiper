@@ -14,18 +14,21 @@ build-submodules: update-remote
     fi \
   done
 
-build-wallet:
- # cargo component build --manifest-path=examples/form/Cargo.toml
- cargo component build --manifest-path=crates/peerpiper-wallet/Cargo.toml
- cargo component build --manifest-path=crates/peerpiper-wallet/Cargo.toml --release
+build-wits:
+ for dir in crates/*; do \
+   if [ -d $dir/wit ]; then \
+     cargo component build --manifest-path=$dir/Cargo.toml; \
+     cargo component build --manifest-path=$dir/Cargo.toml --release; \
+   fi \
+ done
 
 build-examples:
  # cargo component build --manifest-path=examples/form/Cargo.toml
 
 # update and build all submodules, then build the wallet
-update-build: build-submodules build-wallet
+update-build: build-submodules build-wits
 
-compose: build-wallet
+compose: build-wits
   mkdir -p ./dist
   wasm-tools compose --config crates/peerpiper-wallet/config.yml -o dist/peerpiper_wallet_aggregate.wasm target/wasm32-wasi/release/peerpiper_wallet.wasm
 
