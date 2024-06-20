@@ -1,0 +1,42 @@
+package peerpiper:handler@0.1.0;
+
+interface types {
+    /// Public Event type
+    variant event {
+        /// A simple event with a message.
+        message(message),
+        /// A Request
+        request(request),
+    }
+
+    /// Public Request type
+    record request {
+        /// The request message
+        request: list<u8>,
+        /// Requesting peer
+        peer: string,
+    }
+
+    /// Messages are peer, topic, and data (list<u8>)
+    record message {
+        /// The message topic
+        topic: string,
+        /// The message data
+        data: list<u8>,
+        /// The peer that sent the message
+        peer: string,
+    }
+
+}
+
+interface handler {
+    use types.{request, message, event};
+
+    /// Handle an event
+    handle: func(evt: event) -> string; 
+}
+
+/// An example world for the component to target.
+world handlers {
+    export handler;
+}
