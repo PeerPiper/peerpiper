@@ -27,7 +27,7 @@ The core library should include wrappers so that it can be deployed to various i
 
 - [x] Browser via [WebAssembly](https://en.wikipedia.org/wiki/WebAssembly), [Vite](https://vitejs.dev/) & [`wasm-bindgen`](https://rustwasm.github.io/docs/wasm-bindgen/)
 - [x] [Command Line](https://en.wikipedia.org/wiki/Command-line_interface) via Rust
-- [x] 🚧 [Tauri](https://tauri.studio/) home, mobile, and desktop
+- [x] 🚧 [Tauri](https://tauri.studio/) home, mobile, and desktop (via [peerpiper-desktop](https://github.com/PeerPiper/peerpiper-desktop))
 - [ ] [Shuttle](https://shuttle.dev/) via Rust
 - [ ] [Fly.io](https://fly.io/) via Docker
 - [ ] [Cloudflare Workers](https://workers.cloudflare.com/) via WebAssembly
@@ -41,7 +41,7 @@ You'll need a few dependencies to get started:
 
 ### 🦀 [Rust](https://www.rust-lang.org/)
 
-- [x] [Rust](https://www.rust-lang.org/) 1.78+ (use nightly as stipulated in the `rust-toolchain.toml` file)
+- [x] [Rust](https://www.rust-lang.org/) 1.80+ (use nightly as stipulated in the `rust-toolchain.toml` file)
 - [x] Add `wasm32-wasi` target: `rustup target add wasm32-wasi`
 - [x] Add `wasm32-unknown-unknown` target: `rustup target add wasm32-unknown-unknown`
 
@@ -49,7 +49,7 @@ You'll need a few dependencies to get started:
 
 - [x] [cargo-component](https://github.com/bytecodealliance/cargo-component)
 
-Using [`binstall`](https://github.com/cargo-bins/cargo-binstall): `cargo binstall cargo-component@0.10.1`
+Using [`binstall`](https://github.com/cargo-bins/cargo-binstall): `cargo binstall cargo-component@0.13.2`
 
 Note that `cargo-component` is a work in progress and may not be stable. Configs, settings, and commands may change from version to version.
 
