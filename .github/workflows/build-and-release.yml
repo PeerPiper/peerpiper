@@ -45,6 +45,7 @@ jobs:
         run: |
           just build-submodules
           just compose
+          just test
 
       - name: Archive build
         uses: actions/upload-artifact@v4
