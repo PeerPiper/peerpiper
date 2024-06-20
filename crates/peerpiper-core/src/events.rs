@@ -58,6 +58,11 @@ pub enum PublicEvent {
         topic: String,
         data: Vec<u8>,
     },
+    /// A Request was made to us, that we may or may not respond to based on screening criteria.
+    Request {
+        request: Vec<u8>,
+        peer: String,
+    },
     NewConnection {
         peer: String,
     },
