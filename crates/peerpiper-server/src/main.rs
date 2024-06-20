@@ -54,12 +54,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Serve .wasm, .js and server multiaddress over HTTP on this address.
     tokio::spawn(serve(address.clone()));
 
+    let bytes = peerpiper::handler::utils::get_wasm_bytes("peerpiper_handler")?;
+    let handler = peerpiper::handler::Handler::new(bytes)?;
+
     loop {
         tokio::select! {
             Some(msg) = rx.next() => {
                 match msg {
-                    Events::Outer(PublicEvent::Message { topic, peer, .. }) => {
+                    Events::Outer(ref m @ PublicEvent::Message { ref topic, ref peer, .. }) => {
                         tracing::info!("Received msg on topic {:?} from peer: {:?}", topic, peer);
+                        let r = handler.handle(m.clone()).await?;
+                        tracing::info!("Handler returned: {:?}", r);
                     }
                     _ => {}
                 }
