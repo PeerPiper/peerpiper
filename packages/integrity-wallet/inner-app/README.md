@@ -1,4 +1,10 @@
-# Svelte + Vite
+# Inner App
+
+This is the app that is compiled and hashed into the dataurl. This is the app that you want to knwo whether it's been changed or not. The app with your sensitive data (secrets, etc).
+
+This inner app is the opener window, which is how you can connect to the DApp (usign the `window.opener` property).
+
+## Made with Svelte + Vite
 
 This template should help get you started developing with Svelte in Vite.
 
