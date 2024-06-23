@@ -80,6 +80,10 @@ impl bindgen::delano::wit_ui::wurbo_out::Host for MyCtx {
     }
 
     fn activate(&mut self, _selectors: Option<Vec<String>>) {}
+
+    fn customize(&mut self, _templates: Vec<(String, String)>) -> Result<(), String> {
+        Ok(())
+    }
 }
 
 impl bindgen::peerpiper::wallet::context_types::Host for MyCtx {}
