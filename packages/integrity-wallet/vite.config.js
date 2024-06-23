@@ -79,6 +79,9 @@ export default defineConfig(({ command, mode }) => {
 				strict: false
 			}
 		},
+		worker: {
+			format: 'es'
+		},
 		preview: { port: devConfig.port }
 	};
 });

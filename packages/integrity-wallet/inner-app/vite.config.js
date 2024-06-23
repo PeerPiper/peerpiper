@@ -23,6 +23,9 @@ export default defineConfig(({ command, mode }) => {
 		build: {
 			minify: false
 		},
+		worker: {
+			format: 'es'
+		},
 		server: {
 			origin: base,
 			fs: {
