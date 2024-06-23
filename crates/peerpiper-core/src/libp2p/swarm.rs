@@ -6,8 +6,6 @@ pub fn create<B: NetworkBehaviour>(
 ) -> Result<libp2p::Swarm<B>, String> {
     #[cfg(target_arch = "wasm32")]
     {
-        use libp2p::{core::muxing::StreamMuxerBox, Transport};
-
         Ok(libp2p::SwarmBuilder::with_new_identity()
             .with_wasm_bindgen()
             .with_other_transport(|key| {
