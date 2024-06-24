@@ -1275,6 +1275,80 @@ pub mod seed_keeper {
                     }
                 }
             }
+            #[allow(unused_unsafe, clippy::all)]
+            /// Optionally customize the configuration of the templates used to render the component
+            pub fn customize(templates: &[(_rt::String, _rt::String)]) -> Result<(), _rt::String> {
+                unsafe {
+                    #[repr(align(4))]
+                    struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                    let mut ret_area = RetArea([::core::mem::MaybeUninit::uninit(); 12]);
+                    let vec3 = templates;
+                    let len3 = vec3.len();
+                    let layout3 = _rt::alloc::Layout::from_size_align_unchecked(vec3.len() * 16, 4);
+                    let result3 = if layout3.size() != 0 {
+                        let ptr = _rt::alloc::alloc(layout3).cast::<u8>();
+                        if ptr.is_null() {
+                            _rt::alloc::handle_alloc_error(layout3);
+                        }
+                        ptr
+                    } else {
+                        {
+                            ::core::ptr::null_mut()
+                        }
+                    };
+                    for (i, e) in vec3.into_iter().enumerate() {
+                        let base = result3.add(i * 16);
+                        {
+                            let (t0_0, t0_1) = e;
+                            let vec1 = t0_0;
+                            let ptr1 = vec1.as_ptr().cast::<u8>();
+                            let len1 = vec1.len();
+                            *base.add(4).cast::<usize>() = len1;
+                            *base.add(0).cast::<*mut u8>() = ptr1.cast_mut();
+                            let vec2 = t0_1;
+                            let ptr2 = vec2.as_ptr().cast::<u8>();
+                            let len2 = vec2.len();
+                            *base.add(12).cast::<usize>() = len2;
+                            *base.add(8).cast::<*mut u8>() = ptr2.cast_mut();
+                        }
+                    }
+                    let ptr4 = ret_area.0.as_mut_ptr().cast::<u8>();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "seed-keeper:wit-ui/wurbo-out@0.1.0")]
+                    extern "C" {
+                        #[link_name = "customize"]
+                        fn wit_import(_: *mut u8, _: usize, _: *mut u8);
+                    }
+
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: *mut u8, _: usize, _: *mut u8) {
+                        unreachable!()
+                    }
+                    wit_import(result3, len3, ptr4);
+                    let l5 = i32::from(*ptr4.add(0).cast::<u8>());
+                    if layout3.size() != 0 {
+                        _rt::alloc::dealloc(result3.cast(), layout3);
+                    }
+                    match l5 {
+                        0 => {
+                            let e = ();
+                            Ok(e)
+                        }
+                        1 => {
+                            let e = {
+                                let l6 = *ptr4.add(4).cast::<*mut u8>();
+                                let l7 = *ptr4.add(8).cast::<usize>();
+                                let len8 = l7;
+                                let bytes8 = _rt::Vec::from_raw_parts(l6.cast(), len8, len8);
+
+                                _rt::string_lift(bytes8)
+                            };
+                            Err(e)
+                        }
+                        _ => _rt::invalid_enum_discriminant(),
+                    }
+                }
+            }
         }
     }
 }
@@ -2417,56 +2491,57 @@ pub(crate) use __export_peerpiper_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:peerpiper:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2088] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa8\x0f\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 2131] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd3\x0f\x01A\x02\x01\
 A\x16\x01B\x0f\x01s\x04\0\x09encrypted\x03\0\0\x01r\x02\x08selectors\x02tys\x04\0\
 \x0elisten-details\x03\0\x02\x01r\x01\x05titles\x04\0\x04page\x03\0\x04\x01ks\x01\
 r\x02\x0bplaceholders\x0eencrypted-seed\x06\x04\0\x05input\x03\0\x07\x01k\x05\x01\
 k\x08\x01r\x03\x04page\x09\x05input\x0a\x04load\x06\x04\0\x07content\x03\0\x0b\x01\
 q\x05\x0ball-content\x01\x0c\0\x08username\x01s\0\x08password\x01s\0\x09encrypte\
 d\x01\x01\0\x06submit\0\0\x04\0\x07context\x03\0\x0d\x03\x01$seed-keeper:wit-ui/\
-wurbo-types@0.1.0\x05\0\x02\x03\0\0\x07context\x01B\x09\x02\x03\x02\x01\x01\x04\0\
+wurbo-types@0.1.0\x05\0\x02\x03\0\0\x07context\x01B\x0e\x02\x03\x02\x01\x01\x04\0\
 \x07context\x03\0\0\x01j\x01s\x01s\x01@\x01\x03ctx\x01\0\x02\x04\0\x06render\x01\
-\x03\x01ps\x01k\x04\x01@\x01\x09selectors\x05\x01\0\x04\0\x08activate\x01\x06\x03\
-\x01\"seed-keeper:wit-ui/wurbo-out@0.1.0\x05\x02\x01B\x13\x01r\x03\x04names\x07v\
-ersions\x0bdescriptions\x04\0\x04page\x03\0\0\x01k\x01\x01ks\x01r\x02\x04page\x02\
-\x04load\x03\x04\0\x0aeverything\x03\0\x04\x01r\x02\x03keys\x05values\x04\0\x09i\
-nput-ctx\x03\0\x06\x01q\x04\x03key\x01y\0\x02op\x01y\0\x05value\x01y\0\x08select\
-ed\x01y\0\x04\0\x08kovindex\x03\0\x08\x01r\x02\x03idxy\x03val\x09\x04\0\x05entry\
-\x03\0\x0a\x01r\x02\x03ctx\x0b\x05values\x04\0\x05kvctx\x03\0\x0c\x01p}\x01r\x03\
-\x04peers\x05topics\x04data\x0e\x04\0\x07message\x03\0\x0f\x01q\x09\x0ball-conte\
-nt\x01\x05\0\x0caddattribute\0\0\x08newentry\0\0\x0deditattribute\x01\x0d\0\x0ee\
-ditmaxentries\x01}\0\x0dgenerateoffer\0\0\x0dgenerateproof\0\0\x0cpublishproof\0\
-\0\x0cnetworkevent\x01\x10\0\x04\0\x07context\x03\0\x11\x03\x01!delano:wit-ui/co\
-ntext-types@0.1.0\x05\x03\x02\x03\0\x02\x07context\x01B\x0e\x02\x03\x02\x01\x04\x04\
-\0\x07context\x03\0\0\x01o\x02ss\x01p\x02\x01j\0\x01s\x01@\x01\x09templates\x03\0\
-\x04\x04\0\x09customize\x01\x05\x01j\x01s\x01s\x01@\x01\x03ctx\x01\0\x06\x04\0\x06\
-render\x01\x07\x01ps\x01k\x08\x01@\x01\x09selectors\x09\x01\0\x04\0\x08activate\x01\
-\x0a\x03\x01\x1ddelano:wit-ui/wurbo-out@0.1.0\x05\x05\x02\x03\0\x01\x07context\x02\
-\x03\0\x03\x07context\x01B\x1b\x02\x03\x02\x01\x06\x04\0\x0cseed-context\x03\0\0\
-\x02\x03\x02\x01\x07\x04\0\x0edelano-context\x03\0\x02\x01r\x02\x08selectors\x02\
-tys\x04\0\x0elisten-details\x03\0\x04\x01ks\x01r\x01\x05title\x06\x04\0\x03app\x03\
-\0\x07\x01k\x08\x01k\x01\x01k\x03\x01r\x03\x03app\x09\x07seed-ui\x0a\x09delano-u\
-i\x0b\x04\0\x07content\x03\0\x0c\x01r\x01\x04seeds\x04\0\x04seed\x03\0\x0e\x01p}\
-\x01r\x03\x04peers\x05topics\x04data\x10\x04\0\x07message\x03\0\x11\x01r\x02\x03\
-keys\x05value\x10\x04\0\x0fpublish-message\x03\0\x13\x01r\x01\x03keys\x04\0\x0fs\
-ubscribe-topic\x03\0\x15\x01q\x04\x09encrypted\x01\x0f\0\x07message\x01\x12\0\x07\
-publish\x01\x14\0\x09subscribe\x01\x16\0\x04\0\x06events\x03\0\x17\x01q\x04\x0ba\
-ll-content\x01\x0d\0\x04seed\x01\x01\0\x06delano\x01\x03\0\x05event\x01\x18\0\x04\
-\0\x07context\x03\0\x19\x03\x01$peerpiper:wallet/context-types@0.1.0\x05\x08\x02\
-\x03\0\x04\x0elisten-details\x01B\x08\x02\x03\x02\x01\x09\x04\0\x0elisten-detail\
-s\x03\0\0\x01@\x01\x07details\x01\x01\0\x04\0\x10addeventlistener\x01\x02\x01@\x01\
-\x07messages\x01\0\x04\0\x04emit\x01\x03\x01@\x01\x04hashs\x01\0\x04\0\x08set-ha\
-sh\x01\x04\x03\x01\x1fpeerpiper:wallet/wurbo-in@0.1.0\x05\x0a\x02\x03\0\x04\x07c\
-ontext\x01B\x0e\x02\x03\x02\x01\x0b\x04\0\x07context\x03\0\0\x01o\x02ss\x01p\x02\
-\x01j\0\x01s\x01@\x01\x09templates\x03\0\x04\x04\0\x09customize\x01\x05\x01j\x01\
-s\x01s\x01@\x01\x03ctx\x01\0\x06\x04\0\x06render\x01\x07\x01ps\x01k\x08\x01@\x01\
-\x09selectors\x09\x01\0\x04\0\x08activate\x01\x0a\x04\x01\x20peerpiper:wallet/wu\
-rbo-out@0.1.0\x05\x0c\x01B\x04\x01ps\x01k\0\x01@\x01\x09selectors\x01\x01\0\x04\0\
-\x09activates\x01\x02\x04\x01\"peerpiper:wallet/aggregation@0.1.0\x05\x0d\x04\x01\
-\x20peerpiper:wallet/peerpiper@0.1.0\x04\0\x0b\x0f\x01\0\x09peerpiper\x03\0\0\0G\
-\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen\
--rust\x060.25.0";
+\x03\x01ps\x01k\x04\x01@\x01\x09selectors\x05\x01\0\x04\0\x08activate\x01\x06\x01\
+o\x02ss\x01p\x07\x01j\0\x01s\x01@\x01\x09templates\x08\0\x09\x04\0\x09customize\x01\
+\x0a\x03\x01\"seed-keeper:wit-ui/wurbo-out@0.1.0\x05\x02\x01B\x13\x01r\x03\x04na\
+mes\x07versions\x0bdescriptions\x04\0\x04page\x03\0\0\x01k\x01\x01ks\x01r\x02\x04\
+page\x02\x04load\x03\x04\0\x0aeverything\x03\0\x04\x01r\x02\x03keys\x05values\x04\
+\0\x09input-ctx\x03\0\x06\x01q\x04\x03key\x01y\0\x02op\x01y\0\x05value\x01y\0\x08\
+selected\x01y\0\x04\0\x08kovindex\x03\0\x08\x01r\x02\x03idxy\x03val\x09\x04\0\x05\
+entry\x03\0\x0a\x01r\x02\x03ctx\x0b\x05values\x04\0\x05kvctx\x03\0\x0c\x01p}\x01\
+r\x03\x04peers\x05topics\x04data\x0e\x04\0\x07message\x03\0\x0f\x01q\x09\x0ball-\
+content\x01\x05\0\x0caddattribute\0\0\x08newentry\0\0\x0deditattribute\x01\x0d\0\
+\x0eeditmaxentries\x01}\0\x0dgenerateoffer\0\0\x0dgenerateproof\0\0\x0cpublishpr\
+oof\0\0\x0cnetworkevent\x01\x10\0\x04\0\x07context\x03\0\x11\x03\x01!delano:wit-\
+ui/context-types@0.1.0\x05\x03\x02\x03\0\x02\x07context\x01B\x0e\x02\x03\x02\x01\
+\x04\x04\0\x07context\x03\0\0\x01o\x02ss\x01p\x02\x01j\0\x01s\x01@\x01\x09templa\
+tes\x03\0\x04\x04\0\x09customize\x01\x05\x01j\x01s\x01s\x01@\x01\x03ctx\x01\0\x06\
+\x04\0\x06render\x01\x07\x01ps\x01k\x08\x01@\x01\x09selectors\x09\x01\0\x04\0\x08\
+activate\x01\x0a\x03\x01\x1ddelano:wit-ui/wurbo-out@0.1.0\x05\x05\x02\x03\0\x01\x07\
+context\x02\x03\0\x03\x07context\x01B\x1b\x02\x03\x02\x01\x06\x04\0\x0cseed-cont\
+ext\x03\0\0\x02\x03\x02\x01\x07\x04\0\x0edelano-context\x03\0\x02\x01r\x02\x08se\
+lectors\x02tys\x04\0\x0elisten-details\x03\0\x04\x01ks\x01r\x01\x05title\x06\x04\
+\0\x03app\x03\0\x07\x01k\x08\x01k\x01\x01k\x03\x01r\x03\x03app\x09\x07seed-ui\x0a\
+\x09delano-ui\x0b\x04\0\x07content\x03\0\x0c\x01r\x01\x04seeds\x04\0\x04seed\x03\
+\0\x0e\x01p}\x01r\x03\x04peers\x05topics\x04data\x10\x04\0\x07message\x03\0\x11\x01\
+r\x02\x03keys\x05value\x10\x04\0\x0fpublish-message\x03\0\x13\x01r\x01\x03keys\x04\
+\0\x0fsubscribe-topic\x03\0\x15\x01q\x04\x09encrypted\x01\x0f\0\x07message\x01\x12\
+\0\x07publish\x01\x14\0\x09subscribe\x01\x16\0\x04\0\x06events\x03\0\x17\x01q\x04\
+\x0ball-content\x01\x0d\0\x04seed\x01\x01\0\x06delano\x01\x03\0\x05event\x01\x18\
+\0\x04\0\x07context\x03\0\x19\x03\x01$peerpiper:wallet/context-types@0.1.0\x05\x08\
+\x02\x03\0\x04\x0elisten-details\x01B\x08\x02\x03\x02\x01\x09\x04\0\x0elisten-de\
+tails\x03\0\0\x01@\x01\x07details\x01\x01\0\x04\0\x10addeventlistener\x01\x02\x01\
+@\x01\x07messages\x01\0\x04\0\x04emit\x01\x03\x01@\x01\x04hashs\x01\0\x04\0\x08s\
+et-hash\x01\x04\x03\x01\x1fpeerpiper:wallet/wurbo-in@0.1.0\x05\x0a\x02\x03\0\x04\
+\x07context\x01B\x0e\x02\x03\x02\x01\x0b\x04\0\x07context\x03\0\0\x01o\x02ss\x01\
+p\x02\x01j\0\x01s\x01@\x01\x09templates\x03\0\x04\x04\0\x09customize\x01\x05\x01\
+j\x01s\x01s\x01@\x01\x03ctx\x01\0\x06\x04\0\x06render\x01\x07\x01ps\x01k\x08\x01\
+@\x01\x09selectors\x09\x01\0\x04\0\x08activate\x01\x0a\x04\x01\x20peerpiper:wall\
+et/wurbo-out@0.1.0\x05\x0c\x01B\x04\x01ps\x01k\0\x01@\x01\x09selectors\x01\x01\0\
+\x04\0\x09activates\x01\x02\x04\x01\"peerpiper:wallet/aggregation@0.1.0\x05\x0d\x04\
+\x01\x20peerpiper:wallet/peerpiper@0.1.0\x04\0\x0b\x0f\x01\0\x09peerpiper\x03\0\0\
+\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bind\
+gen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]
