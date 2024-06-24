@@ -178,7 +178,7 @@ fn render_all(ctx: Content) -> Result<String, String> {
             .expect("template should be added");
     }
 
-    let struct_ctx = Value::from_struct_object(AppContext::from(ctx.clone()));
+    let struct_ctx = Value::from_object(AppContext::from(ctx.clone()));
 
     let prnt_err = |e| {
         println!("Could not render template: {:#}", e);
@@ -227,25 +227,16 @@ impl AppContext {
     }
 }
 
-impl StructObject for AppContext {
-    fn get_field(&self, name: &str) -> Option<Value> {
-        match name {
-            "app" => Some(Value::from_struct_object(self.app.clone())),
-            "seed_ui" => Some(Value::from_struct_object(self.seed_ui.clone())),
-            "delano_ui" => Some(Value::from_struct_object(self.delano_ui.clone())),
-            // "edwards_ui" => Some(Value::from_struct_object(self.edwards_ui.clone())),
+impl Object for AppContext {
+    fn get_value(self: &std::sync::Arc<Self>, key: &Value) -> Option<Value> {
+        match key.as_str()? {
+            "app" => Some(Value::from_object(self.app.clone())),
+            "seed_ui" => Some(Value::from_object(self.seed_ui.clone())),
+            "delano_ui" => Some(Value::from_object(self.delano_ui.clone())),
+            // "edwards_ui" => Some(Value::from_object(self.edwards_ui.clone())),
             "has_seed" => Some(Value::from(self.state.has_encrypted())),
             _ => None,
         }
-    }
-    /// So that debug will show the values
-    fn static_fields(&self) -> Option<&'static [&'static str]> {
-        Some(&[
-            "app",
-            "seed_ui",
-            "delano_ui",
-            /* "edwards_ui", */ "has_seed",
-        ])
     }
 }
 
@@ -275,12 +266,13 @@ impl From<context_types::Content> for AppContext {
 #[derive(Debug, Clone)]
 pub(crate) struct App(Option<context_types::App>);
 
-impl StructObject for App {
-    fn get_field(&self, name: &str) -> Option<Value> {
-        match name {
+impl Object for App {
+    fn get_value(self: &std::sync::Arc<Self>, key: &Value) -> Option<Value> {
+        match key.as_str()? {
             "title" => Some(Value::from(
                 // unravel app<option<title>> to app<title> to title
                 self.as_ref()
+                    .as_ref()
                     .map(|v| v.title.clone())
                     .unwrap_or_default()
                     .unwrap_or_default(),
@@ -288,10 +280,6 @@ impl StructObject for App {
             "id" => Some(Value::from(rand_id())),
             _ => None,
         }
-    }
-    /// So that debug will show the values
-    fn static_fields(&self) -> Option<&'static [&'static str]> {
-        Some(&["title", "id"])
     }
 }
 
@@ -314,33 +302,29 @@ impl Deref for App {
     }
 }
 
-/// Wrapper around the seed keeper context so we can implement StructObject on top of it
+/// Wrapper around the seed keeper context so we can implement Object on top of it
 #[derive(Debug, Clone)]
 struct SeedUI(Option<context_types::SeedContext>);
 
-/// Implement StructObject for SeedKeeper so that we can use it in the template
+/// Implement Object for SeedKeeper so that we can use it in the template
 /// The main point of this impl is to call render(ctx) on the SeedKeeperUIContext
 /// and return the HTML string as the Value
-impl StructObject for SeedUI {
+impl Object for SeedUI {
     /// Simply passes through the seed context to the component for rendering
     /// outputs to .html
-    fn get_field(&self, name: &str) -> Option<Value> {
-        let render_result = wit_ui::wurbo_out::render(&self.as_ref().map(|v| v.clone()).unwrap_or(
-            wit_ui::wurbo_types::Context::AllContent(wit_ui::wurbo_types::Content {
-                page: None,
-                input: None,
-                load: None,
-            }),
-        ));
-        match (name, render_result) {
+    fn get_value(self: &std::sync::Arc<Self>, key: &Value) -> Option<Value> {
+        let render_result =
+            wit_ui::wurbo_out::render(&self.as_ref().as_ref().map(|v| v.clone()).unwrap_or(
+                wit_ui::wurbo_types::Context::AllContent(wit_ui::wurbo_types::Content {
+                    page: None,
+                    input: None,
+                    load: None,
+                }),
+            ));
+        match (key.as_str()?, render_result) {
             ("html", Ok(html)) => Some(Value::from(html)),
             _ => None,
         }
-    }
-
-    /// So that debug will show the values
-    fn static_fields(&self) -> Option<&'static [&'static str]> {
-        Some(&["html"])
     }
 }
 
@@ -368,31 +352,27 @@ impl Deref for SeedUI {
 #[derive(Debug, Clone)]
 struct DelanoUI(Option<context_types::DelanoContext>);
 
-/// Implement StructObject for DelanoUI so that we can use it in the template
+/// Implement Object for DelanoUI so that we can use it in the template
 /// The main point of this impl is to call render(ctx) on the DelanoUIContext
 /// and return the HTML string as the Value
-impl StructObject for DelanoUI {
+impl Object for DelanoUI {
     /// Simply passes through the seed context to the component for rendering
     /// outputs to .html
-    fn get_field(&self, name: &str) -> Option<Value> {
-        let render_result =
-            delano::wit_ui::wurbo_out::render(&self.as_ref().map(|v| v.clone()).unwrap_or(
+    fn get_value(self: &std::sync::Arc<Self>, key: &Value) -> Option<Value> {
+        let render_result = delano::wit_ui::wurbo_out::render(
+            &self.as_ref().as_ref().map(|v| v.clone()).unwrap_or(
                 delano::wit_ui::context_types::Context::AllContent(
                     delano::wit_ui::context_types::Everything {
                         page: None,
                         load: None,
                     },
                 ),
-            ));
-        match (name, render_result) {
+            ),
+        );
+        match (key.as_str()?, render_result) {
             ("html", Ok(html)) => Some(Value::from(html)),
             _ => None,
         }
-    }
-
-    /// So that debug will show the values
-    fn static_fields(&self) -> Option<&'static [&'static str]> {
-        Some(&["html"])
     }
 }
 
@@ -419,10 +399,10 @@ impl Deref for DelanoUI {
 // #[derive(Debug, Clone)]
 // struct Edwards(context_types::EdwardsContext);
 //
-// /// Implement StructObject for Edwards so that we can use it in the template
+// /// Implement Object for Edwards so that we can use it in the template
 // /// The main point of this impl is to call render(ctx) on the EdwardsUIContext
 // /// and return the HTML string as the Value
-// impl StructObject for Edwards {
+// impl Object for Edwards {
 //     fn get_field(&self, name: &str) -> Option<Value> {
 //         let render_result = edwards_ui::wurbo_out::render(&self);
 //         match (name, render_result) {
