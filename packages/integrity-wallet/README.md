@@ -1,6 +1,8 @@
 # PeerPiper Intgerity Wallet
 
-The main purpose of this JS package is to host a demo of the PeerPiper Integrity Wallet. The Integrity Wallet is a dataurl wallet where the code integrity to verified via SHA hash as a subresource integrity (SRI).
+The main purpose of this JS package is to host a demo of the PeerPiper Integrity Wallet. The Integrity Wallet is a [dataurl wallet](https://github.com/coins/secure-bookmark) where the code integrity to verified via SHA hash as a [subresource integrity (SRI)](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity).
+
+The point? **The wallet won't load if the code was changed behind your back!**
 
 It also hosts a demo for accessing a PeerPiper desktop node via remote connection.
 
