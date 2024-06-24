@@ -26,18 +26,17 @@ jobs:
         uses: cargo-bins/cargo-binstall@main
 
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@nightly
         with:
           targets: wasm32-unknown-unknown, wasm32-wasi
-          toolchain: nightly-2024-05-01
-          components: rust-src, rustfmt, rust-analyzer
+          toolchain: nightly-x86_64-unknown-linux-gnu
+          components: rust-src, rustfmt
 
       - name: Install cargo component v0.13.2
         run: echo yes | cargo binstall cargo-component@0.13.2
 
       - name: Run binstall just, wasm-tools
         run: |
-          # Run binstall just with the --no-confirm flag
           cargo binstall just --no-confirm
           cargo binstall wasm-tools --no-confirm
 
