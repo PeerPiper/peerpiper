@@ -43,7 +43,7 @@ jobs:
 
       - name: Build and Compose Wasm
         run: |
-          just build-submodules
+          # just build-submodules
           just compose
 
       - name: Archive build
