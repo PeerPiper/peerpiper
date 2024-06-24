@@ -38,7 +38,9 @@
 		];
 
 		// load the import handles into the Wasm component and get the ES module returned
-		wurbo = new Wurbo({ arrayBuffer: wasmBytes, importables }, async (payload) => {
+		// We inline the worker code because it's built into a dataurl in this app
+		let inline = true;
+		wurbo = new Wurbo({ arrayBuffer: wasmBytes, importables, inline }, async (payload) => {
 			// Relay emitted commands from the Wasm component to PiperNet
 			console.log('Command emitted: ', { payload });
 			dispatch('command', payload);
