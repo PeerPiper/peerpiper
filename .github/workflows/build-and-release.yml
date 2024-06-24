@@ -29,8 +29,8 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           targets: wasm32-unknown-unknown, wasm32-wasi
-          toolchain: nightly-2024-06-05
-          components: rust-src, rustfmt
+          toolchain: nightly-2024-05-01
+          components: rust-src, rustfmt, rust-analyzer
 
       - name: Install cargo component v0.13.2
         run: echo yes | cargo binstall cargo-component@0.13.2
