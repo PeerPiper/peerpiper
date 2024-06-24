@@ -48,42 +48,25 @@ function readOutputFiles() {
 			const scripts = $('script').filter('[src]');
 			const stylesheets = $('link[rel=stylesheet]').filter('[href]');
 
-			scripts.each((index, element) => {
-				const scriptElement = $(element);
-				const scriptSrc = scriptElement.attr('src');
-				const scriptPath = path.join(outputDir, scriptSrc);
-				let scriptContent = fs.readFileSync(scriptPath, 'utf8');
+			const process = (index, element) => {
+				const element = $(element);
+				const src = element.attr('src') || element.attr('href');
+				const filePath = path.join(outputDir, src);
+				const content = fs.readFileSync(filePath, 'utf8');
 
-				// find matches for /assets/ in the scriptContent
-				let matches = scriptContent.match(/"\/assets\//g);
-
-				// insert ${base} before `assets/` in the source code scriptContent
+				// insert ${base} before `assets/` in the source code content
 				// so that the innerApp can load the correct urls
-				scriptContent = scriptContent.replace(/"\/assets\//g, `"${base}/assets/`);
-				// write the modified scriptContent back to the file
-				fs.writeFileSync(scriptPath, scriptContent);
+				const newContent = content.replace(/"\/assets\//g, `"${base}/assets/`);
+				// write the modified content back to the file
+				fs.writeFileSync(filePath, newContent);
 
 				const algo = 'sha384';
-				const integrity = createHash(algo).update(scriptContent).digest().toString('base64');
-				scriptElement.attr('integrity', `${algo}-${integrity}`);
-			});
+				const integrity = createHash(algo).update(newContent).digest().toString('base64');
+				element.attr('integrity', `${algo}-${integrity}`);
+			};
 
-			stylesheets.each((index, element) => {
-				const linkElement = $(element);
-				const linkHref = linkElement.attr('href');
-				const linkPath = path.join(outputDir, linkHref);
-				let linkContent = fs.readFileSync(linkPath, 'utf8');
-
-				// insert ${base} before `assets/` in the source code linkContent
-				// so that the innerApp can load the correct urls
-				linkContent = linkContent.replace(/"\/assets\//g, `"${base}/assets/`);
-				// write the modified linkContent back to the file
-				fs.writeFileSync(linkPath, linkContent);
-
-				const algo = 'sha384';
-				const integrity = createHash(algo).update(linkContent).digest().toString('base64');
-				linkElement.attr('integrity', `${algo}-${integrity}`);
-			});
+			scripts.each(process);
+			stylesheets.each(process);
 
 			fs.writeFileSync(outputFilePath, $.html());
 		}
