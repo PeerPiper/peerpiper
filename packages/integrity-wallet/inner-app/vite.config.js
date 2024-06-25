@@ -48,8 +48,8 @@ function readOutputFiles() {
 			const scripts = $('script').filter('[src]');
 			const stylesheets = $('link[rel=stylesheet]').filter('[href]');
 
-			const process = (index, element) => {
-				const element = $(element);
+			const process = (index, el) => {
+				const element = $(el);
 				const src = element.attr('src') || element.attr('href');
 				const filePath = path.join(outputDir, src);
 				const content = fs.readFileSync(filePath, 'utf8');
