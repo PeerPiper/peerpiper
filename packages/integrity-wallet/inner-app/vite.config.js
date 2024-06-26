@@ -54,10 +54,7 @@ function readOutputFiles() {
 				const filePath = path.join(outputDir, src);
 				const content = fs.readFileSync(filePath, 'utf8');
 
-				// insert ${base} before `assets/` in the source code content
-				// so that the innerApp can load the correct urls
 				const newContent = content.replace(/"\/assets\//g, `"${base}/assets/`);
-				// write the modified content back to the file
 				fs.writeFileSync(filePath, newContent);
 
 				const algo = 'sha384';
