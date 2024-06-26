@@ -5,6 +5,9 @@
 	import { encodeURLSafe } from '@stablelib/base64';
 	import Finger from '$lib/Finger.svelte';
 
+	// get inner-app/ package.jon version
+	import { version } from '../../../inner-app/package.json';
+
 	/**
 	 * @type {string}
 	 */
@@ -32,7 +35,7 @@
 	let isSafari = false;
 
 	onMount(async () => {
-		const name = 'innerApp.js';
+		const name = `${version}/innerApp.js`;
 		// fetch the text
 		const appRaw = await fetch(`${base}/${name}`).then((res) => res.text());
 

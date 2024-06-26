@@ -7,6 +7,10 @@ import fs from 'fs';
 import path from 'path';
 import { devConfig } from '../config.js';
 
+// read the package.json file to get the version string
+const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const version = packageJson.version;
+
 const devBase = devConfig.devBase;
 let base;
 const env = loadEnv('', process.cwd(), '');
@@ -21,7 +25,9 @@ export default defineConfig(({ command, mode }) => {
 	return {
 		plugins: [readOutputFiles(), svelte()],
 		build: {
-			minify: false
+			minify: false,
+			// out dir is dist/version
+			outDir: 'dist'
 		},
 		worker: {
 			format: 'es'
@@ -54,7 +60,7 @@ function readOutputFiles() {
 				const filePath = path.join(outputDir, src);
 				const content = fs.readFileSync(filePath, 'utf8');
 
-				const newContent = content.replace(/"\/assets\//g, `"${base}/assets/`);
+				const newContent = content.replace(/"\/assets\//g, `"${base}/${version}/assets/`);
 				fs.writeFileSync(filePath, newContent);
 
 				const algo = 'sha384';
