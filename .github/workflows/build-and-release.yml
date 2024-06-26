@@ -92,6 +92,21 @@ jobs:
           npm run build
           # touch docs/.nojekyll
 
+      - name: Get version of inner-app
+        id: get_version
+        run: echo "VERSION=$(jq -r '.version' ./inner-app/package.json)" >> $GITHUB_ENV
+
+      - name: Commit built dist
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add dist/$VERSION
+          git commit -m "Add dist build for version $VERSION"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN}}
+          VERSION: ${{ env.VERSION }}
+
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v3
         with:
