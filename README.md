@@ -21,6 +21,12 @@ PeerPiper is an contacts network based on the `PeerWise Protocol` that allows yo
  
 ![PeerPiper Architecture](./peerpiper_arch.png)
 
+# PeerPiper "Nodes"
+
+The browser needs a node to connect to the network. The good news is that you can run your own node [on your own desktop](https://github.com/PeerPiper/peerpiper-desktop), or trustlessly use someone else's.
+
+This is true even if you use PeerPiper between two browsers, because the server in between connects the browsers together at first.
+
 # Deployment
 
 The core library should include wrappers so that it can be deployed to various infrastructure providers:
@@ -59,4 +65,4 @@ Note that `cargo-component` is a work in progress and may not be stable. Configs
 
 ## Development
 
-Many of the commands used in development are in the `justfile`. You can see them by running `just`.
+Many of the commands used in development are in the [`justfile`](./justfile). You can see them by running [`just`](https://just.systems/man/en/).
