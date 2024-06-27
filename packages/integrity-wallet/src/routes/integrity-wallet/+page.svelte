@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
+	import { page } from '$app/stores';
 
 	import { encodeURLSafe } from '@stablelib/base64';
 	import Finger from '$lib/Finger.svelte';
@@ -52,7 +53,9 @@
 		dataUrl =
 			`data:text/html,<script src="${path}/${name}" integrity="${integrity}" crossorigin></scr` +
 			`ipt><!-` +
-			'-';
+			'-' +
+			'#' +
+			$page.url.searchParams;
 
 		el_link.href = dataUrl;
 
