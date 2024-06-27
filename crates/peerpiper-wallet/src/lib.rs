@@ -100,9 +100,8 @@ impl WurboGuest for Component {
                 *APP_CONTEXT.lock().unwrap() = Some(ctx.clone());
 
                 // convert to json string and set hash to it
-                let hash_val = serde_json::to_string(&state).map_err(|e| e.to_string())?;
-                let hash_b64 = Base64Url::encode_string(hash_val.as_bytes());
-                set_hash(&hash_b64);
+                let val_json = serde_json::to_string(&state).map_err(|e| e.to_string())?;
+                set_hash(&val_json);
                 // re-render_all using APP_CONTEXT to refresh the screen and show anything that depends on seed
                 let res = render_all(ctx.content.clone()).map_err(|e| e.to_string())?;
                 res
