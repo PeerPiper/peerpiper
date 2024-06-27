@@ -28,7 +28,7 @@ build-examples:
 # update and build all submodules, then build the wallet
 update-build: build-submodules build-wits
 
-compose: build-wits
+compose: update-build
   mkdir -p ./dist
   wasm-tools compose --config crates/peerpiper-wallet/config.yml -o dist/peerpiper_wallet_aggregate.wasm target/wasm32-wasi/release/peerpiper_wallet.wasm
 
