@@ -4,6 +4,7 @@
 
 	// Import wasm component bytes as a url
 	import wasmURL from '../../../../../dist/peerpiper_wallet_aggregate.wasm?url';
+	// import wasmURL from 'https://github.com/PeerPiper/peerpiper/releases/download/prerelease/peerpiper_wallet_aggregate.wasm?url';
 
 	/**
 	 * The rendered component as a string of HTML
@@ -49,7 +50,9 @@
 		// get the string after the hash (slice 1)
 		let api = null;
 		try {
-			api = location.hash.slice(1);
+      const searchParams = new URLSearchParams(location.hash.slice(1));
+      api = JSON.stringify(Object.fromEntries(searchParams.entries()));
+      console.log('api', api);
 		} catch (e) {
 			console.warn(e);
 		}
