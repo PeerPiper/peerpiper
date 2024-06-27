@@ -10,7 +10,7 @@ const config = {
 		adapter: adapter(),
 		alias: {
 			// alias for this package
-			'peerpiper-js': '/src/lib/index.js'
+			'@peerpiper/wallet-connector': '/src/lib/index.js'
 		}
 	},
 	preprocess: vitePreprocess()

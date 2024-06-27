@@ -1,5 +1,5 @@
 <script>
-	import { connect } from 'peerpiper-js';
+	import { connect } from '@peerpiper/wallet-connector';
 	import { onMount } from 'svelte';
 	let rpc;
 	onMount(async () => {
