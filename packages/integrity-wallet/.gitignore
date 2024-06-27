@@ -11,4 +11,3 @@ vite.config.ts.timestamp-*
 !static
 /docs
 /static/assets
-/static/innerApp.js
