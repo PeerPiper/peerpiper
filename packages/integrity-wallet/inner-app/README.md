@@ -1,12 +1,10 @@
 # Inner App
 
-This is the app that is compiled and hashed into the dataurl. This is the app that you want to knwo whether it's been changed or not. The app with your sensitive data (secrets, etc).
+This is the app that is compiled and hashed into the [dataurl](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URLs), which are used because they can contain both a script URL plus a [subresource integrity hash](https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity). Use this app when you want to know whether it's been changed or not, as the browser won't load it if it's changed behind your back. Use this app with your sensitive data (secrets, etc).
 
-This inner app is the opener window, which is how you can connect to the DApp (usign the `window.opener` property).
+This inner app is the window [`opener`](https://developer.mozilla.org/en-US/docs/Web/API/Window/opener), which is how you can connect to the DApp (using the `window.opener` [property](https://developer.mozilla.org/en-US/docs/Web/API/Window/opener)).
 
-## Made with Svelte + Vite
-
-This template should help get you started developing with Svelte in Vite.
+Made with Svelte + Vite
 
 ## Build
 
