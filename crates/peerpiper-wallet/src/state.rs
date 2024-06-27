@@ -19,6 +19,12 @@ impl State {
         self
     }
 
+    /// Set the username.
+    pub fn with_username(mut self, username: String) -> Self {
+        self.username = Some(username);
+        self
+    }
+
     /// Returns whether the state has an encrypted seed.
     pub fn has_encrypted(&self) -> bool {
         self.encrypted.is_some()
