@@ -2,12 +2,16 @@
 <script>
 	import { onMount, createEventDispatcher } from 'svelte';
 
+	/**
+	 * DApp URL
+	 * @type {string}
+	 */
+	export let url;
+
 	const dispatch = createEventDispatcher();
 
-	let url = '';
-
 	// List of origins allowed to send messages to this window
-	let origins = [];
+	let origins = new Set();
 
 	let openUrl = () => {
 		// validate it's a valid url
@@ -15,13 +19,16 @@
 			return;
 		}
 		window.open(url, '_blank');
-		origins = [...origins, new URL(url).origin];
+		console.log('URL opened:', url);
+		origins.add(new URL(url).origin);
+		origins = origins;
+		console.log('Origins:', origins);
 	};
 
 	// Listen for messages from the opened window
 	const onMessage = (event) => {
 		// Only accept messages from the same origin
-		if (!origins.includes(event.origin)) {
+		if (!origins.has(event.origin)) {
 			console.warn('Received message from unauthorized origin:', event.origin);
 			return;
 		}
@@ -52,12 +59,12 @@
 	</div>
 </div>
 
-<!--Displays list of Auth'd origins -->
-{#if origins.length > 0}
+<!--Displays set of origins -->
+{#if origins.size > 0}
 	<div class="fixed bottom-0 right-0 m-4 p-4 bg-white rounded-lg shadow-lg">
 		<h2 class="text-lg font-bold text-gray-800">Auth'd Origins</h2>
 		<ul class="mt-2">
-			{#each origins as origin}
+			{#each Array.from(origins) as origin}
 				<li class="text-sm text-gray-600">{origin}</li>
 			{/each}
 		</ul>
