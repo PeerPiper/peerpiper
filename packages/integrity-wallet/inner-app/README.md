@@ -8,6 +8,14 @@ This inner app is the opener window, which is how you can connect to the DApp (u
 
 This template should help get you started developing with Svelte in Vite.
 
+## Build
+
+Building the project will put the files in the [./dist](./dist) folder.
+
+```bash
+npm run build
+```
+
 ## Recommended IDE Setup
 
 [VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
