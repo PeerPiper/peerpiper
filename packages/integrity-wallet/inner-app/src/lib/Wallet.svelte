@@ -50,9 +50,8 @@
 		// get the string after the hash (slice 1)
 		let api = null;
 		try {
-      const searchParams = new URLSearchParams(location.hash.slice(1));
-      api = JSON.stringify(Object.fromEntries(searchParams.entries()));
-      console.log('api', api);
+			const searchParams = new URLSearchParams(location.hash.slice(1));
+			api = JSON.stringify(Object.fromEntries(searchParams.entries()));
 		} catch (e) {
 			console.warn(e);
 		}
