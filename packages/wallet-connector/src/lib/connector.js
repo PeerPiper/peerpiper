@@ -9,7 +9,7 @@
  */
 export function connect() {
 	if (window && window.opener) {
-		return createRpc(window.opener);
+		return createNestedProxy();
 	}
 	return null;
 }
@@ -18,38 +18,41 @@ export function connect() {
  * The createRpc function is called by the connect function to create an rpc function with the given window object.
  * The rpc function it returns is called by the opened window to post messages and receive responses from the opener window.
  */
-function createRpc(target) {
-	return async ({ method, params }) => {
-		let message = { method, params };
-		const channel = new MessageChannel();
-		try {
-			return new Promise((resolve, reject) => {
-				channel.port1.onmessage = (event) => {
-					if (event.data.error) {
-						reject(event.data.error);
-					} else {
-						resolve(event.data.result);
-					}
-				};
-				target.postMessage(message, '*', [channel.port2]);
-			});
-		} catch (e) {
-			console.log(`rpc [fail] ${method} ${e}`);
-			return { error: { message: `${e}` } };
-		}
-	};
+
+async function rpc(method, params) {
+	let message = { method, params };
+	const channel = new MessageChannel();
+	try {
+		return new Promise((resolve, reject) => {
+			channel.port1.onmessage = (event) => {
+				if (event.data.error) {
+					reject(event.data.error);
+				} else {
+					resolve(event.data.result);
+				}
+			};
+			window.opener.postMessage(message, '*', [channel.port2]);
+		});
+	} catch (e) {
+		console.log(`rpc [fail] ${method} ${e}`);
+		return { error: { message: `${e}` } };
+	}
 }
 
 /**
  * Use a new Proxy to make using the rpc function more convenient.
  * This way, we can call the rpc function directly as if it were a local function.
  */
-export function createRpcProxy(rpc) {
-	return new Proxy(rpc, {
-		get(target, prop, receiver) {
-			return async (...args) => {
-				return target(prop, args);
-			};
+function createNestedProxy(path = '') {
+	return new Proxy(function () {}, {
+		get(target, prop) {
+			const newPath = path ? `${path}.${prop}` : prop;
+			return createNestedProxy(newPath);
+		},
+
+		apply(target, thisArg, args) {
+			// Use the rpc function for the final call
+			return rpc(path, args);
 		}
 	});
 }
