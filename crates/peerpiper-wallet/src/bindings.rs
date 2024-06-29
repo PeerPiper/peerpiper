@@ -32,7 +32,7 @@ pub mod delano {
             pub struct Everything {
                 pub page: Option<Page>,
                 /// issue: option<issuer>,
-                /// The base64URLsafe unpadded encoded JSON string of the loadable data (offer or proof)
+                /// The JSON string of the loadable data (offer or proof)
                 pub load: Option<_rt::String>,
             }
             impl ::core::fmt::Debug for Everything {
