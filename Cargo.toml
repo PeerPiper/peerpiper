@@ -4,6 +4,7 @@ resolver = "2"
 
 [workspace.package]
 rust-version = "1.80"
+version = "0.1.0"
 
 [workspace.dependencies]
 peerpiper = { path = "crates/peerpiper" }
@@ -17,6 +18,10 @@ tracing = "0.1.37"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 libp2p = "^0.53.2"
 wit-bindgen-rt = { version = "0.26.0", features = ["bitflags"] }
+# for submodules
+bls12_381_plus = { version = "0.8.16", features = ["expose-fields", "alloc"] }
+delano-keys = { path = "./submodules/delanocreds/crates/delano-keys" }
+seed-keeper-core = { path = "./submodules/seed-keeper/crates/seed-keeper-core" }
 
 [profile.release]
 opt-level = "z"          # Optimize for size.
