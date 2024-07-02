@@ -23,6 +23,9 @@
 
 	function handleSign(e) {
 		console.log('Sending invite for signature', e.detail);
+		remote.delanocreds.sign(e.detail).then((resp) => {
+			console.log('Response from signature', resp);
+		});
 	}
 </script>
 

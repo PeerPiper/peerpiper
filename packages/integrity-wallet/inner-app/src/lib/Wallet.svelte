@@ -6,6 +6,23 @@
 	import wasmURL from '../../../../../dist/peerpiper_wallet_aggregate.wasm?url';
 	// import wasmURL from 'https://github.com/PeerPiper/peerpiper/releases/download/prerelease/peerpiper_wallet_aggregate.wasm?url';
 
+	export let delanoUi;
+
+	let delanoUiDefault = {
+		tag: 'all-content',
+		// name, version, description
+		val: {
+			page: {
+				name: 'Delano',
+				version: '0.0.1',
+				description: 'A DAC wallet for the people'
+			},
+			load: null
+		}
+	};
+
+	let data;
+
 	/**
 	 * The rendered component as a string of HTML
 	 * @type {string | null}
@@ -44,7 +61,7 @@
 		wurbo = new Wurbo({ arrayBuffer: wasmBytes, importables, inline }, async (payload) => {
 			// Relay emitted commands from the Wasm component to PiperNet
 			console.log('Command emitted: ', { payload });
-			dispatch('command', payload);
+			dispatch('emit', payload);
 		});
 
 		// get the string after the hash (slice 1)
@@ -57,7 +74,7 @@
 		}
 
 		// call `render` with your inputs for the component
-		let data = {
+		data = {
 			tag: 'all-content',
 			val: {
 				app: {
@@ -79,11 +96,7 @@
 					tag: 'all-content',
 					// name, version, description
 					val: {
-						page: {
-							name: 'Delano',
-							version: '0.0.1',
-							description: 'A DAC wallet for the people'
-						},
+						...delanoUiDefault.val.page,
 						load: api
 					}
 				},
@@ -102,24 +115,30 @@
 				// }
 			}
 		};
-		renderedHTML = await wurbo.render(data);
+		console.log('data', { data });
+		renderAndUpdate(data);
 	});
 
-	// Once the HTML is rendered and the module is loaded, we can activate the event emitters
-	$: if (renderedHTML && wurbo)
-		(async () => {
-			// wait for the DOM to reflect the updates first
-			await tick();
-			// once the DOM has our elements loaded, we can activate the aggregated event emitters
-			wurbo.aggregation();
-		})();
+	function renderAndUpdate(val) {
+		console.log('renderAndUpdate', { val });
+		wurbo.render(val).then((html) => {
+			renderedHTML = html;
+			tick().then(() => {
+				wurbo.aggregation();
+			});
+		});
+	}
+
+	$: if (wurbo && delanoUi) {
+		console.log('delanoUi', { delanoUi });
+		// renderAndUpdate(delanoUi);
+	}
 </script>
 
 <svelte:head>
 	<title>PeerPiper Wallet</title>
 </svelte:head>
 <div>
-	<h1>PeerPiper Wallet</h1>
 	{#if renderedHTML}
 		{@html renderedHTML}
 	{/if}
