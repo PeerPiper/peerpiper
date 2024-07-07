@@ -4,9 +4,14 @@ version = "0.1.0"
 edition = "2021"
 rust-version.workspace = true
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
+wasm-bindgen = "0.2.92"
+delano-wallet-core = { version = "0.1.1", git = "https://github.com/DougAnderson444/delanocreds.git" }
 seed-keeper-core = { path = "../../submodules/seed-keeper/crates/seed-keeper-core" }
-delanocreds = { path = "../../submodules/delanocreds/crates/delanocreds" }
+delanocreds = { version = "0.2.1", git = "https://github.com/DougAnderson444/delanocreds.git" }
 delano-keys = { path = "../../submodules/delanocreds/crates/delano-keys" }
 serde = { version = "1.0", features = ["derive"] }
 serde-wasm-bindgen = "0.6"

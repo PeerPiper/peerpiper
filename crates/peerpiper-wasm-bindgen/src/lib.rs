@@ -1,6 +1,6 @@
 mod bindgen;
-mod delanocreds;
 
+use delano_wallet_core::DelanoWallet;
 use seed_keeper_core::seed::rand_seed;
 use seed_keeper_core::wrap::{decrypt, encrypt};
 use seed_keeper_core::{derive_key, Zeroizing};
@@ -50,6 +50,7 @@ pub struct Wallet {
     username: MinString<8>,
     password: MinString<8>,
     seed: Zeroizing<Vec<u8>>,
+    delano: DelanoWallet,
 }
 
 impl Wallet {
@@ -76,6 +77,7 @@ impl Wallet {
         };
 
         Ok(Wallet {
+            delano: DelanoWallet::new(seed.clone()),
             seed,
             username: credentials.username,
             password: credentials.password,
@@ -100,6 +102,33 @@ mod tests {
 
     #[test]
     fn it_works() {
-        assert_eq!(result, 4);
+        // Create a new wallet
+        let credentials = Credentials {
+            username: MinString::new("username").unwrap(),
+            password: MinString::new("password").unwrap(),
+            encrypted_seed: None,
+        };
+
+        let wallet = Wallet::new(credentials).expect("Failed to create wallet");
+
+        // Encrypt the seed
+        let encrypted_seed = wallet.encrypted_seed().expect("Failed to encrypt seed");
+
+        // Create a new wallet with the encrypted seed
+        let credentials = Credentials {
+            username: MinString::new("username").unwrap(),
+            password: MinString::new("password").unwrap(),
+            encrypted_seed: Some(encrypted_seed.clone()),
+        };
+
+        let wallet = Wallet::new(credentials).expect("Failed to create wallet");
+
+        // Encrypt the seed
+        let encrypted_seed_2 = wallet.encrypted_seed().expect("Failed to encrypt seed");
+
+        assert!(encrypted_seed_2.len() > 0);
+
+        // Should match
+        assert_eq!(encrypted_seed, encrypted_seed_2);
     }
 }
