@@ -1,0 +1,7 @@
+build:
+  wasm-pack build --target web --release
+
+test: build
+  wasm-pack test --headless --chrome
+
+
