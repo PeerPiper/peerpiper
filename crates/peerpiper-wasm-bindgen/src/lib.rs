@@ -8,14 +8,28 @@ use serde::{Deserialize, Serialize};
 use std::{marker::PhantomData, ops::Deref};
 
 /// Username, password and Option of Encrypted seed
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct Credentials {
     pub username: MinString<8>,
     pub password: MinString<8>,
     pub encrypted_seed: Option<Vec<u8>>,
 }
 
-#[derive(Serialize, Deserialize)]
+impl Credentials {
+    pub fn new(
+        username: &str,
+        password: &str,
+        encrypted_seed: Option<Vec<u8>>,
+    ) -> Result<Self, String> {
+        Ok(Credentials {
+            username: MinString::new(username)?,
+            password: MinString::new(password)?,
+            encrypted_seed,
+        })
+    }
+}
+
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct MinString<const N: usize> {
     value: String,
     _marker: PhantomData<()>,
