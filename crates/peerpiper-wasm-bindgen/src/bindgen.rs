@@ -1,6 +1,7 @@
 //! Wasm-Bindgen bindings for the PeerPiper Wallet. This crate essentially does the conversion
 //! to/from JsValue for the main module.
-use delano_wallet_core::IssueOptions;
+use delano_wallet_core::{IssueOptions, OfferConfig, Provables, Verifiables};
+use delanocreds::keypair::spseq_uc::CredentialCompressed;
 use delanocreds::{Attribute, MaxEntries, Nonce};
 use wasm_bindgen::prelude::*;
 
@@ -27,12 +28,27 @@ pub struct CredArgs {
     encrypted_seed: Option<Vec<u8>>,
 }
 
+/// Offer Arguments
+#[derive(Serialize, Deserialize, Debug)]
+pub struct OfferArgs {
+    credential: CredentialCompressed,
+    config: OfferConfig,
+}
+
 /// Bindings for [Attribute](delanocreds::Attribute) so that the user can create a new Attribute
 /// from bytes
 #[wasm_bindgen]
 pub fn attribute(bytes: &[u8]) -> Result<JsValue, JsValue> {
     let attr = Attribute::new(bytes);
     Ok(serde_wasm_bindgen::to_value(&attr)?)
+}
+
+#[wasm_bindgen]
+extern "C" {
+    // Use `js_namespace` here to bind `console.log(..)` instead of just
+    // `log(..)`
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
 }
 
 #[wasm_bindgen]
@@ -61,6 +77,16 @@ impl WasmWallet {
         Ok(WasmWallet { inner })
     }
 
+    /// Returns the Encrypted Seed of the Wallet
+    #[wasm_bindgen(js_name = encryptedSeed)]
+    pub fn encrypted_seed(&self) -> Result<JsValue, JsValue> {
+        let encr_seed = self
+            .inner
+            .encrypted_seed()
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        Ok(serde_wasm_bindgen::to_value(&encr_seed)?)
+    }
+
     /// Returns the Nym Proof for this Wallet's Delanocreds Feature
     #[wasm_bindgen(js_name = nymProof)]
     pub fn nym_proof(&self, nonce: &[u8]) -> Result<JsValue, JsValue> {
@@ -68,7 +94,10 @@ impl WasmWallet {
         Ok(serde_wasm_bindgen::to_value(&proof)?)
     }
 
-    /// Issue a new credential, optionally with IssuersOptions, and return the credential
+    /// Creates and issues a new credential, optionally with IssuersOptions, and returns the created credential.
+    /// If no NymProof is included in the options, it generates the Credential for oneself.
+    /// If a NymProof is included, it issues the Credential to the NymProof and only they can
+    /// offer it to others (delegatee) or extend it.
     #[wasm_bindgen]
     pub fn issue(&mut self, args: JsValue) -> Result<JsValue, JsValue> {
         let IssueArgs {
@@ -84,9 +113,46 @@ impl WasmWallet {
             ))
         })?;
 
-        let cred = self.inner.delano.issue(attributes, max_entries, options);
+        let cred = self.inner.delano.issue(attributes, max_entries, options)?;
         Ok(serde_wasm_bindgen::to_value(&cred)?)
     }
 
-    // / Create an Offer
+    /// Create an Offer. Takes an issued credential and OfferConfig, and returns the Orphan Credential
+    /// that can only be accpeted by someone who has the attribute values that were included in the
+    /// original credential issuance.
+    #[wasm_bindgen]
+    pub fn offer(&mut self, args: JsValue) -> Result<JsValue, JsValue> {
+        let OfferArgs { credential, config } =
+            serde_wasm_bindgen::from_value(args).map_err(|e| e.to_string())?;
+
+        let cred = self.inner.delano.offer(credential, config)?;
+        Ok(serde_wasm_bindgen::to_value(&cred)?)
+    }
+
+    /// Accept an offered credential.
+    #[wasm_bindgen]
+    pub fn accept(&mut self, cred: JsValue) -> Result<JsValue, JsValue> {
+        let credential: CredentialCompressed =
+            serde_wasm_bindgen::from_value(cred).map_err(|e| e.to_string())?;
+        let cred = self.inner.delano.accept(credential)?;
+        Ok(serde_wasm_bindgen::to_value(&cred)?)
+    }
+
+    /// Generate a Proof for the given [delano_wallet_core::Provables]
+    #[wasm_bindgen]
+    pub fn prove(&mut self, provables: JsValue) -> Result<JsValue, JsValue> {
+        let provables: Provables =
+            serde_wasm_bindgen::from_value(provables).map_err(|e| e.to_string())?;
+        let proof = self.inner.delano.prove(provables)?;
+        Ok(serde_wasm_bindgen::to_value(&proof)?)
+    }
+
+    /// Verify a Proof for the given [delano_wallet_core::Verifiables]
+    #[wasm_bindgen]
+    pub fn verify(&mut self, verifiables: JsValue) -> Result<JsValue, JsValue> {
+        let verifiables: Verifiables = serde_wasm_bindgen::from_value(verifiables)
+            .map_err(|e| format!("Error deserde into Verifiables: {:?}", e))?;
+        let verified = self.inner.delano.verify(verifiables)?;
+        Ok(serde_wasm_bindgen::to_value(&verified)?)
+    }
 }
