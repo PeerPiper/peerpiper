@@ -17,12 +17,14 @@
 	"publishConfig": {
 		"access": "public"
 	},
+	"dependencies": {
+		"wurbo": "^0.4.4"
+	},
 	"devDependencies": {
 		"@sveltejs/vite-plugin-svelte": "^3.0.2",
 		"cheerio": "^1.0.0-rc.12",
 		"node-fetch": "^2.6.1",
 		"svelte": "^4.2.12",
-		"vite": "^5.2.0",
-		"wurbo": "^0.4.4"
+		"vite": "^5.2.0"
 	}
 }
