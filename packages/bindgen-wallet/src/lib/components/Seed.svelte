@@ -7,15 +7,26 @@
 	// if error, change input borders to red.
 	export let error;
 
-	$: errorClass = error ? 'border-red-500' : '';
+	// Base64 seed
+	export let b64Seed;
+
+	$: errorClass = error ? 'border-red-500 outline-red-500' : '';
 
 	// on Submit, dispatch 'seed' event
 	function handleSubmit(event) {
 		event.preventDefault();
 		const form = event.target;
 		const formData = new FormData(form);
-		const data = Object.fromEntries(formData.entries());
-		console.log('emiting ', data);
+		// const data = Object.fromEntries(formData.entries());
+		// only include entries that have a value
+		const data = Object.fromEntries([...formData.entries()].filter(([_, value]) => value));
+		// if enr_seed, convert encrypted_seed from base64 string into Uint8Array
+		if (data.encrypted_seed)
+			data.encrypted_seed = new Uint8Array(
+				atob(data.encrypted_seed)
+					.split('')
+					.map((c) => c.charCodeAt(0))
+			);
 		dispatch('seed', data);
 	}
 </script>
@@ -28,7 +39,7 @@
 		class="relative bg-white px-6 pt-10 pb-8 shadow-xl ring-1 ring-gray-900/5 sm:mx-auto sm:max-w-lg sm:rounded-lg sm:px-10"
 	>
 		<div class="mx-auto max-w-md">
-			<h1 class="text-3xl font-bold pb-4">Access</h1>
+			<h1 class="text-3xl font-bold pb-4">Generate keys</h1>
 			<form
 				class="flex flex-col space-y-4 mx-auto min-w-md"
 				on:submit|preventDefault={handleSubmit}
@@ -39,8 +50,7 @@
 					id="username"
 					name="username"
 					autocomplete="username"
-					class="border py-2 px-4 rounded-lg bg-sky-100 text-black"
-					class:border-red-500={!!error}
+					class={`border py-2 px-4 rounded-lg bg-sky-100 text-black ${errorClass}`}
 				/>
 				<label for="password">Password</label>
 				<input
@@ -58,7 +68,8 @@
 				<input
 					type="text"
 					id="seed"
-					name="seed"
+					name="encrypted_seed"
+					bind:value={b64Seed}
 					class="border py-2 px-4 rounded-lg bg-amber-50 text-black"
 				/>
 				<div class="text-sm text-gray-500">
