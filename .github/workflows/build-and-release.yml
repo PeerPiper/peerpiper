@@ -72,11 +72,11 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: "./packages/integrity-wallet/package-lock.json"
+          cache-dependency-path: "./packages/demos/package-lock.json"
 
       - name: Install dependencies
         run: |
-          cd packages/integrity-wallet
+          cd packages/demos
           npm install
           cd inner-app
           npm install
@@ -86,7 +86,7 @@ jobs:
           BASE_PATH: ${{ env.BASE_PATH }}
           VITE_BASE: ${{ env.VITE_BASE }}
         run: |
-          cd packages/integrity-wallet/inner-app
+          cd packages/demos/inner-app
           npm run build
           cd .. 
           npm run build
@@ -98,7 +98,7 @@ jobs:
 
       # - name: Commit built dist
       #   run: |
-      #     FOLDER_NAME="packages/integrity-wallet/static/$VERSION"
+      #     FOLDER_NAME="packages/demos/static/$VERSION"
       #     git config --global user.name 'github-actions[bot]'
       #     git config --global user.email 'github-actions[bot]@users.noreply.github.com'
       #     git add -f $FOLDER_NAME
@@ -112,7 +112,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           # this should match the `pages` option in your adapter-static options
-          path: "packages/integrity-wallet/docs/"
+          path: "packages/demos/docs/"
 
   deploy:
     needs: build_release
