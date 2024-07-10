@@ -78,8 +78,12 @@ impl Wallet {
                 )
                 .map_err(|e| e.to_string())?;
 
+                println!("Key: {:?}", key);
+
                 // Decrypt the given seed with the key, if it fails the username or password is wrong & return error
-                let decrypted = decrypt(key.clone(), &encrypted_seed).map_err(|e| e.to_string())?;
+                let decrypted = decrypt(key.clone(), &encrypted_seed).map_err(|_e| {
+                    format!("Username and password does not unlock that seed. Try again!")
+                })?;
 
                 if decrypted.len() != 32 {
                     return Err("Seed must be 32 bytes long".to_string());
