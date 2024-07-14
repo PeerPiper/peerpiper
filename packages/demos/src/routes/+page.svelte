@@ -4,6 +4,17 @@
 
 <main class="flex flex-col px-8 py-2 w-screen">
 	<h1 class="text-2xl font-semibold mt-4">PeerPiper ToolKit</h1>
+	<!--Full feature App with Wallet and publishing built in-->
+	<div class="mt-4 border border-neutral-50 rounded bg-sky-50 p-2">
+		<a
+			href="{base}/app"
+			class="border-2 border-neutral-400 rounded-lg shadow-md outline-lime-50 px-4 py-2 w-fit"
+			>PeerPiper App</a
+		>
+		<p class="p-2">
+			PeerPiper App is a full-featured application that includes a wallet and publishing tools.
+		</p>
+	</div>
 	<div class="mt-4 border border-neutral-50 rounded bg-sky-50 p-2">
 		<a
 			href="{base}/integrity-wallet"
