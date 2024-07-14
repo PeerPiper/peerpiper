@@ -29,13 +29,13 @@
 	}
 </script>
 
-<section class="p-2">
+<section class="flex flex-col p-2 min-h-screen">
 	<h1 class="text-2xl font-bold">Invite Builder</h1>
 	<p class="text-gray-500">Invite a contact to join your network</p>
 	<!-- Create an Invite: Key Value pairs and an optional photo -->
 	<!-- Key and Value are in the smae row together, spaced by 1 px. Combined width of side by side 2 input fields shall not exceed the width of the parent -->
 	<!-- Bind each possibly chnaging values of each attribute back to the array -->
-	<div class="flex flex-col space-y-2">
+	<div class="flex-grow flex flex-col space-y-2">
 		{#each attributes as attribute}
 			<!-- If value is Uint8arry, skip it-->
 			<div class="flex flex-row space-x-2 justify-between">
@@ -78,11 +78,18 @@
 			</button>
 		</div>
 	</div>
-	<!-- "Create Invite" at bottom of page-->
-	<button
-		class="bg-blue-500 text-white rounded-md py-3 px-4 mt-4 font-semibold w-full"
-		on:click={handleInvite}
-	>
-		Create Invite
-	</button>
+	<div class="flex flex-row space-x-8">
+		<!--Cancel button -->
+		<button
+			class="flex-1 bg-red-500 text-white rounded-md py-3 px-4 mt-4 font-semibold w-full"
+			on:click={() => dispatch('cancel')}>CANCEL</button
+		>
+		<!-- "Create Invite" at bottom of page-->
+		<button
+			class="flex-1 bg-blue-500 text-white rounded-md py-3 px-4 mt-4 font-semibold w-full"
+			on:click={handleInvite}
+		>
+			Create Invite
+		</button>
+	</div>
 </section>

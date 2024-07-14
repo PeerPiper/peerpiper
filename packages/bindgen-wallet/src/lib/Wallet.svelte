@@ -1,11 +1,12 @@
 <script>
-	import { onMount, setContext } from 'svelte';
-	import wasm from '../../../../crates/peerpiper-wasm-bindgen/Cargo.toml';
-	import { Seed, Delanocreds, Header } from './index.js';
+	import { onMount, setContext, createEventDispatcher } from 'svelte';
+	import { Seed, Invite, Header } from './index.js';
 	import OfferClipboard from './components/OfferClipboard.svelte';
 	import AcceptOffer from './components/AcceptOffer.svelte';
 
-	let unlock, wallet, generateAttribute;
+	import wasm from '../../../../crates/peerpiper-wasm-bindgen/Cargo.toml';
+
+	let unlock, wallet, generateAttribute, getPublishKey;
 	let error;
 	let b64Seed;
 	let hash;
@@ -25,7 +26,9 @@
 	}
 
 	onMount(async () => {
-		const { WasmWallet, attribute } = await loadWasm();
+		const { WasmWallet, attribute, publishKey } = await loadWasm();
+
+		getPublishKey = publishKey;
 
 		// check for b64seed in local storage
 		b64Seed = localStorage.getItem(KEY_BASE64_SEED);
@@ -54,22 +57,26 @@
 		let myAttribute = attribute(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]));
 	});
 
+	// serialize the attributes into a Uint8Array Preimage
+	function preimageFromAttribute({ key, value }) {
+		// create string of `key = value`, except for Uint8Array (just the value is enough)
+		if (value instanceof Uint8Array) {
+			return value;
+		}
+		let val = `${key} = ${value}`;
+		// convert string to bytes
+		return new TextEncoder().encode(val);
+	}
+
 	// Preprocesses the string into proper Attributes
-	function serializeAttrs(attributes) {
+	function hashAttrs(attributes) {
 		return attributes.map(({ key, value }) => {
-			// create string of `key = value`, except for Uint8Array (just the value is enough)
-			if (value instanceof Uint8Array) {
-				return generateAttribute(value);
-			}
-			let val = `${key} = ${value}`;
-			// convert string to bytes
-			let inputBytes = new TextEncoder().encode(val);
-			return generateAttribute(inputBytes);
+			return generateAttribute(preimageFromAttribute({ key, value }));
 		});
 	}
 
 	function handleInvite(event) {
-		let attributes = serializeAttrs(event.detail);
+		let attributes = hashAttrs(event.detail);
 
 		// hints are the keys from the KV attributes
 		hints = event.detail.map(({ key }) => key);
@@ -95,10 +102,22 @@
 				max_entries: null
 			}
 		});
+
+		console.log('offer', offer);
+
+		let preimages = event.detail.map(preimageFromAttribute);
+
+		console.log('preimages', preimages);
+
+		let publishKey = getPublishKey({ vk: offer.issuer_public.vk, preimages });
+
+		let b64pubKey = btoa(String.fromCharCode(...publishKey));
+
+		console.log('publishKey', publishKey, b64pubKey);
 	}
 
 	function handleAccept(event) {
-		const attributes = serializeAttrs(event.detail);
+		const attributes = hashAttrs(event.detail);
 		const acceptedCred = wallet.accept(hash.offer);
 
 		// To validate that we entered the answers correctly, we need to do a test proof and verification
@@ -148,14 +167,13 @@
 		{#if generateAttribute}
 			{#if hash && !verified}
 				<AcceptOffer {hash} on:accept={handleAccept} />
+			{:else if offer && hints}
+				<OfferClipboard {offer} {hints} />
 			{:else}
-				<Delanocreds {wallet} {generateAttribute} on:invite={handleInvite} />
+				<Invite {wallet} {generateAttribute} on:invite={handleInvite} />
 			{/if}
 
 			<!-- If offer, create an email link to send them the text file, and the hints as body text. -->
-			{#if offer && hints}
-				<OfferClipboard {offer} {hints} />
-			{/if}
 		{/if}
 	{/if}
 {:else}
