@@ -1,0 +1,12 @@
+<!-- Imports contacts from CSV file that is uplaoded -->
+<div class="flex-1">
+    <div class="flex-1">Upload Contacts CSV File:</div>
+    <div class="flex-1">
+        <input
+            id="{{ id|on('change') }}"
+            data-context-name="upload"
+            class="rounded border border-blue-400 bg-green-100 text-neutral-700 p-2 m-2 placeholder:Enter"
+            type="file"
+        />
+    </div>
+</div>

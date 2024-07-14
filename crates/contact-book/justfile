@@ -1,0 +1,14 @@
+#!/usr/bin/env -S just --justfile
+# ^ A shebang isn't required, but allows a justfile to be executed
+#   like a script, with `./justfile test`, for example.
+#
+# Uses Just language syntax (https://just.systems/man/en/), to run the commands below:
+
+build:
+  cargo component build
+  cargo component build --release
+
+preview:
+  cd demo && npm run build && npm run preview -- --open
+
+run: build preview

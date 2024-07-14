@@ -1,0 +1,127 @@
+<div id="{{app_id}}" class="max-w-2xl mx-auto p-2">
+  <h1 class="text-2xl font-bold mb-2 mt-1">Contact Book</h1>
+  <!-- Add new contact -->
+  <div id="{{id}}" class="flex flex-col group">
+    <details>
+      <!-- Summary should look like a button -->
+      <summary
+        class="cursor-pointer font-semibold text-lg bg-blue-500 hover:bg-blue-700 text-white p-2 my-2 rounded"
+      >
+        Add New Contact
+      </summary>
+      <!-- -->
+      <div class="flex-1">
+        <div class="flex-1">
+          <label for="first_name">First Name</label>
+        </div>
+        <div class="flex">
+          <input
+            type="text"
+            id="{{id|on('input')}}"
+            data-context-name="buildcontact"
+            data-context-value='{ "label": {"tag": "first-name"} }'
+            class="rounded w-full border border-blue-400 bg-blue-100 text-neutral-700 p-2 m-2 placeholder:Enter invalid:[&:not(:placeholder-shown):not(:focus)]:border-red-500 peer"
+          />
+        </div>
+      </div>
+      <div class="flex-1">
+        <div class="flex-1">
+          <label for="last_name">Last Name</label>
+        </div>
+        <div class="flex">
+          <input
+            type="text"
+            id="{{id|on('input')}}"
+            data-context-name="buildcontact"
+            data-context-value='{ "label": {"tag": "last-name"} }'
+            class="rounded w-full border border-blue-400 bg-blue-100 text-neutral-700 p-2 m-2 placeholder:Enter invalid:[&:not(:placeholder-shown):not(:focus)]:border-red-500 peer"
+          />
+        </div>
+      </div>
+      <div class="flex-1">
+        <div class="flex-1">
+          <label for="email">Email</label>
+        </div>
+        <div class="flex">
+          <input
+            type="email"
+            id="{{id|on('input')}}"
+            data-context-name="buildcontact"
+            data-context-value='{ "label": {"tag": "email"} }'
+            class="rounded w-full border border-blue-400 bg-blue-100 text-neutral-700 p-2 m-2 placeholder:Enter invalid:[&:not(:placeholder-shown):not(:focus)]:border-red-500 peer"
+          />
+        </div>
+      </div>
+      <div class="flex-1">
+        <div class="flex-1">
+          <label for="phone">Phone</label>
+        </div>
+        <div class="flex-1 flex flex-row">
+          <div class="flex w-full">
+            <input
+              type="tel"
+              id="{{id|on('input')}}"
+              data-context-name="buildcontact"
+              data-context-value='{ "label": {"tag": "phone"} }'
+              class="rounded border border-blue-400 bg-blue-100 text-neutral-700 p-2 m-2 placeholder:Enter"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-col-reverse">
+        <button
+          id="{{id|on('click')}}"
+          data-context-name="submitnewcontact"
+          type="button"
+          class="bg-blue-500 hover:bg-blue-700 text-white font-bold p-2 m-2 rounded group-invalid:pointer-events-none group-invalid:opacity-30"
+        >
+          Add Contact
+        </button>
+      </div>
+    </details>
+  </div>
+  <!-- Include import.html -->
+  {% include "upload.html" %}
+  <!-- -->
+  {% include "output.html" %}
+  <div class="my-4 mb-2">
+    {% if state.contacts|length > 0 %}
+    <table class="table-auto w-full">
+      <thead>
+        <tr>
+          <th class="px-2 py-1">First Name</th>
+          <th class="px-2 py-1">Last Name</th>
+          <th class="px-2 py-1">Email</th>
+          <th class="px-2 py-1">Phone</th>
+          <th class="px-2 py-1">Extra</th>
+          <th class="px-2 py-1">Action</th>
+        </tr>
+      </thead>
+      {% for contact in state.contacts %}
+      <!-- tailwindcss flex box with first - last - email - phone -->
+      <tr class="{{ loop.cycle('bg-neutral-50', 'bg-neutral-200') }}">
+        <td class="border px-2 py-1">{{ contact.first_name }}</td>
+        <td class="border px-2 py-1">{{ contact.last_name }}</td>
+        <td class="border px-2 py-1">{{ contact.email }}</td>
+        <td class="border px-2 py-1">{{ contact.phone }}</td>
+        <td class="border px-2 py-1">{{ contact.extra }}</td>
+        <td class="border px-2 py-1">
+          <button
+            id="{{id|on('click')}}"
+            data-context-name="invite"
+            value="{{ contact.id }}"
+            class="bg-green-500 hover:bg-green-700 text-white font-bold p-2 m-2 rounded"
+          >
+            Invite
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <div>
+      <p>No contacts found</p>
+    </div>
+    {% endif %}
+  </div>
+</div>

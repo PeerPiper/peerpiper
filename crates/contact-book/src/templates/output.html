@@ -1,0 +1,27 @@
+<div id="output">
+  <!-- if any of the fields in state.build have a value / length, then show the table. Use |select filter to check each field -->
+  {% if (state.builder.first_name is defined and state.builder.first_name|length
+  > 0) or (state.builder.last_name is defined and state.builder.last_name|length
+  > 0) or (state.builder.email is defined and state.builder.email|length > 0) or
+  (state.builder.phone is defined and state.builder.phone|length > 0) %}
+
+  <table class="shadow rounded">
+    <tr>
+      <td class="border px-2 py-1">First Name</td>
+      <td class="border px-2 py-1">{{ state.builder.first_name }}</td>
+    </tr>
+    <tr>
+      <td class="border px-2 py-1">Last Name</td>
+      <td class="border px-2 py-1">{{ state.builder.last_name }}</td>
+    </tr>
+    <tr>
+      <td class="border px-2 py-1">Email</td>
+      <td class="border px-2 py-1">{{ state.builder.email }}</td>
+    </tr>
+    <tr>
+      <td class="border px-2 py-1">Phone</td>
+      <td class="border px-2 py-1">{{ state.builder.phone }}</td>
+    </tr>
+  </table>
+  {% endif %}
+</div>

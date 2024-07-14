@@ -1,0 +1,105 @@
+package component:contact-book@0.1.0;
+
+interface context-types {
+
+  use wurbo-types.{listen-details, file-details};
+
+  /// A contact
+  record contact {
+    id: option<string>,
+    first-name: string,
+    last-name: string,
+    email: string,
+    phone: string,
+  }
+
+  /// The types of messages that can be emitted by the component
+  variant message {
+    /// An invite for a contact
+    invite(contact),
+    /// Contact(s) that has been added
+    added(list<contact>),
+  }
+
+  record initial {
+    load: option<list<contact>>
+  }
+
+  variant label {
+    first-name,
+    last-name,
+    email,
+    phone,
+  }
+
+  /// Wurbo will merge the nput value with data-context-value object, if any
+  record addctx {
+    label: label,
+    value: string
+  }
+
+  /// The type of context provided
+  variant context {
+    all-content(initial),
+    // edits the contact details that is about to be created
+    buildcontact(addctx),
+    // submits the new contact details
+    submitnewcontact,
+    /// Uploaded contacts
+    upload(file-details),
+    /// Emit the invite signal
+    invite(string)
+  }
+}
+
+interface wurbo-types {
+  // Details required in order to add an event listener to an element
+  record listen-details {
+    selector: string,
+    ty: string,
+  }
+
+  /// Content for a file, bytes and name
+  record file-details {
+    /// The bytes of the file
+    bytes: list<u8>,
+    /// The name of the file
+    filename: string
+  }
+}
+
+/// An interface that provides an event listener to make the component interactive.
+interface wurbo-in {
+
+  use wurbo-types.{listen-details, file-details};
+  use context-types.{message};
+
+  // Add an event listener to the given element
+  addeventlistener: func(details: listen-details);
+
+  /// Emit an event message to the parent component
+  emit: func(message: message);
+
+}
+
+/// An interface that provides a way to render the component.
+interface wurbo-out {
+
+  use context-types.{context};
+
+  /// renders the initial Web component with the given data
+  /// and the target template to use as top level entry point
+  render: func(ctx: context) -> result<string, string>;
+
+  /// listen on all or given selectors
+  activate: func(selectors: option<list<string>>);
+  
+  /// Optionally customize the configuration of the templates used to render the component
+  customize: func(templates: list<tuple<string, string>>) -> result<_, string>;
+}
+
+/// An example world for the component to target.
+world example {
+    import wurbo-in;
+    export wurbo-out;
+}
