@@ -1,5 +1,7 @@
 //! Wasm-Bindgen bindings for the PeerPiper Wallet. This crate essentially does the conversion
 //! to/from JsValue for the main module.
+use delano_keys::publish::{IssuerKey, OfferedPreimages};
+use delano_keys::vk::VKCompressed;
 use delano_wallet_core::{IssueOptions, OfferConfig, Provables, Verifiables};
 use delanocreds::keypair::spseq_uc::CredentialCompressed;
 use delanocreds::{Attribute, MaxEntries, Nonce};
@@ -35,12 +37,34 @@ pub struct OfferArgs {
     config: OfferConfig,
 }
 
+/// Publishables, the details needed to create a [delano_keys::publish::PublishingKey].
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Publishables {
+    preimages: Vec<Vec<u8>>,
+    /// Verification Key can come from provables.issuer_public.vk
+    vk: Vec<VKCompressed>,
+}
+
 /// Bindings for [Attribute](delanocreds::Attribute) so that the user can create a new Attribute
 /// from bytes
 #[wasm_bindgen]
 pub fn attribute(bytes: &[u8]) -> Result<JsValue, JsValue> {
     let attr = Attribute::new(bytes);
     Ok(serde_wasm_bindgen::to_value(&attr)?)
+}
+
+/// Generates the a [delano_keys::publish::PublishingKey] from the given [Publishables]
+#[wasm_bindgen(js_name = publishKey)]
+pub fn publish_key(publishables: JsValue) -> Result<JsValue, JsValue> {
+    let publishables: Publishables =
+        serde_wasm_bindgen::from_value(publishables).map_err(|e| e.to_string())?;
+    let pk = delano_keys::publish::PublishingKey::new(
+        &OfferedPreimages::<Vec<u8>>(&publishables.preimages),
+        &IssuerKey(&publishables.vk),
+    )
+    .cid();
+
+    Ok(serde_wasm_bindgen::to_value(&pk)?)
 }
 
 #[wasm_bindgen]
