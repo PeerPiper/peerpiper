@@ -99,34 +99,40 @@ pub mod component {
                     f.debug_struct("Initial").field("load", &self.load).finish()
                 }
             }
-            #[derive(Clone, Copy)]
-            pub enum Label {
-                FirstName,
-                LastName,
-                Email,
-                Phone,
-            }
-            impl ::core::fmt::Debug for Label {
-                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    match self {
-                        Label::FirstName => f.debug_tuple("Label::FirstName").finish(),
-                        Label::LastName => f.debug_tuple("Label::LastName").finish(),
-                        Label::Email => f.debug_tuple("Label::Email").finish(),
-                        Label::Phone => f.debug_tuple("Label::Phone").finish(),
-                    }
-                }
-            }
-            /// Wurbo will merge the nput value with data-context-value object, if any
             #[derive(Clone)]
-            pub struct Addctx {
-                pub label: Label,
-                pub value: _rt::String,
+            pub enum Addctx {
+                FirstName(_rt::String),
+                LastName(_rt::String),
+                Email(_rt::String),
+                Phone(_rt::String),
+                PublishingKey(_rt::Vec<u8>),
             }
             impl ::core::fmt::Debug for Addctx {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                    f.debug_struct("Addctx")
-                        .field("label", &self.label)
-                        .field("value", &self.value)
+                    match self {
+                        Addctx::FirstName(e) => {
+                            f.debug_tuple("Addctx::FirstName").field(e).finish()
+                        }
+                        Addctx::LastName(e) => f.debug_tuple("Addctx::LastName").field(e).finish(),
+                        Addctx::Email(e) => f.debug_tuple("Addctx::Email").field(e).finish(),
+                        Addctx::Phone(e) => f.debug_tuple("Addctx::Phone").field(e).finish(),
+                        Addctx::PublishingKey(e) => {
+                            f.debug_tuple("Addctx::PublishingKey").field(e).finish()
+                        }
+                    }
+                }
+            }
+            /// Updates the contact with the given id to the addctx value
+            #[derive(Clone)]
+            pub struct Update {
+                pub id: _rt::String,
+                pub vals: _rt::Vec<Addctx>,
+            }
+            impl ::core::fmt::Debug for Update {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_struct("Update")
+                        .field("id", &self.id)
+                        .field("vals", &self.vals)
                         .finish()
                 }
             }
@@ -142,6 +148,8 @@ pub mod component {
                 Upload(FileDetails),
                 /// Emit the invite signal
                 Invite(_rt::String),
+                /// Updates the contact with the given id to the addctx value
+                Updatecontact(Update),
             }
             impl ::core::fmt::Debug for Context {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
@@ -157,6 +165,9 @@ pub mod component {
                         }
                         Context::Upload(e) => f.debug_tuple("Context::Upload").field(e).finish(),
                         Context::Invite(e) => f.debug_tuple("Context::Invite").field(e).finish(),
+                        Context::Updatecontact(e) => {
+                            f.debug_tuple("Context::Updatecontact").field(e).finish()
+                        }
                     }
                 }
             }
@@ -424,10 +435,10 @@ pub mod exports {
                 ) -> *mut u8 {
                     #[cfg(target_arch = "wasm32")]
                     _rt::run_ctors_once();
-                    use super::super::super::super::component::contact_book::context_types::Context as V22;
-                    let v22 = match arg0 {
+                    use super::super::super::super::component::contact_book::context_types::Context as V45;
+                    let v45 = match arg0 {
                         0 => {
-                            let e22 = super::super::super::super::component::contact_book::context_types::Initial{
+                            let e45 = super::super::super::super::component::contact_book::context_types::Initial{
               load: match arg1 as i32 {
                 0 => None,
                 1 => {
@@ -489,78 +500,218 @@ pub mod exports {
                 _ => _rt::invalid_enum_discriminant(),
               },
             };
-                            V22::AllContent(e22)
+                            V45::AllContent(e45)
                         }
                         1 => {
-                            let e22 = {
-                                use super::super::super::super::component::contact_book::context_types::Label as V17;
-                                let v17 = match arg1 as i32 {
-                                    0 => V17::FirstName,
-                                    1 => V17::LastName,
-                                    2 => V17::Email,
+                            let e45 = {
+                                use super::super::super::super::component::contact_book::context_types::Addctx as V22;
+                                let v22 = match arg1 as i32 {
+                                    0 => {
+                                        let e22 = {
+                                            let len17 = arg3 as usize;
+                                            let bytes17 =
+                                                _rt::Vec::from_raw_parts(arg2.cast(), len17, len17);
+
+                                            _rt::string_lift(bytes17)
+                                        };
+                                        V22::FirstName(e22)
+                                    }
+                                    1 => {
+                                        let e22 = {
+                                            let len18 = arg3 as usize;
+                                            let bytes18 =
+                                                _rt::Vec::from_raw_parts(arg2.cast(), len18, len18);
+
+                                            _rt::string_lift(bytes18)
+                                        };
+                                        V22::LastName(e22)
+                                    }
+                                    2 => {
+                                        let e22 = {
+                                            let len19 = arg3 as usize;
+                                            let bytes19 =
+                                                _rt::Vec::from_raw_parts(arg2.cast(), len19, len19);
+
+                                            _rt::string_lift(bytes19)
+                                        };
+                                        V22::Email(e22)
+                                    }
+                                    3 => {
+                                        let e22 = {
+                                            let len20 = arg3 as usize;
+                                            let bytes20 =
+                                                _rt::Vec::from_raw_parts(arg2.cast(), len20, len20);
+
+                                            _rt::string_lift(bytes20)
+                                        };
+                                        V22::Phone(e22)
+                                    }
                                     n => {
-                                        debug_assert_eq!(n, 3, "invalid enum discriminant");
-                                        V17::Phone
+                                        debug_assert_eq!(n, 4, "invalid enum discriminant");
+                                        let e22 = {
+                                            let len21 = arg3 as usize;
+
+                                            _rt::Vec::from_raw_parts(arg2.cast(), len21, len21)
+                                        };
+                                        V22::PublishingKey(e22)
                                     }
                                 };
-                                let len18 = arg3 as usize;
-                                let bytes18 = _rt::Vec::from_raw_parts(arg2.cast(), len18, len18);
 
-                                super::super::super::super::component::contact_book::context_types::Addctx{
-                label: v17,
-                value: _rt::string_lift(bytes18),
-              }
+                                v22
                             };
-                            V22::Buildcontact(e22)
+                            V45::Buildcontact(e45)
                         }
-                        2 => V22::Submitnewcontact,
+                        2 => V45::Submitnewcontact,
                         3 => {
-                            let e22 = {
-                                let len19 = arg2 as usize;
-                                let len20 = arg4;
-                                let bytes20 = _rt::Vec::from_raw_parts(arg3.cast(), len20, len20);
+                            let e45 = {
+                                let len23 = arg2 as usize;
+                                let len24 = arg4;
+                                let bytes24 = _rt::Vec::from_raw_parts(arg3.cast(), len24, len24);
 
                                 super::super::super::super::component::contact_book::wurbo_types::FileDetails{
-                bytes: _rt::Vec::from_raw_parts(arg1.cast(), len19, len19),
-                filename: _rt::string_lift(bytes20),
+                bytes: _rt::Vec::from_raw_parts(arg1.cast(), len23, len23),
+                filename: _rt::string_lift(bytes24),
               }
                             };
-                            V22::Upload(e22)
+                            V45::Upload(e45)
+                        }
+                        4 => {
+                            let e45 = {
+                                let len25 = arg2 as usize;
+                                let bytes25 = _rt::Vec::from_raw_parts(arg1.cast(), len25, len25);
+
+                                _rt::string_lift(bytes25)
+                            };
+                            V45::Invite(e45)
                         }
                         n => {
-                            debug_assert_eq!(n, 4, "invalid enum discriminant");
-                            let e22 = {
-                                let len21 = arg2 as usize;
-                                let bytes21 = _rt::Vec::from_raw_parts(arg1.cast(), len21, len21);
+                            debug_assert_eq!(n, 5, "invalid enum discriminant");
+                            let e45 = {
+                                let len26 = arg2 as usize;
+                                let bytes26 = _rt::Vec::from_raw_parts(arg1.cast(), len26, len26);
+                                let base44 = arg3;
+                                let len44 = arg4;
+                                let mut result44 = _rt::Vec::with_capacity(len44);
+                                for i in 0..len44 {
+                                    let base = base44.add(i * 12);
+                                    let e44 = {
+                                        let l27 = i32::from(*base.add(0).cast::<u8>());
+                                        use super::super::super::super::component::contact_book::context_types::Addctx as V43;
+                                        let v43 = match l27 {
+                                            0 => {
+                                                let e43 = {
+                                                    let l28 = *base.add(4).cast::<*mut u8>();
+                                                    let l29 = *base.add(8).cast::<usize>();
+                                                    let len30 = l29;
+                                                    let bytes30 = _rt::Vec::from_raw_parts(
+                                                        l28.cast(),
+                                                        len30,
+                                                        len30,
+                                                    );
 
-                                _rt::string_lift(bytes21)
+                                                    _rt::string_lift(bytes30)
+                                                };
+                                                V43::FirstName(e43)
+                                            }
+                                            1 => {
+                                                let e43 = {
+                                                    let l31 = *base.add(4).cast::<*mut u8>();
+                                                    let l32 = *base.add(8).cast::<usize>();
+                                                    let len33 = l32;
+                                                    let bytes33 = _rt::Vec::from_raw_parts(
+                                                        l31.cast(),
+                                                        len33,
+                                                        len33,
+                                                    );
+
+                                                    _rt::string_lift(bytes33)
+                                                };
+                                                V43::LastName(e43)
+                                            }
+                                            2 => {
+                                                let e43 = {
+                                                    let l34 = *base.add(4).cast::<*mut u8>();
+                                                    let l35 = *base.add(8).cast::<usize>();
+                                                    let len36 = l35;
+                                                    let bytes36 = _rt::Vec::from_raw_parts(
+                                                        l34.cast(),
+                                                        len36,
+                                                        len36,
+                                                    );
+
+                                                    _rt::string_lift(bytes36)
+                                                };
+                                                V43::Email(e43)
+                                            }
+                                            3 => {
+                                                let e43 = {
+                                                    let l37 = *base.add(4).cast::<*mut u8>();
+                                                    let l38 = *base.add(8).cast::<usize>();
+                                                    let len39 = l38;
+                                                    let bytes39 = _rt::Vec::from_raw_parts(
+                                                        l37.cast(),
+                                                        len39,
+                                                        len39,
+                                                    );
+
+                                                    _rt::string_lift(bytes39)
+                                                };
+                                                V43::Phone(e43)
+                                            }
+                                            n => {
+                                                debug_assert_eq!(n, 4, "invalid enum discriminant");
+                                                let e43 = {
+                                                    let l40 = *base.add(4).cast::<*mut u8>();
+                                                    let l41 = *base.add(8).cast::<usize>();
+                                                    let len42 = l41;
+
+                                                    _rt::Vec::from_raw_parts(
+                                                        l40.cast(),
+                                                        len42,
+                                                        len42,
+                                                    )
+                                                };
+                                                V43::PublishingKey(e43)
+                                            }
+                                        };
+
+                                        v43
+                                    };
+                                    result44.push(e44);
+                                }
+                                _rt::cabi_dealloc(base44, len44 * 12, 4);
+
+                                super::super::super::super::component::contact_book::context_types::Update{
+                id: _rt::string_lift(bytes26),
+                vals: result44,
+              }
                             };
-                            V22::Invite(e22)
+                            V45::Updatecontact(e45)
                         }
                     };
-                    let result23 = T::render(v22);
-                    let ptr24 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
-                    match result23 {
+                    let result46 = T::render(v45);
+                    let ptr47 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result46 {
                         Ok(e) => {
-                            *ptr24.add(0).cast::<u8>() = (0i32) as u8;
-                            let vec25 = (e.into_bytes()).into_boxed_slice();
-                            let ptr25 = vec25.as_ptr().cast::<u8>();
-                            let len25 = vec25.len();
-                            ::core::mem::forget(vec25);
-                            *ptr24.add(8).cast::<usize>() = len25;
-                            *ptr24.add(4).cast::<*mut u8>() = ptr25.cast_mut();
+                            *ptr47.add(0).cast::<u8>() = (0i32) as u8;
+                            let vec48 = (e.into_bytes()).into_boxed_slice();
+                            let ptr48 = vec48.as_ptr().cast::<u8>();
+                            let len48 = vec48.len();
+                            ::core::mem::forget(vec48);
+                            *ptr47.add(8).cast::<usize>() = len48;
+                            *ptr47.add(4).cast::<*mut u8>() = ptr48.cast_mut();
                         }
                         Err(e) => {
-                            *ptr24.add(0).cast::<u8>() = (1i32) as u8;
-                            let vec26 = (e.into_bytes()).into_boxed_slice();
-                            let ptr26 = vec26.as_ptr().cast::<u8>();
-                            let len26 = vec26.len();
-                            ::core::mem::forget(vec26);
-                            *ptr24.add(8).cast::<usize>() = len26;
-                            *ptr24.add(4).cast::<*mut u8>() = ptr26.cast_mut();
+                            *ptr47.add(0).cast::<u8>() = (1i32) as u8;
+                            let vec49 = (e.into_bytes()).into_boxed_slice();
+                            let ptr49 = vec49.as_ptr().cast::<u8>();
+                            let len49 = vec49.len();
+                            ::core::mem::forget(vec49);
+                            *ptr47.add(8).cast::<usize>() = len49;
+                            *ptr47.add(4).cast::<*mut u8>() = ptr49.cast_mut();
                         }
                     };
-                    ptr24
+                    ptr47
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
@@ -616,6 +767,15 @@ pub mod exports {
                         }
                         _ => _rt::invalid_enum_discriminant(),
                     });
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_deactivate_cabi<T: Guest>(arg0: *mut u8, arg1: usize) {
+                    #[cfg(target_arch = "wasm32")]
+                    _rt::run_ctors_once();
+                    let len0 = arg1;
+                    let bytes0 = _rt::Vec::from_raw_parts(arg0.cast(), len0, len0);
+                    T::deactivate(_rt::string_lift(bytes0));
                 }
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
@@ -682,6 +842,8 @@ pub mod exports {
                     fn render(ctx: Context) -> Result<_rt::String, _rt::String>;
                     /// listen on all or given selectors
                     fn activate(selectors: Option<_rt::Vec<_rt::String>>);
+                    /// Deactivates given selector
+                    fn deactivate(selector: _rt::String);
                     /// Optionally customize the configuration of the templates used to render the component
                     fn customize(
                         templates: _rt::Vec<(_rt::String, _rt::String)>,
@@ -690,30 +852,34 @@ pub mod exports {
                 #[doc(hidden)]
 
                 macro_rules! __export_component_contact_book_wurbo_out_0_1_0_cabi{
-    ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
+  ($ty:ident with_types_in $($path_to_types:tt)*) => (const _: () = {
 
-      #[export_name = "component:contact-book/wurbo-out@0.1.0#render"]
-      unsafe extern "C" fn export_render(arg0: i32,arg1: *mut u8,arg2: *mut u8,arg3: *mut u8,arg4: usize,) -> *mut u8 {
-        $($path_to_types)*::_export_render_cabi::<$ty>(arg0, arg1, arg2, arg3, arg4)
-      }
-      #[export_name = "cabi_post_component:contact-book/wurbo-out@0.1.0#render"]
-      unsafe extern "C" fn _post_return_render(arg0: *mut u8,) {
-        $($path_to_types)*::__post_return_render::<$ty>(arg0)
-      }
-      #[export_name = "component:contact-book/wurbo-out@0.1.0#activate"]
-      unsafe extern "C" fn export_activate(arg0: i32,arg1: *mut u8,arg2: usize,) {
-        $($path_to_types)*::_export_activate_cabi::<$ty>(arg0, arg1, arg2)
-      }
-      #[export_name = "component:contact-book/wurbo-out@0.1.0#customize"]
-      unsafe extern "C" fn export_customize(arg0: *mut u8,arg1: usize,) -> *mut u8 {
-        $($path_to_types)*::_export_customize_cabi::<$ty>(arg0, arg1)
-      }
-      #[export_name = "cabi_post_component:contact-book/wurbo-out@0.1.0#customize"]
-      unsafe extern "C" fn _post_return_customize(arg0: *mut u8,) {
-        $($path_to_types)*::__post_return_customize::<$ty>(arg0)
-      }
-    };);
-  }
+    #[export_name = "component:contact-book/wurbo-out@0.1.0#render"]
+    unsafe extern "C" fn export_render(arg0: i32,arg1: *mut u8,arg2: *mut u8,arg3: *mut u8,arg4: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_render_cabi::<$ty>(arg0, arg1, arg2, arg3, arg4)
+    }
+    #[export_name = "cabi_post_component:contact-book/wurbo-out@0.1.0#render"]
+    unsafe extern "C" fn _post_return_render(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_render::<$ty>(arg0)
+    }
+    #[export_name = "component:contact-book/wurbo-out@0.1.0#activate"]
+    unsafe extern "C" fn export_activate(arg0: i32,arg1: *mut u8,arg2: usize,) {
+      $($path_to_types)*::_export_activate_cabi::<$ty>(arg0, arg1, arg2)
+    }
+    #[export_name = "component:contact-book/wurbo-out@0.1.0#deactivate"]
+    unsafe extern "C" fn export_deactivate(arg0: *mut u8,arg1: usize,) {
+      $($path_to_types)*::_export_deactivate_cabi::<$ty>(arg0, arg1)
+    }
+    #[export_name = "component:contact-book/wurbo-out@0.1.0#customize"]
+    unsafe extern "C" fn export_customize(arg0: *mut u8,arg1: usize,) -> *mut u8 {
+      $($path_to_types)*::_export_customize_cabi::<$ty>(arg0, arg1)
+    }
+    #[export_name = "cabi_post_component:contact-book/wurbo-out@0.1.0#customize"]
+    unsafe extern "C" fn _post_return_customize(arg0: *mut u8,) {
+      $($path_to_types)*::__post_return_customize::<$ty>(arg0)
+    }
+  };);
+}
                 #[doc(hidden)]
                 pub(crate) use __export_component_contact_book_wurbo_out_0_1_0_cabi;
                 #[repr(align(4))]
@@ -787,32 +953,33 @@ pub(crate) use __export_example_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:example:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1088] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc2\x07\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1160] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x8a\x08\x01A\x02\x01\
 A\x0c\x01B\x05\x01r\x02\x08selectors\x02tys\x04\0\x0elisten-details\x03\0\0\x01p\
 }\x01r\x02\x05bytes\x02\x08filenames\x04\0\x0cfile-details\x03\0\x03\x03\x01(com\
 ponent:contact-book/wurbo-types@0.1.0\x05\0\x02\x03\0\0\x0elisten-details\x02\x03\
-\0\0\x0cfile-details\x01B\x13\x02\x03\x02\x01\x01\x04\0\x0elisten-details\x03\0\0\
+\0\0\x0cfile-details\x01B\x15\x02\x03\x02\x01\x01\x04\0\x0elisten-details\x03\0\0\
 \x02\x03\x02\x01\x02\x04\0\x0cfile-details\x03\0\x02\x01ks\x01r\x05\x02id\x04\x0a\
 first-names\x09last-names\x05emails\x05phones\x04\0\x07contact\x03\0\x05\x01p\x06\
 \x01q\x02\x06invite\x01\x06\0\x05added\x01\x07\0\x04\0\x07message\x03\0\x08\x01k\
-\x07\x01r\x01\x04load\x0a\x04\0\x07initial\x03\0\x0b\x01q\x04\x0afirst-name\0\0\x09\
-last-name\0\0\x05email\0\0\x05phone\0\0\x04\0\x05label\x03\0\x0d\x01r\x02\x05lab\
-el\x0e\x05values\x04\0\x06addctx\x03\0\x0f\x01q\x05\x0ball-content\x01\x0c\0\x0c\
-buildcontact\x01\x10\0\x10submitnewcontact\0\0\x06upload\x01\x03\0\x06invite\x01\
-s\0\x04\0\x07context\x03\0\x11\x03\x01*component:contact-book/context-types@0.1.\
-0\x05\x03\x02\x03\0\x01\x07message\x01B\x0a\x02\x03\x02\x01\x01\x04\0\x0elisten-\
-details\x03\0\0\x02\x03\x02\x01\x02\x04\0\x0cfile-details\x03\0\x02\x02\x03\x02\x01\
+\x07\x01r\x01\x04load\x0a\x04\0\x07initial\x03\0\x0b\x01p}\x01q\x05\x0afirst-nam\
+e\x01s\0\x09last-name\x01s\0\x05email\x01s\0\x05phone\x01s\0\x0epublishing-key\x01\
+\x0d\0\x04\0\x06addctx\x03\0\x0e\x01p\x0f\x01r\x02\x02ids\x04vals\x10\x04\0\x06u\
+pdate\x03\0\x11\x01q\x06\x0ball-content\x01\x0c\0\x0cbuildcontact\x01\x0f\0\x10s\
+ubmitnewcontact\0\0\x06upload\x01\x03\0\x06invite\x01s\0\x0dupdatecontact\x01\x12\
+\0\x04\0\x07context\x03\0\x13\x03\x01*component:contact-book/context-types@0.1.0\
+\x05\x03\x02\x03\0\x01\x07message\x01B\x0a\x02\x03\x02\x01\x01\x04\0\x0elisten-d\
+etails\x03\0\0\x02\x03\x02\x01\x02\x04\0\x0cfile-details\x03\0\x02\x02\x03\x02\x01\
 \x04\x04\0\x07message\x03\0\x04\x01@\x01\x07details\x01\x01\0\x04\0\x10addeventl\
 istener\x01\x06\x01@\x01\x07message\x05\x01\0\x04\0\x04emit\x01\x07\x03\x01%comp\
-onent:contact-book/wurbo-in@0.1.0\x05\x05\x02\x03\0\x01\x07context\x01B\x0e\x02\x03\
+onent:contact-book/wurbo-in@0.1.0\x05\x05\x02\x03\0\x01\x07context\x01B\x10\x02\x03\
 \x02\x01\x06\x04\0\x07context\x03\0\0\x01j\x01s\x01s\x01@\x01\x03ctx\x01\0\x02\x04\
 \0\x06render\x01\x03\x01ps\x01k\x04\x01@\x01\x09selectors\x05\x01\0\x04\0\x08act\
-ivate\x01\x06\x01o\x02ss\x01p\x07\x01j\0\x01s\x01@\x01\x09templates\x08\0\x09\x04\
-\0\x09customize\x01\x0a\x04\x01&component:contact-book/wurbo-out@0.1.0\x05\x07\x04\
-\x01$component:contact-book/example@0.1.0\x04\0\x0b\x0d\x01\0\x07example\x03\0\0\
-\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.208.1\x10wit-bind\
-gen-rust\x060.25.0";
+ivate\x01\x06\x01@\x01\x08selectors\x01\0\x04\0\x0adeactivate\x01\x07\x01o\x02ss\
+\x01p\x08\x01j\0\x01s\x01@\x01\x09templates\x09\0\x0a\x04\0\x09customize\x01\x0b\
+\x04\x01&component:contact-book/wurbo-out@0.1.0\x05\x07\x04\x01$component:contac\
+t-book/example@0.1.0\x04\0\x0b\x0d\x01\0\x07example\x03\0\0\0G\x09producers\x01\x0c\
+processed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

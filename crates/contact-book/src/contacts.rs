@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use crate::bindings::component::contact_book::{
-    context_types::{self, Addctx, Label},
+    context_types::{self, Addctx},
     wurbo_in,
 };
 use phonenumber::{country::Id, Mode};
@@ -234,6 +234,11 @@ pub(crate) struct Contact {
     /// when ivites were sent out, etc.
     #[serde(default)]
     history: Vec<String>,
+
+    /// The PublishingKey, which starts out as None but gets set once the invite is created and
+    /// sent. Once created, it gets save here.
+    #[serde(skip_serializing_if = "Option::is_none", alias = "publishingKey")]
+    pub(crate) publishing_key: Option<Vec<u8>>,
 }
 
 /// Impl From<Contact> for context_types::Contact
@@ -265,17 +270,19 @@ impl Default for Contact {
             phone: None,
             extra: Default::default(),
             history: Default::default(),
+            publishing_key: Default::default(),
         }
     }
 }
 
 impl Contact {
     pub(crate) fn update_contact(&mut self, addctx: Addctx) {
-        match addctx.label {
-            Label::FirstName => self.first_name = Some(addctx.value.clone().into()),
-            Label::LastName => self.last_name = Some(addctx.value.clone().into()),
-            Label::Email => self.email = Some(addctx.value.clone().into()),
-            Label::Phone => self.phone = Some(process_phone_number(&addctx.value)),
+        match addctx {
+            Addctx::FirstName(first_name) => self.first_name = Some(first_name),
+            Addctx::LastName(last_name) => self.last_name = Some(last_name),
+            Addctx::Email(email) => self.email = Some(email),
+            Addctx::Phone(phone) => self.phone = Some(process_phone_number(&phone)),
+            Addctx::PublishingKey(publishing_key) => self.publishing_key = Some(publishing_key),
         }
     }
 
@@ -322,6 +329,12 @@ impl Object for Contact {
                     .unwrap_or_default(),
             )),
             "extra" => Some(Value::from_object(self.extra.clone())),
+            "publishing_key" => Some(Value::from(
+                self.publishing_key
+                    .as_ref()
+                    .map(|key| key.to_vec())
+                    .unwrap_or_default(),
+            )),
             _ => None,
         }
     }
@@ -343,6 +356,7 @@ impl From<context_types::Contact> for Contact {
             phone: contact.phone.into(),
             extra: Default::default(),
             history: Default::default(),
+            publishing_key: Default::default(),
         }
     }
 }
@@ -358,6 +372,13 @@ impl ContactList {
     pub(crate) fn new() -> Self {
         ContactList {
             contacts: Default::default(),
+        }
+    }
+
+    /// Updates a contact in the ContactList that matches the given id
+    pub(crate) fn update(&mut self, id: &str, addctx: Addctx) {
+        if let Some(contact) = self.contacts.get_mut(id) {
+            contact.update_contact(addctx);
         }
     }
 

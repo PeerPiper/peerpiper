@@ -19,7 +19,7 @@
             type="text"
             id="{{id|on('input')}}"
             data-context-name="buildcontact"
-            data-context-value='{ "label": {"tag": "first-name"} }'
+            data-context-value='{ "tag": "first-name" }'
             class="rounded w-full border border-blue-400 bg-blue-100 text-neutral-700 p-2 m-2 placeholder:Enter invalid:[&:not(:placeholder-shown):not(:focus)]:border-red-500 peer"
           />
         </div>
@@ -33,7 +33,7 @@
             type="text"
             id="{{id|on('input')}}"
             data-context-name="buildcontact"
-            data-context-value='{ "label": {"tag": "last-name"} }'
+            data-context-value='{"tag": "last-name"}'
             class="rounded w-full border border-blue-400 bg-blue-100 text-neutral-700 p-2 m-2 placeholder:Enter invalid:[&:not(:placeholder-shown):not(:focus)]:border-red-500 peer"
           />
         </div>
@@ -47,7 +47,7 @@
             type="email"
             id="{{id|on('input')}}"
             data-context-name="buildcontact"
-            data-context-value='{ "label": {"tag": "email"} }'
+            data-context-value='{"tag": "email"}'
             class="rounded w-full border border-blue-400 bg-blue-100 text-neutral-700 p-2 m-2 placeholder:Enter invalid:[&:not(:placeholder-shown):not(:focus)]:border-red-500 peer"
           />
         </div>
@@ -62,7 +62,7 @@
               type="tel"
               id="{{id|on('input')}}"
               data-context-name="buildcontact"
-              data-context-value='{ "label": {"tag": "phone"} }'
+              data-context-value='{"tag": "phone"}'
               class="rounded border border-blue-400 bg-blue-100 text-neutral-700 p-2 m-2 placeholder:Enter"
             />
           </div>
@@ -94,6 +94,7 @@
           <th class="px-2 py-1">Email</th>
           <th class="px-2 py-1">Phone</th>
           <th class="px-2 py-1">Extra</th>
+          <th class="px-2 py-1">Publishing Key</th>
           <th class="px-2 py-1">Action</th>
         </tr>
       </thead>
@@ -105,6 +106,7 @@
         <td class="border px-2 py-1">{{ contact.email }}</td>
         <td class="border px-2 py-1">{{ contact.phone }}</td>
         <td class="border px-2 py-1">{{ contact.extra }}</td>
+        <td class="border px-2 py-1">{{ contact.publishing_key }}</td>
         <td class="border px-2 py-1">
           <button
             id="{{id|on('click')}}"

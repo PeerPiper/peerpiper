@@ -25,17 +25,18 @@ interface context-types {
     load: option<list<contact>>
   }
 
-  variant label {
-    first-name,
-    last-name,
-    email,
-    phone,
+  variant addctx {
+    first-name(string),
+    last-name(string),
+    email(string),
+    phone(string),
+    publishing-key(list<u8>),
   }
 
-  /// Wurbo will merge the nput value with data-context-value object, if any
-  record addctx {
-    label: label,
-    value: string
+  /// Updates the contact with the given id to the addctx value
+  record update {
+    id: string,
+    vals: list<addctx>
   }
 
   /// The type of context provided
@@ -48,7 +49,9 @@ interface context-types {
     /// Uploaded contacts
     upload(file-details),
     /// Emit the invite signal
-    invite(string)
+    invite(string),
+    /// Updates the contact with the given id to the addctx value
+    updatecontact(update),
   }
 }
 
@@ -93,6 +96,9 @@ interface wurbo-out {
 
   /// listen on all or given selectors
   activate: func(selectors: option<list<string>>);
+
+  /// Deactivates given selector 
+  deactivate: func(selector: string);
   
   /// Optionally customize the configuration of the templates used to render the component
   customize: func(templates: list<tuple<string, string>>) -> result<_, string>;

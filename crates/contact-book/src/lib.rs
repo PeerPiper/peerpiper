@@ -23,11 +23,23 @@ static APP_ID: OnceLock<String> = OnceLock::new();
 /// We need to provide the templates for the macro to pull in
 fn get_templates() -> Templates {
     let templates = Templates::new(
-        Index::new(INDEX_HTML, include_str!("templates/index.html")),
-        Entry::new(OUTPUT_HTML, include_str!("templates/output.html")),
+        Index::new(
+            INDEX_HTML.to_string(),
+            include_str!("templates/index.html").to_owned(),
+        ),
+        Entry::new(
+            OUTPUT_HTML.to_owned(),
+            include_str!("templates/output.html").to_owned(),
+        ),
         Rest::new(vec![
-            Entry::new(CARD_HTML, include_str!("templates/card.html")),
-            Entry::new("upload.html", include_str!("templates/upload.html")),
+            Entry::new(
+                CARD_HTML.to_owned(),
+                include_str!("templates/card.html").to_owned(),
+            ),
+            Entry::new(
+                "upload.html".to_owned(),
+                include_str!("templates/upload.html").to_owned(),
+            ),
         ]),
     );
     templates
@@ -74,7 +86,7 @@ impl From<&Context> for StructContext {
         match context {
             Context::AllContent(initial) => StructContext::from(initial.clone()),
             Context::Buildcontact(detail) => {
-                StructContext::from(State::from_latest().update_contact(detail.clone()))
+                StructContext::from(State::from_latest().build_contact(detail.clone()))
                     .with_target(OUTPUT_HTML.to_string())
             }
             Context::Submitnewcontact => {
@@ -90,6 +102,10 @@ impl From<&Context> for StructContext {
             // emit an Invite for this Contact id
             Context::Invite(id) => {
                 StructContext::from(State::from_latest().emit_invite(id.clone()))
+            }
+            Context::Updatecontact(update) => {
+                println!("[Rust] Update Contact: {:?}", update);
+                StructContext::from(State::from_latest().update_contact(update.clone()))
             }
         }
     }

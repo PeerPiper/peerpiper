@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 wit-bindgen-rt = {version = "0.27.0", features = ["bitflags"]}
-wurbo = "0.4.1"
+wurbo = "0.5.0"
 phonenumber = "0.3"
 strum = { version = "0.26", features = ["derive"] }
 strum_macros = "0.26"

@@ -1,7 +1,7 @@
 //! Module to hold the sate of this app
 use super::LAST_STATE;
 use crate::{
-    bindings::component::contact_book::context_types::{self, Addctx, Initial},
+    bindings::component::contact_book::context_types::{self, Addctx, Initial, Update},
     contacts::{Contact, ContactList},
 };
 use wurbo::prelude::{Object, Value};
@@ -31,8 +31,16 @@ impl State {
     }
 
     /// Updates the Contact in builder with the given Addctx
-    pub(crate) fn update_contact(mut self, addctx: Addctx) -> Self {
+    pub(crate) fn build_contact(mut self, addctx: Addctx) -> Self {
         self.builder.update_contact(addctx);
+        self
+    }
+
+    /// Update a pecific contact given an id and addctx
+    pub(crate) fn update_contact(mut self, ctx: Update) -> Self {
+        for val in ctx.vals {
+            self.contacts.update(&ctx.id, val);
+        }
         self
     }
 
