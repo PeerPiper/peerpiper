@@ -922,7 +922,7 @@ dependencies = [
  "strum",
  "strum_macros",
  "wit-bindgen-rt 0.27.0",
- "wurbo",
+ "wurbo 0.5.0",
 ]
 
 [[package]]
@@ -4023,7 +4023,7 @@ dependencies = [
  "wasmtime",
  "wasmtime-wasi",
  "wit-bindgen-rt 0.26.0",
- "wurbo",
+ "wurbo 0.4.1",
 ]
 
 [[package]]
@@ -7275,6 +7275,22 @@ name = "wurbo"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c6cf55abeaaef723ceccb7b13901f260aba62605784d32c545f0e87df8b7fbc7"
+dependencies = [
+ "base64ct",
+ "convert_case",
+ "lazy_static",
+ "minijinja",
+ "nanoid",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "wurbo"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5efcb128ed9cc01ddd74249eddd09a8c821b7b46e970f4bb399fedd8430a8828"
 dependencies = [
  "base64ct",
  "convert_case",
