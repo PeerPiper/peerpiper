@@ -1,10 +1,15 @@
 <script>
+	// @hmr:keep-all
+	// All state in this component will be preserved during hot reload
 	import { onMount, setContext, createEventDispatcher } from 'svelte';
 	import { Seed, Invite, Header } from './index.js';
+  import { page } from '$app/stores';
 	import OfferClipboard from './components/OfferClipboard.svelte';
 	import AcceptOffer from './components/AcceptOffer.svelte';
 
 	import wasm from '../../../../crates/peerpiper-wasm-bindgen/Cargo.toml';
+
+	const dispatch = createEventDispatcher();
 
 	let unlock, wallet, generateAttribute, getPublishKey;
 	let error;
@@ -12,6 +17,12 @@
 	let hash;
 	let offer, hints;
 	let verified;
+
+  let activeComponent = null;
+  let activeProps = {};
+  let handleActiveEvt;
+
+  let inviteResolve;
 
 	const KEY_BASE64_SEED = 'encrypted_seed_base64';
 
@@ -25,6 +36,49 @@
 		}
 	}
 
+  export let api = {
+      invite,
+      accept,
+      extend
+  }
+
+  // Function invite takes contact info, prompts to generate offer, then returns the publishingKey and hints
+  async function invite(attributes) {
+    // set active component to Invite
+    // wait on invite event
+    // handle invite, return publishingKey and hints
+    let attrs = Object.entries(attributes).filter(([key, value]) => value && key != 'id').map(([key, value]) => ({ key, value }))
+    activeComponent = Invite;
+    activeProps = { attributes: attrs };
+    handleActiveEvt = handleInvite;
+    
+    return new Promise((resolve, reject) => {
+      inviteResolve = resolve;
+    });
+  }
+
+  // Function accept takes offer and hints, prompts to accept offer, then returns the verified status
+  function accept(offer, hints){
+    // set active component to AcceptOffer
+    // wait on accept event
+    // handle accept, return verified status
+  }
+
+  // Function extends a credential with an additional attribute, returns the updated credential
+  function extend(credential, attribute){
+    // set active component to Extend
+    // wait on extend event
+    // handle extend, return updated credential
+  }
+
+  // handleHashChange
+  function handleHashChange() {
+    console.log('hash change', window.location.hash);
+    if (window.location.hash) {
+      hash = JSON.parse(window.atob(window.location.hash.slice(1)));
+    }
+  }
+
 	onMount(async () => {
 		const { WasmWallet, attribute, publishKey } = await loadWasm();
 
@@ -36,7 +90,6 @@
 		// if hash,
 		// get any #hash value, atob it, and parse it into JSON
 		if (window.location.hash) hash = JSON.parse(window.atob(window.location.hash.slice(1)));
-		console.log('hash', hash);
 
 		unlock = async (e) => {
 			try {
@@ -46,6 +99,8 @@
 				let seed = new Uint8Array(encrSeed);
 				b64Seed = btoa(String.fromCharCode(...seed));
 				localStorage.setItem(KEY_BASE64_SEED, b64Seed);
+
+				dispatch('unlock', { encryptedSeed: encrSeed, base64Seed: b64Seed });
 			} catch (e) {
 				error = e;
 			}
@@ -76,6 +131,7 @@
 	}
 
 	function handleInvite(event) {
+    console.log('handleInvite', event.detail);
 		let attributes = hashAttrs(event.detail);
 
 		// hints are the keys from the KV attributes
@@ -109,11 +165,29 @@
 
 		console.log('preimages', preimages);
 
-		let publishKey = getPublishKey({ vk: offer.issuer_public.vk, preimages });
+		let publishingKey = getPublishKey({ vk: offer.issuer_public.vk, preimages });
 
-		let b64pubKey = btoa(String.fromCharCode(...publishKey));
+		let b64pubKey = btoa(String.fromCharCode(...publishingKey));
 
-		console.log('publishKey', publishKey, b64pubKey);
+		console.log('publishingKey', publishingKey, b64pubKey);
+
+		// Replace the hash with contact id, publishingKey, back to the ContactBook
+    inviteResolve({ publishingKey, hints });
+
+    // see if you can get phone or email from event.detail ([{key: 'phone', value: '123-456-7890'}])
+    // if so, send the offer to that contact
+    let phone, email
+    event.detail.forEach(({ key, value }) => {
+      if (key == 'phone') phone = value;
+      if (key == 'email') email = value;
+    });
+
+    console.log('phone', phone, 'email', email);
+
+    // active component is now OfferClipboard
+    activeComponent = OfferClipboard;
+    activeProps = { offer, hints, phone, email };
+    
 	}
 
 	function handleAccept(event) {
@@ -159,21 +233,34 @@
 	}
 </script>
 
+<svelte:window on:hashchange={handleHashChange} />
+
 {#if unlock}
 	{#if !wallet}
 		<Seed on:seed={unlock} {error} {b64Seed} />
 	{:else}
 		<Header seed={b64Seed} />
 		{#if generateAttribute}
-			{#if hash && !verified}
-				<AcceptOffer {hash} on:accept={handleAccept} />
-			{:else if offer && hints}
-				<OfferClipboard {offer} {hints} />
-			{:else}
-				<Invite {wallet} {generateAttribute} on:invite={handleInvite} />
-			{/if}
-
-			<!-- If offer, create an email link to send them the text file, and the hints as body text. -->
+      <svelte:component this={activeComponent} {...activeProps} on:event={handleActiveEvt} />
+			<!-- {#if hash?.tag == 'invite'} -->
+			<!-- 	<!-- turns hash obj into [{key, value}] attributes array -->
+			<!-- 	<!-- We need to pass in id so we can associate the PushingKey with the id back in ContactBook --> 
+			<!-- 	<!-- Filter out any values that are empty or are key = "id" --> 
+			<!-- 	<Invite -->
+			<!-- 		attributes={Object.entries(hash.val) -->
+			<!-- 			.filter(([key, value]) => value && key != 'id') -->
+			<!-- 			.map(([key, value]) => ({ key, value }))} -->
+			<!-- 		{wallet} -->
+			<!-- 		{generateAttribute} -->
+			<!-- 		on:invite={handleInvite} -->
+			<!-- 	/> -->
+			<!-- {:else if hash && !verified} -->
+			<!-- 	<AcceptOffer {hash} on:accept={handleAccept} /> -->
+			<!-- {:else if offer && hints} -->
+			<!-- 	<OfferClipboard {offer} {hints} /> -->
+			<!-- {:else} -->
+			<!-- 	<Invite {wallet} {generateAttribute} on:invite={handleInvite} /> -->
+			<!-- {/if} -->
 		{/if}
 	{/if}
 {:else}
