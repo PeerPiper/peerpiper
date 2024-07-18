@@ -2,6 +2,8 @@
 	export let offer;
 	export let hints;
 
+  export let phone, email;
+
 	let url = new URL(window.location.href);
 	url.hash = btoa(JSON.stringify({ offer, hints }));
 </script>
@@ -38,4 +40,27 @@
 			>
 		</button>
 	</div>
+<!-- If phone and/or email, include mailto: and sms: links to those destinations with the offer link -->
+  <div class="flex flex-row space-x-2 my-2">
+  {#if phone}
+    <div class="flex flex-row space-x-2">
+      <a
+        href={`sms:${phone}?body=${url.href}`}
+        class="flex-1 bg-blue-500 text-white rounded-md py-2 px-4 flex justify-center items-center font-semibold"
+      >
+        Send link as SMS
+      </a>
+  </div>
+  {/if}
+  {#if email}
+    <div class="flex flex-row space-x-2">
+      <a
+        href={`mailto:${email}?subject=Invitation&body=${url.href}`}
+        class="flex-1 bg-blue-500 text-white rounded-md py-2 px-4 flex justify-center items-center font-semibold"
+      >
+        Send link as Email
+      </a>
+    </div>
+  {/if}
+  </div>
 </div>

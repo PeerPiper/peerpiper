@@ -8,7 +8,7 @@
 	const dispatch = createEventDispatcher();
 
 	// attribtes is an array of { key, value}
-	let attributes = [
+	export let attributes = [
 		{ key: 'First Name', value: 'Richard' },
 		{ key: 'Last Name', value: 'Hendricks' }
 	];
@@ -23,13 +23,13 @@
 		];
 	}
 
-	// Converts the Key Values to strings, then bytes, then Attributes, then generates a byte attribute array for the wallet to issue a cred
+  // Create Invite should hide the "create" views and display OfferClipboard to send the offer, then close that view.
 	function handleInvite() {
-		dispatch('invite', attributes);
+		dispatch('event', attributes);
 	}
 </script>
 
-<section class="flex flex-col p-2 min-h-screen">
+<section class="flex flex-col p-2 flex-grow h-full">
 	<h1 class="text-2xl font-bold">Invite Builder</h1>
 	<p class="text-gray-500">Invite a contact to join your network</p>
 	<!-- Create an Invite: Key Value pairs and an optional photo -->
@@ -50,7 +50,7 @@
 					<img src={URL.createObjectURL(new Blob([attribute.value]))} class="w-auto h-12" />
 				{:else}
 					<input
-						type="text"
+				type="text"
 						class="w-1/2 border border-gray-300 rounded-md p-2"
 						placeholder="Value"
 						bind:value={attribute.value}
@@ -84,7 +84,6 @@
 			class="flex-1 bg-red-500 text-white rounded-md py-3 px-4 mt-4 font-semibold w-full"
 			on:click={() => dispatch('cancel')}>CANCEL</button
 		>
-		<!-- "Create Invite" at bottom of page-->
 		<button
 			class="flex-1 bg-blue-500 text-white rounded-md py-3 px-4 mt-4 font-semibold w-full"
 			on:click={handleInvite}
