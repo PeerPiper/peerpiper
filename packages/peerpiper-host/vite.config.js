@@ -10,5 +10,10 @@ export default defineConfig({
 	},
 	worker: {
 		format: 'es'
+	},
+	server: {
+		fs: {
+			strict: false
+		}
 	}
 });

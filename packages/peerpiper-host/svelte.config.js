@@ -11,6 +11,11 @@ const config = {
 		alias: {
 			'@peerpiper-wallet': '../bindgen-wallet/src/lib/index.js'
 		}
+	},
+	vitePlugin: {
+		hot: {
+			preserveLocalState: true
+		}
 	}
 };
 

@@ -18,10 +18,16 @@
 		val: {}
 	};
 
+  // console when data changes
+  $: console.log('ContactBook data changed', data);
+
 	const eventHandler = (payload) => {
 		console.log('Contact Book Wasm Component emitted an event:', payload);
 		dispatch('event', payload);
 	};
 </script>
 
-<WurboComponent {wasmURL} {data} {eventHandler} />
+<!-- <WurboComponent {wasmURL} {data} {eventHandler} /> -->
+{#if WurboComponent && data && eventHandler}
+  <WurboComponent {wasmURL} {data} {eventHandler} />
+{/if}
