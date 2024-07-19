@@ -54,8 +54,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Serve .wasm, .js and server multiaddress over HTTP on this address.
     tokio::spawn(serve(address.clone()));
 
-    let bytes = peerpiper::handler::utils::get_wasm_bytes("peerpiper_handler")?;
-    let handler = peerpiper::handler::Handler::new(bytes)?;
+    // TODO: Insert handler (WIT components) here.
+    // let bytes = peerpiper::handler::utils::get_wasm_bytes("peerpiper_handler")?;
+    // let handler = peerpiper::handler::Handler::new(bytes)?;
 
     loop {
         tokio::select! {
@@ -63,8 +64,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 match msg {
                     Events::Outer(ref m @ PublicEvent::Message { ref topic, ref peer, .. }) => {
                         tracing::info!("Received msg on topic {:?} from peer: {:?}", topic, peer);
-                        let r = handler.handle(m.clone()).await?;
-                        tracing::info!("Handler returned: {:?}", r);
+                        // let r = handler.handle(m.clone()).await?;
+                        // tracing::info!("Handler returned: {:?}", r);
                     }
                     _ => {}
                 }
@@ -103,10 +104,12 @@ pub(crate) async fn serve(libp2p_transport: Multiaddr) {
     tracing::info!(url=%format!("http://{addr}"), "Serving client files at url");
 
     tokio::spawn(async move {
-        axum::Server::bind(&addr)
+        if let Err(e) = axum::Server::bind(&addr)
             .serve(server.into_make_service())
             .await
-            .unwrap();
+        {
+            tracing::error!(%e, "Error serving client files");
+        }
     });
 
     tracing::info!(url=%format!("http://{addr}"), "Opening browser");
