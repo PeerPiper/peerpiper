@@ -1,0 +1,152 @@
+use libp2p::identity;
+use libp2p::identity::Keypair;
+use libp2p::identity::PeerId;
+use libp2p_webrtc::tokio::Certificate;
+use serde::{Deserialize, Serialize};
+use std::error::Error;
+use std::fs;
+use std::path::Path;
+use std::path::PathBuf;
+use std::str::FromStr;
+
+pub const LOCAL_KEY_PATH: &str = "./local_keypair";
+
+/// The configuration of the libp2p node.
+#[derive(Clone, Deserialize, Serialize, Default)]
+#[serde(rename_all = "PascalCase")]
+pub struct Config {
+    pub identity: Identity,
+}
+
+impl zeroize::Zeroize for Config {
+    fn zeroize(&mut self) {
+        self.identity.peer_id.zeroize();
+        self.identity.priv_key.zeroize();
+        self.identity.cert_pem.zeroize();
+    }
+}
+
+/// The identity of this node, the PeerId, priv key, and cert pem.
+#[derive(Clone, Deserialize, Serialize, Default)]
+#[serde(rename_all = "PascalCase")]
+pub struct Identity {
+    pub peer_id: String,
+    priv_key: String,
+    cert_pem: String,
+}
+
+impl Config {
+    pub fn from_file(path: &Path) -> Result<Self, Box<dyn Error>> {
+        Ok(serde_json::from_str(&std::fs::read_to_string(path)?)?)
+    }
+
+    pub fn load() -> Result<(Keypair, Certificate), Box<dyn Error>> {
+        let existing_keyfile = match Config::from_file(Path::new(LOCAL_KEY_PATH)) {
+            Ok(config) => Some(config),
+            Err(_) => None,
+        };
+        let key_path = PathBuf::from(LOCAL_KEY_PATH);
+
+        tracing::info!("Key path: {:?}", key_path);
+
+        match existing_keyfile {
+            Some(keyfile) => {
+                tracing::info!("Previously saved local peerid available");
+
+                let config = zeroize::Zeroizing::new(keyfile);
+
+                let keypair = identity::Keypair::from_protobuf_encoding(&zeroize::Zeroizing::new(
+                    base64::decode(config.identity.priv_key.as_bytes())?,
+                ))?;
+
+                let cert = Certificate::from_pem(&config.identity.cert_pem)?;
+
+                let peer_id = keypair.public().into();
+                assert_eq!(
+                    PeerId::from_str(&config.identity.peer_id)?,
+                    peer_id,
+                    "Expect peer id derived from private key and peer id retrieved from config to match."
+                );
+
+                Ok((keypair, cert))
+            }
+            None => {
+                tracing::info!("No local peerid available, generating new keypair");
+                let keypair = identity::Keypair::generate_ed25519();
+                let cert = Certificate::generate(&mut rand::thread_rng())?;
+                let cert_pem = cert.serialize_pem();
+
+                // Save keypair to file.
+                let config = Config {
+                    identity: Identity {
+                        peer_id: keypair.public().to_peer_id().to_string(),
+                        priv_key: base64::encode(
+                            keypair.to_protobuf_encoding().expect("valid keypair"),
+                        ),
+                        cert_pem,
+                    },
+                };
+
+                match serde_json::to_string_pretty(&config) {
+                    Ok(config) => {
+                        fs::write(key_path, config)?;
+                        Ok((keypair, cert))
+                    }
+                    Err(e) => Err(e.into()),
+                }
+            }
+        }
+    }
+
+    /// Saves the keypair and certificate to the local filesystem.
+    pub fn save(keypair: &Keypair, cert: &Certificate) -> Result<(), Box<dyn Error>> {
+        let config = Config {
+            identity: Identity {
+                peer_id: keypair.public().to_peer_id().to_string(),
+                priv_key: base64::encode(
+                    keypair
+                        .to_protobuf_encoding()
+                        .expect("valid keypair")
+                        .as_slice(),
+                ),
+                cert_pem: cert.serialize_pem(),
+            },
+        };
+
+        let key_path = PathBuf::from(LOCAL_KEY_PATH);
+
+        fs::write(key_path, serde_json::to_string_pretty(&config)?)?;
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use libp2p::identity::Keypair;
+    use libp2p_webrtc::tokio::Certificate;
+    use std::fs;
+    use std::path::Path;
+
+    #[test]
+    fn test_roundtrip() {
+        // saves a keypair and certificate to the local filesystem, then loads and checks if same
+        let keypair = Keypair::generate_ed25519();
+        let cert = Certificate::generate(&mut rand::thread_rng()).unwrap();
+
+        let key_path = PathBuf::from(LOCAL_KEY_PATH);
+
+        let _ = fs::remove_file(&key_path);
+
+        Config::save(&keypair, &cert).unwrap();
+
+        let (keypair2, cert2) = Config::load().unwrap();
+
+        assert_eq!(
+            keypair.to_protobuf_encoding().unwrap(),
+            keypair2.to_protobuf_encoding().unwrap()
+        );
+        assert_eq!(cert, cert2);
+    }
+}

@@ -23,16 +23,22 @@ pub fn create<B: NetworkBehaviour>(
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
+        use crate::libp2p::config::Config;
+        use libp2p_webrtc::tokio::Certificate;
         use rand::thread_rng;
 
-        Ok(libp2p::SwarmBuilder::with_new_identity()
+        let (keypair, cert) = Config::load().unwrap_or_else(|_| {
+            let keypair = Keypair::generate_ed25519();
+            let cert = Certificate::generate(&mut thread_rng()).unwrap();
+            Config::save(&keypair, &cert).unwrap();
+            (keypair, cert)
+        });
+
+        Ok(libp2p::SwarmBuilder::with_existing_identity(keypair)
             .with_tokio()
             .with_quic()
             .with_other_transport(|id_keys| {
-                Ok(libp2p_webrtc::tokio::Transport::new(
-                    id_keys.clone(),
-                    libp2p_webrtc::tokio::Certificate::generate(&mut thread_rng())?,
-                ))
+                Ok(libp2p_webrtc::tokio::Transport::new(id_keys.clone(), cert))
             })
             .map_err(|e| e.to_string())?
             .with_behaviour(behaviour_constructor)
