@@ -11,6 +11,7 @@ futures-timer = "3.0.2"
 rand = "0.8"
 thiserror = "1"
 tracing = "0.1.37"
+serde = { version = "1.0", features = ["derive"] }
 wnfs-common = "0.2.0"
 multibase = { version ="0.9", default-features = false }
 zeroize = "1.8.1"
@@ -22,6 +23,5 @@ libp2p-webrtc-websys = { version = "0.3.0-alpha" }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "quic", "tokio", "gossipsub", "identify", "kad", "request-response", "cbor"]}
 libp2p-webrtc = { version = "0.7.1-alpha", features = ["tokio", "pem"] }
-serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 base64 = "0.20"
