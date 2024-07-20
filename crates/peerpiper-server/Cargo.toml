@@ -10,6 +10,7 @@ peerpiper = { workspace = true }
 
 axum = "0.6.19"
 anyhow = "1.0.72"
+dotenv = "0.15.0"
 futures = "0.3.29"
 rand = "0.8"
 serde = { version = "1", features = ["derive"] }
