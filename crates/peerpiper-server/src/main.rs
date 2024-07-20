@@ -1,23 +1,17 @@
+#[cfg(feature = "cloudflare")]
+mod cloudflare;
+
 use anyhow::Result;
 use axum::extract::State;
-// use axum::http::header::CONTENT_TYPE;
-// use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse};
-// use axum::routing::post;
-use axum::{http::Method, routing::get};
-// use axum::{Json};
 use axum::Router;
+use axum::{http::Method, routing::get};
 use futures::channel::{mpsc, oneshot};
 use futures::StreamExt;
 use libp2p::multiaddr::{Multiaddr, Protocol};
 use peerpiper::core::events::{Events, PublicEvent};
 use std::net::{Ipv4Addr, SocketAddr};
 use tower_http::cors::{Any, CorsLayer};
-
-// use std::process::Stdio;
-// use thirtyfour::prelude::*;
-// use tokio::io::{AsyncBufReadExt, BufReader};
-// use tokio::process::Child;
 
 const MAX_CHANNELS: usize = 16;
 
@@ -29,7 +23,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .try_init();
 
-    tracing::info!("Starting peerpiper-native TESTS");
+    tracing::info!("Starting peerpiper-server");
 
     let (tx, mut rx) = mpsc::channel(MAX_CHANNELS);
     let (_command_sender, command_receiver) = mpsc::channel(8);
@@ -53,6 +47,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Serve .wasm, .js and server multiaddress over HTTP on this address.
     tokio::spawn(serve(address.clone()));
+
+    // TODO: Make TXT record for dnsaddr for this address
+    #[cfg(feature = "cloudflare")]
+    if let Err(e) = cloudflare::add_address(&address).await {
+        eprintln!("Could not add address to cloudflar DNS")
+    }
 
     // TODO: Insert handler (WIT components) here.
     // let bytes = peerpiper::handler::utils::get_wasm_bytes("peerpiper_handler")?;
