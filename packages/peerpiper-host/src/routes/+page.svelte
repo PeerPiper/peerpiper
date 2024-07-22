@@ -1,14 +1,31 @@
 <script>
-	import { ContactBook, Modal, Details } from '$lib';
+	import { onMount } from 'svelte';
+	import { ContactBook, Modal, Details, Connect } from '$lib';
 	import { Wallet } from '@peerpiper-wallet';
 	import { goto, pushState } from '$app/navigation';
 	import { page } from '$app/stores';
 
 	let connected = false;
 
-  let api
+	let api;
 
 	let contactBookData;
+
+	// the Dial Address to connect to
+	let dialAddr;
+
+	onMount(async () => {
+		// Start peerpiper-server to get a local Multiaddr at port 8080:
+		// use try / catch to possibly display "Have you started the server?"
+		try {
+			const res = await fetch('http://localhost:8080/');
+			console.log('res', res);
+			const addr = await res.text();
+			dialAddr = addr;
+		} catch (e) {
+			console.log('Have you started the server?');
+		}
+	});
 
 	const variants = {
 		INVITE: 'invite'
@@ -29,23 +46,24 @@
 		if (evt?.tag == 'invite') {
 			const state = { showWallet: true };
 			pushState('', state);
-      const invited = await api.invite(evt.val);
-      console.log('Invited', invited);
-      // send the publishingKey to the contact
-      contactBookData = {
-        tag: 'updatecontact',
-        val: { 
-          id: evt.val.id, 
-          vals: [
-            { 
-              tag:'publishing-key', 
-              val: invited.publishingKey
-            }] 
-          } 
-      };
+			const invited = await api.invite(evt.val);
+			console.log('Invited', invited);
+			// send the publishingKey to the contact
+			contactBookData = {
+				tag: 'updatecontact',
+				val: {
+					id: evt.val.id,
+					vals: [
+						{
+							tag: 'publishing-key',
+							val: invited.publishingKey
+						}
+					]
+				}
+			};
 		} else {
-      console.log('Not inviting', evt);
-    }
+			console.log('Not inviting', evt);
+		}
 	}
 
 	function handleConnected(event) {
@@ -69,8 +87,12 @@
 	<script src="https://cdn.tailwindcss.com"></script>
 </svelte:head>
 
+{#if dialAddr}
+	<Connect {dialAddr} />
+{/if}
+
 <ContactBook on:event={handleContactBookEvt} data={contactBookData} />
 <hr />
 <!-- <Details title={'Wallet'}> -->
-	<Wallet on:unlock={handleConnected} on:invited={handleInvited} bind:api />
+<Wallet on:unlock={handleConnected} on:invited={handleInvited} bind:api />
 <!-- </Details> -->

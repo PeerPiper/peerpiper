@@ -2,3 +2,4 @@
 export { default as ContactBook } from './ContactBook.svelte';
 export { default as Modal } from './Modal.svelte';
 export { default as Details } from './Details.svelte';
+export { default as Connect } from './Connect.svelte';
