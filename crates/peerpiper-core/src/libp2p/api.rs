@@ -15,6 +15,7 @@ use libp2p::request_response::{self, OutboundRequestId, ResponseChannel};
 use libp2p::swarm::{Swarm, SwarmEvent};
 use libp2p::{ping, Multiaddr, PeerId};
 use serde::{Deserialize, Serialize};
+use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::error::Error;
 use std::net::Ipv4Addr;
@@ -414,13 +415,12 @@ impl EventLoop {
                     .await
                     .expect("Event receiver not to be dropped.");
             }
-            // Ping event
             SwarmEvent::Behaviour(BehaviourEvent::Ping(ping::Event {
                 peer,
                 result: Ok(rtt),
                 ..
             })) => {
-                tracing::debug!("🏓 Ping {peer} in {rtt:?}");
+                tracing::info!("🏓 Ping {peer} in {rtt:?}");
                 // send msg
                 self.event_sender
                     .send(Events::Outer(PublicEvent::Pong {
@@ -429,6 +429,16 @@ impl EventLoop {
                     }))
                     .await
                     .expect("Event receiver not to be dropped.");
+            }
+            SwarmEvent::Behaviour(BehaviourEvent::Ping(ping::Event {
+                peer,
+                result: Err(err),
+                connection,
+            })) => {
+                tracing::warn!("⚠️  Ping {peer} failed: {err}");
+                self.swarm.behaviour_mut().kad.remove_peer(&peer);
+                let found = self.swarm.close_connection(connection);
+                tracing::warn!("Connection closed: {found}");
             }
             // SwarmEvent::Behaviour(BehaviourEvent::Relay(e)) => {
             //     tracing::debug!("{:?}", e);
