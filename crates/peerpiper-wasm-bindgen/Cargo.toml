@@ -9,7 +9,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wasm-bindgen = "0.2.92"
-delano-wallet-core = { version = "0.1.2", git = "https://github.com/DougAnderson444/delanocreds.git" }
+delano-wallet-core = { version = "^0.1", git = "https://github.com/DougAnderson444/delanocreds.git" }
 seed-keeper-core = { path = "../../submodules/seed-keeper/crates/seed-keeper-core" }
 delanocreds = { version = "0.2.1", git = "https://github.com/DougAnderson444/delanocreds.git" }
 delano-keys = { path = "../../submodules/delanocreds/crates/delano-keys" }
