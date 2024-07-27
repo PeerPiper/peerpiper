@@ -17,14 +17,13 @@ use wurbo::prelude_bindgen;
 
 const INDEX_HTML: &str = "index.html";
 const OUTPUT_HTML: &str = "output.html";
-const CARD_HTML: &str = "card.html";
 static APP_ID: OnceLock<String> = OnceLock::new();
 
 /// We need to provide the templates for the macro to pull in
 fn get_templates() -> Templates {
     let templates = Templates::new(
         Index::new(
-            INDEX_HTML.to_string(),
+            INDEX_HTML.to_owned(),
             include_str!("templates/index.html").to_owned(),
         ),
         Entry::new(
@@ -33,12 +32,16 @@ fn get_templates() -> Templates {
         ),
         Rest::new(vec![
             Entry::new(
-                CARD_HTML.to_owned(),
+                "card.html".to_owned(),
                 include_str!("templates/card.html").to_owned(),
             ),
             Entry::new(
                 "upload.html".to_owned(),
                 include_str!("templates/upload.html").to_owned(),
+            ),
+            Entry::new(
+                "profile.html".to_owned(),
+                include_str!("templates/profile.html").to_owned(),
             ),
         ]),
     );
