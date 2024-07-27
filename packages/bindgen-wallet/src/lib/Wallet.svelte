@@ -3,7 +3,7 @@
 	// All state in this component will be preserved during hot reload
 	import { onMount, setContext, createEventDispatcher } from 'svelte';
 	import { Seed, Invite, Header } from './index.js';
-  import { page } from '$app/stores';
+	import { page } from '$app/stores';
 	import OfferClipboard from './components/OfferClipboard.svelte';
 	import AcceptOffer from './components/AcceptOffer.svelte';
 
@@ -18,11 +18,11 @@
 	let offer, hints;
 	let verified;
 
-  let activeComponent = null;
-  let activeProps = {};
-  let handleActiveEvt;
+	let activeComponent = null;
+	let activeProps = {};
+	let handleActiveEvt;
 
-  let inviteResolve;
+	let inviteResolve;
 
 	const KEY_BASE64_SEED = 'encrypted_seed_base64';
 
@@ -36,48 +36,102 @@
 		}
 	}
 
-  export let api = {
-      invite,
-      accept,
-      extend
-  }
+	export let api = {
+		invite,
+		accept,
+		extend
+	};
 
-  // Function invite takes contact info, prompts to generate offer, then returns the publishingKey and hints
-  async function invite(attributes) {
-    // set active component to Invite
-    // wait on invite event
-    // handle invite, return publishingKey and hints
-    let attrs = Object.entries(attributes).filter(([key, value]) => value && key != 'id').map(([key, value]) => ({ key, value }))
-    activeComponent = Invite;
-    activeProps = { attributes: attrs };
-    handleActiveEvt = handleInvite;
-    
-    return new Promise((resolve, reject) => {
-      inviteResolve = resolve;
-    });
-  }
+	// Function invite takes contact info, prompts to generate offer, then returns the publishingKey and hints
+	async function invite(attributes) {
+		// set active component to Invite
+		// wait on invite event
+		// handle invite, return publishingKey and hints
+		let attrs = Object.entries(attributes)
+			.filter(([key, value]) => value && key != 'id')
+			.map(([key, value]) => ({ key, value }));
+		activeComponent = Invite;
+		activeProps = { attributes: attrs };
+		handleActiveEvt = handleInvite;
 
-  // Function accept takes offer and hints, prompts to accept offer, then returns the verified status
-  function accept(offer, hints){
-    // set active component to AcceptOffer
-    // wait on accept event
-    // handle accept, return verified status
-  }
+		return new Promise((resolve, reject) => {
+			inviteResolve = resolve;
+		});
+	}
 
-  // Function extends a credential with an additional attribute, returns the updated credential
-  function extend(credential, attribute){
-    // set active component to Extend
-    // wait on extend event
-    // handle extend, return updated credential
-  }
+	// Function accept takes offer and hints, prompts to accept offer, then returns the verified status
+	async function accept({ offer, hints }) {
+		// set active component to AcceptOffer
+		// wait on accept event
+		// handle accept, return verified status
+		console.log('[Wallet]: Accepting offer', { offer, hints });
+		activeComponent = AcceptOffer;
+		activeProps = { hash: { offer, hints } };
 
-  // handleHashChange
-  function handleHashChange() {
-    console.log('hash change', window.location.hash);
-    if (window.location.hash) {
-      hash = JSON.parse(window.atob(window.location.hash.slice(1)));
-    }
-  }
+		return new Promise((resolve, reject) => {
+			handleActiveEvt = (event) => {
+				const attributes = hashAttrs(event.detail);
+				const acceptedCred = wallet.accept(offer);
+
+				// To validate that we entered the answers correctly, we need to do a test proof and verification
+
+				// generate random nonce, fill a Uint8Array with random values
+				let nonce = new Uint8Array(32);
+				window.crypto.getRandomValues(nonce);
+
+				let provables = {
+					credential: acceptedCred,
+					entries: [attributes],
+					selected: attributes,
+					nonce
+				};
+
+				// Now we can create a proof
+				try {
+					let { proof, selected } = wallet.prove(provables);
+
+					// Now we can verify the proof against the issuer's public data and the selected attributes
+					let verifiables = {
+						proof,
+						issuer_public: acceptedCred.issuer_public,
+						selected,
+						nonce
+					};
+
+					let verified = wallet.verify(verifiables);
+
+					if (verified) {
+						console.log('Verified');
+					} else {
+						console.warn('Not Verified');
+					}
+
+					resolve({
+						credential: acceptedCred,
+						preimages: event.detail
+					});
+				} catch (e) {
+					console.error(e);
+					reject(e);
+				}
+			};
+		});
+	}
+
+	// Function extends a credential with an additional attribute, returns the updated credential
+	function extend(credential, attribute) {
+		// set active component to Extend
+		// wait on extend event
+		// handle extend, return updated credential
+	}
+
+	// handleHashChange
+	function handleHashChange() {
+		console.log('hash change', window.location.hash);
+		if (window.location.hash) {
+			hash = JSON.parse(window.atob(window.location.hash.slice(1)));
+		}
+	}
 
 	onMount(async () => {
 		const { WasmWallet, attribute, publishKey } = await loadWasm();
@@ -114,8 +168,8 @@
 
 	// serialize the attributes into a Uint8Array Preimage
 	function preimageFromAttribute({ key, value }) {
-		// create string of `key = value`, except for Uint8Array (just the value is enough)
-		if (value instanceof Uint8Array) {
+		// create string of `key = value`, except for Uint8Array or ArrayBuffer
+		if (value instanceof Uint8Array || value instanceof ArrayBuffer) {
 			return value;
 		}
 		let val = `${key} = ${value}`;
@@ -131,8 +185,10 @@
 	}
 
 	function handleInvite(event) {
-    console.log('handleInvite', event.detail);
+		console.log('handleInvite', event.detail);
 		let attributes = hashAttrs(event.detail);
+
+		console.log('[Invite] attributes', attributes);
 
 		// hints are the keys from the KV attributes
 		hints = event.detail.map(({ key }) => key);
@@ -172,26 +228,27 @@
 		console.log('publishingKey', publishingKey, b64pubKey);
 
 		// Replace the hash with contact id, publishingKey, back to the ContactBook
-    inviteResolve({ publishingKey, hints });
+		inviteResolve({ publishingKey, hints });
 
-    // see if you can get phone or email from event.detail ([{key: 'phone', value: '123-456-7890'}])
-    // if so, send the offer to that contact
-    let phone, email
-    event.detail.forEach(({ key, value }) => {
-      if (key == 'phone') phone = value;
-      if (key == 'email') email = value;
-    });
+		// see if you can get phone or email from event.detail ([{key: 'phone', value: '123-456-7890'}])
+		// if so, send the offer to that contact
+		let phone, email;
+		event.detail.forEach(({ key, value }) => {
+			if (key == 'phone') phone = value;
+			if (key == 'email') email = value;
+		});
 
-    console.log('phone', phone, 'email', email);
+		console.log('phone', phone, 'email', email);
 
-    // active component is now OfferClipboard
-    activeComponent = OfferClipboard;
-    activeProps = { offer, hints, phone, email };
-    
+		// active component is now OfferClipboard
+		activeComponent = OfferClipboard;
+		activeProps = { offer, hints, phone, email };
 	}
 
 	function handleAccept(event) {
+		console.log('handleAccept attrs', event.detail);
 		const attributes = hashAttrs(event.detail);
+		console.log('handleAccept HaSHED attrs', attributes);
 		const acceptedCred = wallet.accept(hash.offer);
 
 		// To validate that we entered the answers correctly, we need to do a test proof and verification
@@ -241,11 +298,11 @@
 	{:else}
 		<Header seed={b64Seed} />
 		{#if generateAttribute}
-      <svelte:component this={activeComponent} {...activeProps} on:event={handleActiveEvt} />
+			<svelte:component this={activeComponent} {...activeProps} on:event={handleActiveEvt} />
 			<!-- {#if hash?.tag == 'invite'} -->
 			<!-- 	<!-- turns hash obj into [{key, value}] attributes array -->
-			<!-- 	<!-- We need to pass in id so we can associate the PushingKey with the id back in ContactBook --> 
-			<!-- 	<!-- Filter out any values that are empty or are key = "id" --> 
+			<!-- 	<!-- We need to pass in id so we can associate the PushingKey with the id back in ContactBook -->
+			<!-- 	<!-- Filter out any values that are empty or are key = "id" -->
 			<!-- 	<Invite -->
 			<!-- 		attributes={Object.entries(hash.val) -->
 			<!-- 			.filter(([key, value]) => value && key != 'id') -->

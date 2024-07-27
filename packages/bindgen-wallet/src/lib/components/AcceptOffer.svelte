@@ -34,7 +34,14 @@
 						<FileReader
 							on:photo={(e) => {
 								console.log(e);
-								attributes[i].value = e.detail.bytes;
+								// attributes[i].value = e.detail.bytes;
+								attributes = attributes.map((a, j) => {
+									if (i === j) {
+										return { ...a, value: new Uint8Array(e.detail.bytes) };
+									}
+									return a;
+								});
+								console.log('[AcceptOffer]: attributes', attributes);
 							}}
 						/>
 					{:else}
