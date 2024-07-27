@@ -45,5 +45,6 @@ all: update-build preview
 test: update-build
   cargo test --workspace --all-targets
 
-tauri:
-  cd tauri-app && npm run tauri dev
+# this recipe builds the wits, then runs `npm run dev` in the packages/peerpiper-host directory
+dev: build-wits
+  cd packages/peerpiper-host && npm run dev
