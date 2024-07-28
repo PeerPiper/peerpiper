@@ -4,7 +4,7 @@ use delano_keys::publish::{IssuerKey, OfferedPreimages};
 use delano_keys::vk::VKCompressed;
 use delano_wallet_core::{IssueOptions, OfferConfig, Provables, Verifiables};
 use delanocreds::keypair::spseq_uc::CredentialCompressed;
-use delanocreds::{Attribute, MaxEntries, Nonce};
+use delanocreds::{Attribute, MaxEntries};
 use wasm_bindgen::prelude::*;
 
 use super::*;
@@ -176,7 +176,19 @@ impl WasmWallet {
     pub fn verify(&mut self, verifiables: JsValue) -> Result<JsValue, JsValue> {
         let verifiables: Verifiables = serde_wasm_bindgen::from_value(verifiables)
             .map_err(|e| format!("Error deserde into Verifiables: {:?}", e))?;
-        let verified = self.inner.delano.verify(verifiables)?;
+        let verified = delano_wallet_core::verify_proof(verifiables)?;
         Ok(serde_wasm_bindgen::to_value(&verified)?)
+    }
+
+    /// verify a signature againat a public key and message
+    #[wasm_bindgen]
+    pub fn verify_signature(
+        &self,
+        signature: Vec<u8>,
+        public_key: Vec<u8>,
+        message: Vec<u8>,
+    ) -> Result<bool, JsValue> {
+        let verified = delano_wallet_core::verify_signature(signature, message, public_key)?;
+        Ok(verified)
     }
 }
