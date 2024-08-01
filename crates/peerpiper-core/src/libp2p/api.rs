@@ -321,7 +321,12 @@ impl EventLoop {
                         .clone()
                         .with(Protocol::P2p(*self.swarm.local_peer_id()));
 
-                    tracing::info!("👉  Emitting {p2p_addr}");
+                    // info!("Listen p2p address: \n\x1b[30;1;42m{p2p_addr}\x1b[0m");
+                    // This address is reachable, add it
+                    self.swarm.add_external_address(p2p_addr.clone());
+
+                    // check off adding this address
+                    tracing::info!("👉  Added {p2p_addr}");
 
                     // pass the address back to the other task, for display, etc.
                     self.event_sender
@@ -334,10 +339,10 @@ impl EventLoop {
                 match address.iter().next() {
                     Some(Protocol::Ip6(ip6)) => {
                         // Only add our globally available IPv6 addresses to the external addresses list.
-                        // no fe80::/10 addresses
                         if !ip6.is_loopback()
                             && !ip6.is_unspecified()
                             && !ip6.is_unicast_link_local()
+                        // no fe80::/10 addresses
                         {
                             if let Err(e) = addr_handler() {
                                 tracing::error!("Failed to send listen address: {:?}", e);
