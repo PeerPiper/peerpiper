@@ -65,6 +65,8 @@ pub async fn start() -> Result<(), JsValue> {
 
 #[wasm_bindgen]
 pub async fn connect(libp2p_endpoint: &str, on_event: &js_sys::Function) -> Result<(), JsError> {
+    tracing::info!("Connecting to libp2p endpoint: {}", libp2p_endpoint);
+
     let (tx_evts, mut rx_evts) = mpsc::channel(MAX_CHANNELS);
 
     // client sync oneshot

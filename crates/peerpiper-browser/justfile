@@ -1,6 +1,8 @@
 build:
-  wasm-pack build --target web --release
+  wasm-pack build --target web --release --scope peerpiper
 
 test: build
   wasm-pack test --headless --chrome
 
+publish: build
+  npm publish --access=public
