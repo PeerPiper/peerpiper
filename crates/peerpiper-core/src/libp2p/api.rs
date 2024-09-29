@@ -15,7 +15,6 @@ use libp2p::request_response::{self, OutboundRequestId, ResponseChannel};
 use libp2p::swarm::{Swarm, SwarmEvent};
 use libp2p::{ping, Multiaddr, PeerId};
 use serde::{Deserialize, Serialize};
-use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::error::Error;
 use std::net::Ipv4Addr;

@@ -46,5 +46,8 @@ test: update-build
   cargo test --workspace --all-targets
 
 # this recipe builds the wits, then runs `npm run dev` in the packages/peerpiper-host directory
-dev: build-wits
+dev: build-wits 
+  just serve &
+  cd crates/peerpiper-browser && wasm-pack build --target web
+  cd ../../
   cd packages/peerpiper-host && npm run dev
