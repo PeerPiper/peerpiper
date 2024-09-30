@@ -74,14 +74,16 @@ pub enum PublicEvent {
 
 // futures::futures_channel::mpsc::Sender<NetworkEvent>: From<futures::futures_channel::mpsc::Sender<peerpiper_core::events::Event>>
 
-/// Command Events to the PeerPiper network.
+/// Command the PeerPiper network to do something for you.
+///
 /// They should be network, transport, and protocol agnostic. Could be libp2p, Nostr or HTTPS
 /// publish, for example.
 /// They should be able to be serialized and sent over the wire.
 /// They should be able to be deserialized and executed by the PeerPiper network.
 /// This is marked non-exhaustive because we may want to add new events in the future.
 #[derive(Debug, Serialize, Deserialize)]
-#[non_exhaustive]
+#[serde(tag = "action")]
+//#[non_exhaustive]
 pub enum PeerPiperCommand {
     Publish {
         topic: String,

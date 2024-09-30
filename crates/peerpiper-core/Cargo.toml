@@ -13,15 +13,39 @@ thiserror = "1"
 tracing = "0.1.37"
 serde = { version = "1.0", features = ["derive"] }
 wnfs-common = "0.2.0"
-multibase = { version ="0.9", default-features = false }
+multibase = { version = "0.9", default-features = false }
 zeroize = "1.8.1"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "wasm-bindgen", "gossipsub", "identify", "kad", "request-response", "cbor"] }
-libp2p-webrtc-websys = { version = "0.3.0-alpha" }
+libp2p = { workspace = true, features = [
+  "ed25519",
+  "macros",
+  "ping",
+  "wasm-bindgen",
+  "gossipsub",
+  "identify",
+  "kad",
+  "request-response",
+  "cbor",
+] }
+libp2p-webrtc-websys = { version = "0.4.0-alpha.2", git = "https://github.com/libp2p/rust-libp2p.git" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "quic", "tokio", "gossipsub", "identify", "kad", "request-response", "cbor"]}
-libp2p-webrtc = { version = "0.7.1-alpha", features = ["tokio", "pem"] }
+libp2p = { workspace = true, features = [
+  "ed25519",
+  "macros",
+  "ping",
+  "quic",
+  "tokio",
+  "gossipsub",
+  "identify",
+  "kad",
+  "request-response",
+  "cbor",
+] }
+libp2p-webrtc = { version = "0.8.0-alpha", git = "https://github.com/libp2p/rust-libp2p.git", features = [
+  "tokio",
+  "pem",
+] }
 serde_json = "1.0"
 base64 = "0.20"

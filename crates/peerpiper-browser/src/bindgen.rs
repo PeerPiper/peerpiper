@@ -7,7 +7,6 @@ use futures::{
     channel::{mpsc, oneshot},
     StreamExt,
 };
-use gloo_utils::format::JsValueSerdeExt;
 use peerpiper_core::events::{PeerPiperCommand, SystemCommand};
 use peerpiper_core::Commander;
 use std::sync::Mutex;
@@ -64,7 +63,7 @@ pub async fn start() -> Result<(), JsValue> {
 }
 
 #[wasm_bindgen]
-pub async fn connect(libp2p_endpoint: &str, on_event: &js_sys::Function) -> Result<(), JsError> {
+pub async fn connect(libp2p_endpoint: String, on_event: &js_sys::Function) -> Result<(), JsError> {
     tracing::info!("Connecting to libp2p endpoint: {}", libp2p_endpoint);
 
     let (tx_evts, mut rx_evts) = mpsc::channel(MAX_CHANNELS);
@@ -76,10 +75,8 @@ pub async fn connect(libp2p_endpoint: &str, on_event: &js_sys::Function) -> Resu
     // so we will need to wrap it in a Mutex or something to make it thread safe.
     let (command_sender, command_receiver) = mpsc::channel(8);
 
-    let endpoint = libp2p_endpoint.to_string().clone();
-
     spawn_local(async move {
-        crate::start(tx_evts, command_receiver, tx_client, endpoint)
+        crate::start(tx_evts, command_receiver, tx_client, libp2p_endpoint)
             .await
             .expect("never end")
     });
@@ -102,7 +99,8 @@ pub async fn connect(libp2p_endpoint: &str, on_event: &js_sys::Function) -> Resu
     while let Some(event) = rx_evts.next().await {
         match event {
             peerpiper_core::events::Events::Outer(event) => {
-                let evt = JsValue::from_serde(&event).unwrap();
+                let evt = serde_wasm_bindgen::to_value(&event)
+                    .map_err(|err| JsError::new(&format!("Failed to serialize event: {}", err)))?;
                 let _ = on_event.call1(&this, &evt);
             }
             _ => {}
@@ -117,28 +115,26 @@ pub async fn connect(libp2p_endpoint: &str, on_event: &js_sys::Function) -> Resu
 /// then sends it to the COMMANDER who routes it to either the network or the system depending on the command.
 /// If it fails, returns an error.
 #[wasm_bindgen]
-pub async fn command(json: &str) -> Result<JsValue, JsError> {
-    tracing::trace!("Received command.");
-
+pub async fn command(cmd: JsValue) -> Result<JsValue, JsError> {
     let example_put = PeerPiperCommand::System(SystemCommand::Put {
         bytes: vec![1, 2, 3],
     });
 
     tracing::debug!(
         "Example Put Command: {:?}",
-        serde_json::to_string(&example_put).unwrap()
+        serde_wasm_bindgen::to_value(&example_put).unwrap()
     );
 
     tracing::info!(
         "Example RequestResponse Command: {:?}",
-        serde_json::to_string(&PeerPiperCommand::RequestResponse {
+        serde_wasm_bindgen::to_value(&PeerPiperCommand::RequestResponse {
             request: "what is your fave colour?".to_string(),
             peer_id: "123DfQm3...".to_string(),
         })
         .unwrap()
     );
 
-    let command: PeerPiperCommand = serde_json::from_str(json).map_err(|err| {
+    let command: PeerPiperCommand = serde_wasm_bindgen::from_value(cmd).map_err(|err| {
         let err_str = format!("Failed to parse command from JSON: {}", err);
         tracing::error!(err_str);
         // TODO: Figure out why this error does not propagate to JavaScript as an error. It just
@@ -146,11 +142,9 @@ pub async fn command(json: &str) -> Result<JsValue, JsError> {
         JsError::new(&format!(
             "Failed to parse command from JSON: {}. Expected format: {:?}",
             err.to_string(),
-            serde_json::to_string(&example_put).unwrap()
+            serde_wasm_bindgen::to_value(&example_put).unwrap()
         ))
     })?;
-
-    tracing::info!("This Command: {:?}", command);
 
     let maybe_result = COMMANDER
         .get()
@@ -163,8 +157,10 @@ pub async fn command(json: &str) -> Result<JsValue, JsError> {
 
     // convert the ReturnValues enum to a JsValue (Cid as String, Vec<u8> as Uint8Array, or null)
     let js_val = match maybe_result {
-        peerpiper_core::ReturnValues::Data(data) => JsValue::from_serde(&data)?,
-        peerpiper_core::ReturnValues::ID(cid) => JsValue::from_str(&cid.to_string()),
+        peerpiper_core::ReturnValues::Data(data) => serde_wasm_bindgen::to_value(&data)
+            .map_err(|err| JsError::new(&format!("Failed to serialize data: {}", err)))?,
+        peerpiper_core::ReturnValues::ID(cid) => serde_wasm_bindgen::to_value(&cid)
+            .map_err(|err| JsError::new(&format!("Failed to serialize cid: {}", err)))?,
         peerpiper_core::ReturnValues::None => JsValue::null(),
     };
     Ok(js_val)

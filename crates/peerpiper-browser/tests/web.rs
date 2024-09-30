@@ -1,6 +1,6 @@
-#![cfg(target_arch = "wasm32")]
+#![cfg(target_arch = "wasm32")] // <== So that peerpiper_browser::bindgen references are valid
 
-use gloo_utils::format::JsValueSerdeExt;
+use cid::Cid;
 use peerpiper_browser::bindgen;
 pub use peerpiper_core::events::PeerPiperCommand;
 use wasm_bindgen::{JsError, JsValue};
@@ -147,36 +147,40 @@ async fn test_commander() -> Result<(), JsValue> {
         bytes: bytes.clone(),
     });
 
-    let json = serde_json::to_string(&command).map_err(|err| {
+    let js_cmd = serde_wasm_bindgen::to_value(&command).map_err(|err| {
         JsError::new(&format!(
             "Failed to serialize PeerPiperCommand::SystemCommands: {:?}",
             err.to_string()
         ))
     })?;
 
-    let cid = peerpiper_browser::bindgen::command(&json).await?;
+    let cid = peerpiper_browser::bindgen::command(js_cmd).await?;
 
-    // result should be JsValue::from_str("ba...") where ... is the CID
-    let cid = cid
-        .as_string()
-        .ok_or_else(|| JsError::new("Failed to get string from JsValue, expected a string"))?;
+    let cid: Cid = serde_wasm_bindgen::from_value(cid).map_err(|err| {
+        JsError::new(&format!(
+            "Failed to deserialize Cid from JsValue: {:?}",
+            err.to_string()
+        ))
+    })?;
+
+    let cid = cid.to_string();
 
     // now get the data back from cid string
     let command = PeerPiperCommand::System(peerpiper_core::events::SystemCommand::Get { key: cid });
 
-    let json = serde_json::to_string(&command).map_err(|err| {
+    let json = serde_wasm_bindgen::to_value(&command).map_err(|err| {
         JsError::new(&format!(
             "Failed to serialize PeerPiperCommand::SystemCommands: {:?}",
             err.to_string()
         ))
     })?;
 
-    let data = peerpiper_browser::bindgen::command(&json).await?;
+    let data = peerpiper_browser::bindgen::command(json).await?;
 
     // data should be a JsValue that converts to bytes vector which matches the original bytes
-    let data: Vec<u8> = data.into_serde().map_err(|err| {
+    let data: Vec<u8> = serde_wasm_bindgen::from_value(data).map_err(|err| {
         JsError::new(&format!(
-            "Failed to convert JsValue to Vec<u8>: {:?}",
+            "Failed to deserialize data from JsValue: {:?}",
             err.to_string()
         ))
     })?;

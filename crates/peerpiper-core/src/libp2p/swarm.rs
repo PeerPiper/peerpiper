@@ -9,7 +9,7 @@ pub fn create<B: NetworkBehaviour>(
         Ok(libp2p::SwarmBuilder::with_new_identity()
             .with_wasm_bindgen()
             .with_other_transport(|key| {
-                libp2p_webrtc_websys::Transport::new(libp2p_webrtc_websys::Config::new(&key))
+                libp2p_webrtc_websys::Transport::new(libp2p_webrtc_websys::Config::new(key))
             })
             .expect("infalliable to never exist")
             .with_behaviour(behaviour_constructor)

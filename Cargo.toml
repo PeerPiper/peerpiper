@@ -17,7 +17,7 @@ rand = "0.8"
 thiserror = "1"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-libp2p = "^0.53.2"
+libp2p = { version = "0.54.1", git = "https://github.com/libp2p/rust-libp2p.git" }
 wit-bindgen-rt = { version = "0.26.0", features = ["bitflags"] }
 # for submodules
 bls12_381_plus = { version = "0.8.16", features = ["expose-fields", "alloc"] }

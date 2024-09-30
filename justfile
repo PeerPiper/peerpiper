@@ -44,6 +44,7 @@ all: update-build preview
 
 test: update-build
   cargo test --workspace --all-targets
+  @just peerpiper-browser test
 
 # The just command from crates/peerpiper-browser to build 
 peerpiper-browser *args:
@@ -51,9 +52,8 @@ peerpiper-browser *args:
 
 # this recipe builds the wits, then runs `npm run dev` in the packages/peerpiper-host directory
 dev: build-wits 
-  # start the server
-  just serve &
+  @trap 'kill $(jobs -p)' EXIT
   # build the browser wasm
   @just peerpiper-browser build
-  # start the client 
-  cd packages/peerpiper-host && npm run dev
+  # start the server
+  just serve & cd packages/peerpiper-host && npm run dev -- --open

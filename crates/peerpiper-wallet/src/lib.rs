@@ -36,7 +36,7 @@ use bindings::seed_keeper::wit_ui;
 use wurbo::jinja::{error::RenderError, Entry, Index, Rest, Templates};
 use wurbo::prelude::*;
 
-use base64ct::{Base64Url, Base64UrlUnpadded, Encoding};
+use base64ct::{Base64UrlUnpadded, Encoding};
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
 use std::sync::{LazyLock, Mutex};
