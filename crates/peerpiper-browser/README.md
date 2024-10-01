@@ -30,23 +30,55 @@ peerpiper.connect(dialAddr, onEvent);
 /** 
 use the PeerPiper command API:
 
- Publish {
-    topic: String,
-    data: Vec<u8>,
- },
- Subscribe {
-    topic: String,
- },
- Unsubscribe {
-    topic: String,
- },
- RequestResponse {
-    request: String,
-    peer_id: String,
- }
-*/ 
-let ask = { RequestResponse: { request: question, peer_id: peerid } };
-ask = JSON.stringify(ask);
+/// Publish data to a topic
+{
+    "action": "Publish",
+    "topic": "test",
+    "data": [1, 2, 3]
+}
+
+/// Subscribe to a topic
+{
+    "action": "Subscribe",
+    "topic": "test"
+}
+
+/// Unsubscribe from a topic
+{
+    "action": "Unsubscribe",
+    "topic": "test"
+}
+
+/// Save bytes to the storage system
+{
+    "action": "System",
+    "Put": {
+        "bytes": [1, 2, 3]
+    }
+}
+
+/// Get bytes from the storage system
+{
+    "action": "System",
+    "Get": {
+        "key": "123DfQm3..."
+    }
+}
+
+/// Request the server to emit the Multiaddr that it is listening on
+{
+    "action": "ShareAddress"
+}
+
+/// Request a response from a peer
+{
+    "action": "RequestResponse",
+    "request": "what is your fave colour?",
+    "peer_id": "123DfQm3..."
+}
+*/
+ 
+let ask = { action: "RequestResponse", request: "what is your fave colour?", peer_id: "123DfQm3..." };
 
 try {
     let ans = await pipernet.command(ask);
