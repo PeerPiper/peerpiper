@@ -52,19 +52,13 @@ impl<H: SystemCommandHandler> Commander<H> {
         match command {
             PeerPiperCommand::System(SystemCommand::Put { bytes }) => {
                 let cid = self.system_command_handler.put(bytes).await.map_err(|e| {
-                    error::Error::String(format!(
-                        "Failed to put bytes in the system: {}",
-                        e.to_string()
-                    ))
+                    error::Error::String(format!("Failed to put bytes in the system: {e}"))
                 })?;
                 Ok(ReturnValues::ID(cid))
             }
             PeerPiperCommand::System(SystemCommand::Get { key }) => {
                 let bytes = self.system_command_handler.get(key).await.map_err(|e| {
-                    error::Error::String(format!(
-                        "Failed to get bytes from the system: {}",
-                        e.to_string()
-                    ))
+                    error::Error::String(format!("Failed to get bytes from the system: {e}"))
                 })?;
                 Ok(ReturnValues::Data(bytes))
             }
@@ -78,18 +72,16 @@ impl<H: SystemCommandHandler> Commander<H> {
                         Err(err) => {
                             return Err(error::Error::String(format!(
                                 "Failed to send request: {}",
-                                err.to_string()
+                                err
                             )));
                         }
                     };
                     Ok(ReturnValues::Data(response))
                 }
-                None => {
-                    return Err(error::Error::String(
-                        "Tried to send a network command, but network nor client is not initialized"
-                            .to_string(),
-                    ));
-                }
+                None => Err(error::Error::String(
+                    "Tried to send a network command, but network nor client is not initialized"
+                        .to_string(),
+                )),
             },
             _ => {
                 match &mut self.network {
