@@ -11,7 +11,7 @@
 
 	const dispatch = createEventDispatcher();
 
-	let unlock, wallet, generateAttribute, getPublishKey;
+	let unlock, wallet, delanoWallet, generateAttribute, getPublishKey;
 	let error;
 	let b64Seed;
 	let hash;
@@ -71,7 +71,7 @@
 		return new Promise((resolve, reject) => {
 			handleActiveEvt = (event) => {
 				const attributes = hashAttrs(event.detail);
-				const acceptedCred = wallet.accept(offer);
+				const acceptedCred = delanoWallet.accept(offer);
 
 				// To validate that we entered the answers correctly, we need to do a test proof and verification
 
@@ -88,7 +88,7 @@
 
 				// Now we can create a proof
 				try {
-					let { proof, selected } = wallet.prove(provables);
+					let { proof, selected } = delanoWallet.prove(provables);
 
 					// Now we can verify the proof against the issuer's public data and the selected attributes
 					let verifiables = {
@@ -98,7 +98,7 @@
 						nonce
 					};
 
-					let verified = wallet.verify(verifiables);
+					let verified = delanoWallet.verify(verifiables);
 
 					if (verified) {
 						console.log('Verified');
@@ -148,13 +148,22 @@
 		unlock = async (e) => {
 			try {
 				wallet = new WasmWallet(e.detail);
+
+				console.log('wallet', wallet);
+				delanoWallet = wallet.delano();
+
+				// verification key #1 (G1)
+				let vk1 = delanoWallet.publicKey();
+
+				console.log('delanoWallet pk1', vk1);
+
 				let encrSeed = wallet.encryptedSeed();
 				// to Uint8Array, to base64 string
 				let seed = new Uint8Array(encrSeed);
 				b64Seed = btoa(String.fromCharCode(...seed));
 				localStorage.setItem(KEY_BASE64_SEED, b64Seed);
 
-				dispatch('unlock', { encryptedSeed: encrSeed, base64Seed: b64Seed });
+				dispatch('unlock', { encryptedSeed: encrSeed, base64Seed: b64Seed, vk1 });
 			} catch (e) {
 				error = e;
 			}
@@ -193,7 +202,7 @@
 		// hints are the keys from the KV attributes
 		hints = event.detail.map(({ key }) => key);
 
-		const credential = wallet.issue({
+		const credential = delanoWallet.issue({
 			attributes,
 			max_entries: 1,
 			// We issue this to ourselves, no need to specify a NymProof
@@ -202,7 +211,7 @@
 
 		// Now that we have created a Credential issued to ourselves, we can create an Offer
 		// and send it to the other party
-		offer = wallet.offer({
+		offer = delanoWallet.offer({
 			// The credential we just created
 			credential,
 			config: {
@@ -246,10 +255,8 @@
 	}
 
 	function handleAccept(event) {
-		console.log('handleAccept attrs', event.detail);
 		const attributes = hashAttrs(event.detail);
-		console.log('handleAccept HaSHED attrs', attributes);
-		const acceptedCred = wallet.accept(hash.offer);
+		const acceptedCred = delanoWallet.accept(hash.offer);
 
 		// To validate that we entered the answers correctly, we need to do a test proof and verification
 
@@ -263,7 +270,7 @@
 
 		// Now we can create a proof
 		try {
-			let { proof, selected } = wallet.prove(provables);
+			let { proof, selected } = delanoWallet.prove(provables);
 
 			// Now we can verify the proof against the issuer's public data and the selected attributes
 			let verifiables = {
@@ -274,9 +281,9 @@
 				nonce
 			};
 
-			verified = wallet.verify(verifiables);
+			verified = delanoWallet.verify(verifiables);
 
-			// Now we can safely store the accepted credential and the attributes in whatever system is connected to the wallet.
+			// Now we can safely store the accepted credential and the attributes in whatever system is connected to the wallet
 			// The accepted credential will be needed when we want to extend it with more entries of values
 
 			if (verified) {
