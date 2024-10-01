@@ -297,7 +297,7 @@ impl EventLoop {
         //     tracing::debug!("Failed to run Kademlia bootstrap: {e:?}");
         // }
 
-        let _message = format!("Hello world! Sent from the rust-peer");
+        let _message = "Hello world! Sent from the rust-peer".to_string();
 
         // if let Some(Err(err)) = self
         //     .swarm
