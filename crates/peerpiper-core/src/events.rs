@@ -34,6 +34,7 @@ pub enum Events {
 }
 
 /// Events from the Peerpiper network.
+///
 /// They should be network, transport, and protocol agnostic. Could be libp2p, Nostr or HTTPS
 /// publish, for example.
 /// This is marked non-exhaustive because we may want to add new events in the future.
@@ -81,7 +82,7 @@ pub enum PublicEvent {
 /// They should be able to be serialized and sent over the wire.
 /// They should be able to be deserialized and executed by the PeerPiper network.
 /// This is marked non-exhaustive because we may want to add new events in the future.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "action")]
 //#[non_exhaustive]
 pub enum PeerPiperCommand {
@@ -110,7 +111,7 @@ pub enum PeerPiperCommand {
 
 /// System Commands that do not go to the network, but come from componets to direct
 /// the system to do something, like save bytes to a file.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub enum SystemCommand {
     Put { bytes: Vec<u8> },
     Get { key: String },
@@ -147,6 +148,46 @@ pub mod test_helpers {
         {
             Ok(_) => tracing::info!("Published data"),
             Err(e) => tracing::error!("Failed to publish data: {:?}", e),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // iterate through each PeerPiperCommand variant and print it
+    #[test]
+    fn test_serde_peerpiper_command() {
+        let commands = vec![
+            PeerPiperCommand::Publish {
+                topic: "test".to_string(),
+                data: vec![1, 2, 3],
+            },
+            PeerPiperCommand::Subscribe {
+                topic: "test".to_string(),
+            },
+            PeerPiperCommand::Unsubscribe {
+                topic: "test".to_string(),
+            },
+            PeerPiperCommand::System(SystemCommand::Put {
+                bytes: vec![1, 2, 3],
+            }),
+            PeerPiperCommand::System(SystemCommand::Get {
+                key: "test".to_string(),
+            }),
+            PeerPiperCommand::ShareAddress,
+            PeerPiperCommand::RequestResponse {
+                request: "what is your fave colour?".to_string(),
+                peer_id: "123DfQm3...".to_string(),
+            },
+        ];
+
+        for command in commands {
+            let serialized = serde_json::to_string(&command).unwrap();
+            println!("{}", serialized);
+            let deserialized: PeerPiperCommand = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(command, deserialized);
         }
     }
 }
