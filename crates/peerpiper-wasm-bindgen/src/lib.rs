@@ -1,6 +1,5 @@
 mod bindgen;
 
-use delano_wallet_core::DelanoWallet;
 use seed_keeper_core::seed::rand_seed;
 use seed_keeper_core::wrap::{decrypt, encrypt};
 use seed_keeper_core::{derive_key, Zeroizing};
@@ -64,7 +63,6 @@ pub struct Wallet {
     username: MinString<8>,
     password: MinString<8>,
     seed: Zeroizing<Vec<u8>>,
-    delano: DelanoWallet,
 }
 
 impl Wallet {
@@ -95,7 +93,6 @@ impl Wallet {
         };
 
         Ok(Wallet {
-            delano: DelanoWallet::new(seed.clone()),
             seed,
             username: credentials.username,
             password: credentials.password,

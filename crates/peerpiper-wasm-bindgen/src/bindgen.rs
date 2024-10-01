@@ -2,6 +2,7 @@
 //! to/from JsValue for the main module.
 use delano_keys::publish::{IssuerKey, OfferedPreimages};
 use delano_keys::vk::VKCompressed;
+use delano_wallet_core::DelanoWallet;
 use delano_wallet_core::{IssueOptions, OfferConfig, Provables, Verifiables};
 use delanocreds::keypair::spseq_uc::CredentialCompressed;
 use delanocreds::{Attribute, MaxEntries};
@@ -111,10 +112,32 @@ impl WasmWallet {
         Ok(serde_wasm_bindgen::to_value(&encr_seed)?)
     }
 
+    /// Spans a new DelanoWasm from this wallet's seed
+    #[wasm_bindgen(js_name = delano)]
+    pub fn delano(&self) -> DelanoWasm {
+        DelanoWasm::new(self.inner.seed.to_vec())
+    }
+}
+
+/// DelanoWasm
+#[wasm_bindgen]
+pub struct DelanoWasm {
+    inner: DelanoWallet,
+}
+
+#[wasm_bindgen]
+impl DelanoWasm {
+    /// Creates a new DelanoWasm from a DelanoWallet and seed
+    pub fn new(seed: Vec<u8>) -> DelanoWasm {
+        DelanoWasm {
+            inner: DelanoWallet::new(zeroize::Zeroizing::new(seed)),
+        }
+    }
+
     /// Returns the Nym Proof for this Wallet's Delanocreds Feature
     #[wasm_bindgen(js_name = nymProof)]
     pub fn nym_proof(&self, nonce: &[u8]) -> Result<JsValue, JsValue> {
-        let proof = self.inner.delano.nym_proof(nonce.to_vec());
+        let proof = self.inner.nym_proof(nonce.to_vec());
         Ok(serde_wasm_bindgen::to_value(&proof)?)
     }
 
@@ -122,7 +145,6 @@ impl WasmWallet {
     /// If no NymProof is included in the options, it generates the Credential for oneself.
     /// If a NymProof is included, it issues the Credential to the NymProof and only they can
     /// offer it to others (delegatee) or extend it.
-    #[wasm_bindgen]
     pub fn issue(&mut self, args: JsValue) -> Result<JsValue, JsValue> {
         let IssueArgs {
             attributes,
@@ -137,7 +159,7 @@ impl WasmWallet {
             ))
         })?;
 
-        let cred = self.inner.delano.issue(attributes, max_entries, options)?;
+        let cred = self.inner.issue(attributes, max_entries, options)?;
         Ok(serde_wasm_bindgen::to_value(&cred)?)
     }
 
@@ -149,7 +171,7 @@ impl WasmWallet {
         let OfferArgs { credential, config } =
             serde_wasm_bindgen::from_value(args).map_err(|e| e.to_string())?;
 
-        let cred = self.inner.delano.offer(credential, config)?;
+        let cred = self.inner.offer(credential, config)?;
         Ok(serde_wasm_bindgen::to_value(&cred)?)
     }
 
@@ -158,7 +180,7 @@ impl WasmWallet {
     pub fn accept(&mut self, cred: JsValue) -> Result<JsValue, JsValue> {
         let credential: CredentialCompressed =
             serde_wasm_bindgen::from_value(cred).map_err(|e| e.to_string())?;
-        let cred = self.inner.delano.accept(credential)?;
+        let cred = self.inner.accept(credential)?;
         Ok(serde_wasm_bindgen::to_value(&cred)?)
     }
 
@@ -167,7 +189,7 @@ impl WasmWallet {
     pub fn prove(&mut self, provables: JsValue) -> Result<JsValue, JsValue> {
         let provables: Provables =
             serde_wasm_bindgen::from_value(provables).map_err(|e| e.to_string())?;
-        let proof = self.inner.delano.prove(provables)?;
+        let proof = self.inner.prove(provables)?;
         Ok(serde_wasm_bindgen::to_value(&proof)?)
     }
 
@@ -178,6 +200,20 @@ impl WasmWallet {
             .map_err(|e| format!("Error deserde into Verifiables: {:?}", e))?;
         let verified = delano_wallet_core::verify_proof(verifiables)?;
         Ok(serde_wasm_bindgen::to_value(&verified)?)
+    }
+
+    /// Sign a message
+    #[wasm_bindgen]
+    pub fn sign(&self, message: Vec<u8>) -> Result<JsValue, JsValue> {
+        let sig = self.inner.sign(message);
+        Ok(serde_wasm_bindgen::to_value(&sig)?)
+    }
+
+    /// Get the public key of the wallet account
+    #[wasm_bindgen(js_name = publicKey)]
+    pub fn public_key(&self) -> Result<JsValue, JsValue> {
+        let pk = self.inner.public_key();
+        Ok(serde_wasm_bindgen::to_value(&pk)?)
     }
 
     /// verify a signature againat a public key and message
