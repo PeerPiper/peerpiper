@@ -13,7 +13,7 @@ npm install @peerpiper/peerpiper-browser
 ## Use 
 
 ```js
-import peerpiper from '@peerpiper/peerpiper-browser';
+import * as peerpiper from '@peerpiper/peerpiper-browser';
 
 // Initialize the PeerPiper WebAssembly module
 await peerpiper.default();
