@@ -57,3 +57,7 @@ dev: build-wits
   @just peerpiper-browser build
   # start the server
   just serve & cd packages/peerpiper-host && npm run dev -- --open
+
+publish:
+  # right now browser is the only thing that is set up to be published
+  @just peerpiper-browser publish
