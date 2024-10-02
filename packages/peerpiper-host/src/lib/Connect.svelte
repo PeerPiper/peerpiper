@@ -1,7 +1,8 @@
 <script>
 	// Connects to a PeerPiper node
 	import { onMount } from 'svelte';
-	import peerpiper from '../../../../crates/peerpiper-browser/Cargo.toml';
+	// import peerpiper from '../../../../crates/peerpiper-browser/Cargo.toml';
+	import * as peerpiper from 'peerpiper-browser';
 
 	/**
 	 * The address of the peer to connect to
@@ -11,11 +12,10 @@
 
 	let errorConnecting = null;
 	let connectingState = 'idle';
-	let pipernet;
 
 	onMount(async () => {
 		try {
-			pipernet = await peerpiper();
+			await peerpiper.default();
 		} catch (error) {
 			console.error(error);
 			errorConnecting = error;
@@ -25,16 +25,16 @@
 
 	// When the user input Enters the dialAddr, we will connect to the peer using connect
 	function handleConnect(evt) {
-		console.log('Connecting to', dialAddr);
 		connectingState = 'connecting...';
 
-		// handle events from pipernet
+		// handle events
 		const onEvent = async (evt) => {
 			console.log('Event Happened:', evt);
 		};
 
 		try {
-			pipernet.connect(dialAddr, onEvent);
+			console.log('Connecting to', dialAddr);
+			peerpiper.connect(dialAddr, onEvent);
 			connectingState = 'connected';
 		} catch (error) {
 			console.error(error);
