@@ -86,20 +86,6 @@ pub async fn add_address(multiaddr: &Multiaddr) -> Result<(), CloudflareError> {
         })?
         .result;
 
-    tracing::info!(
-        "🔍 Found {} TXT records \n\n {:?}",
-        existing_records.len(),
-        existing_records
-    );
-
-    //let mut existing_records = dns_records
-    //    .result
-    //    .into_iter()
-    //    .find(|record| matches!(record.content, DnsContent::TXT { .. }))
-    //    .into_iter()
-    //    .collect::<Vec<DnsRecord>>();
-
-    // Sort the Vec<DnsRecord> byDnsRecord.created_on and keep the most recent MAX_RECORDS
     existing_records.sort_by(|a, b| a.created_on.cmp(&b.created_on).reverse());
 
     // check to see if the multiaddr is already in an existing record, if so, return
