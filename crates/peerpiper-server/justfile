@@ -1,0 +1,3 @@
+# use cargo to start the server with the cloudflare feature
+serve:
+  cargo run --features cloudflare
