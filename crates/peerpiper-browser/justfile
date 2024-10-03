@@ -2,14 +2,14 @@ build:
   wasm-pack build --target web --release --scope peerpiper
   # small line to ensure 'snippets/*' folder is listed in package.json under files field 
   # (this is required for npm to include the snippets folder in the published package)
-  node -e "const fs = require('fs'); const pkg = JSON.parse(fs.readFileSync('./pkg/package.json')); pkg.files = pkg.files || []; if (!pkg.files.includes('snippets/*')) { pkg.files.push('snippets/*'); fs.writeFileSync('./pkg/package.json', JSON.stringify(pkg, null, 2)); }"
+  node -e "const fs = require('fs'); const pkg = JSON.parse(fs.readFileSync('./pkg/package.json')); pkg.files = pkg.files || []; if (!pkg.files.includes('snippets/**/*')) { pkg.files.push('snippets/**/*'); fs.writeFileSync('./pkg/package.json', JSON.stringify(pkg, null, 2)); }"
 
 test:
   wasm-pack build --target web
   wasm-pack test --headless --chrome
 
 # npm publish the package in ./pkg/ directory
-publish: build
+publish: 
   npm publish ./pkg --access public
 
 # Update ChromeDriver
