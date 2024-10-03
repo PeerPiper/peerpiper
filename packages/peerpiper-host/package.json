@@ -31,6 +31,6 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"peerpiper-browser": "file:../../crates/peerpiper-browser/pkg"
+		"@peerpiper/peerpiper-browser": "file:../../crates/peerpiper-browser/pkg"
 	}
 }
