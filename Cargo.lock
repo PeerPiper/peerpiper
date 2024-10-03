@@ -870,9 +870,8 @@ dependencies = [
 
 [[package]]
 name = "cloudflare"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b19c12f95c05549854043364bce0e65cb12bd545a62128af2810a01bf1843161"
+version = "0.12.0"
+source = "git+https://github.com/cloudflare/cloudflare-rs.git#bea21a7dc592a66f58b0a9276c6e4f1eef379238"
 dependencies = [
  "chrono",
  "http",
@@ -3997,7 +3996,7 @@ dependencies = [
 
 [[package]]
 name = "peerpiper-browser"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "bytes",
@@ -4113,6 +4112,7 @@ dependencies = [
  "libp2p",
  "peerpiper",
  "rand",
+ "thiserror",
  "tokio",
  "tower",
  "tower-http",
