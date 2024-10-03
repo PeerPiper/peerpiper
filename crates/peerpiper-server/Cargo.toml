@@ -17,10 +17,11 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tokio = { version = "1.34", features = ["macros", "net", "rt", "signal"] }
 tower = "0.4"
 tower-http = { version = "0.4.0", features = ["cors"] }
-libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "tokio"] }
+libp2p = { workspace = true, features = ["ed25519", "macros", "ping", "tokio"] }
+thiserror = "1.0"
 
 # Optional dependencies
-cloudflare = { version = "0.11", optional = true }
+cloudflare = { version = "0.12.0", optional = true, git = "https://github.com/cloudflare/cloudflare-rs.git" }
 dotenv = { version = "0.15", optional = true }
 
 [features]

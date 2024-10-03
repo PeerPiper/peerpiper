@@ -1,3 +1,6 @@
+#![feature(async_closure)]
+#![allow(clippy::needless_return)]
+
 #[cfg(feature = "cloudflare")]
 mod cloudflare;
 
@@ -48,11 +51,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Serve .wasm, .js and server multiaddress over HTTP on this address.
     tokio::spawn(serve(address.clone()));
 
-    // TODO: Make TXT record for dnsaddr for this address
-    #[cfg(feature = "cloudflare")]
-    if let Err(e) = cloudflare::add_address(&address).await {
-        eprintln!("Could not add address to cloudflar DNS")
-    }
+    let handle_new_address = async |address: &Multiaddr| {
+        #[cfg(feature = "cloudflare")]
+        if let Err(e) = cloudflare::add_address(address).await {
+            tracing::error!("Could not add address to cloudflare DNS record: {e}");
+        }
+    };
+
+    handle_new_address(&address).await;
 
     // TODO: Insert handler (WIT components) here.
     // let bytes = peerpiper::handler::utils::get_wasm_bytes("peerpiper_handler")?;
@@ -66,6 +72,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         tracing::info!("Received msg on topic {:?} from peer: {:?}", topic, peer);
                         // let r = handler.handle(m.clone()).await?;
                         // tracing::info!("Handler returned: {:?}", r);
+                    }
+                    Events::Outer(PublicEvent::ListenAddr { address: _, .. }) => {
+                        // TODO: Figure out what we want to do with the other new addresses.
+                        //handle_new_address(&address).await;
                     }
                     _ => {}
                 }
