@@ -2,7 +2,7 @@
 	// Connects to a PeerPiper node
 	import { onMount } from 'svelte';
 	// import peerpiper from '../../../../crates/peerpiper-browser/Cargo.toml';
-	import * as peerpiper from 'peerpiper-browser';
+	import * as peerpiper from '@peerpiper/peerpiper-browser';
 
 	/**
 	 * The address of the peer to connect to
