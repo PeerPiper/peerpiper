@@ -56,7 +56,7 @@ pub async fn start(
 
         // add remote peer_id as explicit peer so we can gossipsub to it with minimal peers available
         if let Some(Protocol::P2p(rpid)) = remote_address.pop() {
-            network_client.add_peer(rpid).await;
+            network_client.add_peer(rpid).await?;
             tracing::info!("Added remote peer_id as explicit peer: {:?}", rpid);
         }
     }

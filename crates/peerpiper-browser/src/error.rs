@@ -21,4 +21,8 @@ pub enum Error {
     /// anyhow
     #[error("Anyhow error {0}")]
     Anyhow(#[from] anyhow::Error),
+
+    /// From libp2p::error::Error
+    #[error("Libp2p error {0}")]
+    Libp2p(#[from] peerpiper_core::libp2p::error::Error),
 }
