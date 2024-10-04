@@ -34,7 +34,7 @@
 
 		try {
 			console.log('Connecting to', dialAddr);
-			peerpiper.connect(dialAddr, onEvent);
+			peerpiper.connect([dialAddr], onEvent);
 			connectingState = 'connected';
 		} catch (error) {
 			console.error(error);
