@@ -1,0 +1,10 @@
+package component:extension@0.1.0;
+
+interface handlers {
+    handle-message: func(topic: string, peer: string, data: list<u8>) -> string;
+}
+
+/// An example world for the component to target.
+world extension-world {
+    export handlers;
+}

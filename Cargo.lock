@@ -1718,6 +1718,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "extension-echo"
+version = "0.1.0"
+dependencies = [
+ "thiserror",
+ "wasmtime",
+ "wasmtime-wasi",
+ "wit-bindgen-rt 0.26.0",
+]
+
+[[package]]
 name = "fallible-iterator"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3996,7 +4006,7 @@ dependencies = [
 
 [[package]]
 name = "peerpiper-browser"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "bytes",

@@ -50,6 +50,10 @@ test: update-build
 peerpiper-browser *args:
   @just -f crates/peerpiper-browser/justfile {{args}}
 
+# To use cloudflare feature, run `just peerpiper-server serve` as it;s included in the server just recipe
+peerpiper-server *args:
+  @just -f crates/peerpiper-server/justfile {{args}}
+
 # this recipe builds the wits, then runs `npm run dev` in the packages/peerpiper-host directory
 dev: build-wits 
   @trap 'kill $(jobs -p)' EXIT
