@@ -62,10 +62,13 @@ pub async fn start() -> Result<(), JsValue> {
     Ok(())
 }
 
+/// Connect to the network with the given a list of libp2p endpoints.
+/// Pass in a JavaScript function that will be called with events from the network.
 #[wasm_bindgen]
-pub async fn connect(libp2p_endpoint: String, on_event: &js_sys::Function) -> Result<(), JsError> {
-    tracing::info!("Connecting to libp2p endpoint: {}", libp2p_endpoint);
-
+pub async fn connect(
+    libp2p_endpoint: Vec<String>,
+    on_event: &js_sys::Function,
+) -> Result<(), JsError> {
     let (tx_evts, mut rx_evts) = mpsc::channel(MAX_CHANNELS);
 
     // client sync oneshot

@@ -18,14 +18,14 @@ import * as peerpiper from '@peerpiper/peerpiper-browser';
 // Initialize the PeerPiper WebAssembly module
 await peerpiper.default();
 
-// the multiaddress you wish to dial 
-let dialAddr = '/ip6/2607:fea8:fec0:8526:11c6:f7d2:4537:bbca/udp/39849/webrtc-direct/certhash/uEiCdIot7k1VoSPrlnLvpvB15wRPn1poEOlozZkZi8jUiWw/p2p/12D3KooWGBXPH3JKKhLPMSuQmafBU2wvYXv5RKfn8QKUzYofstau';
+// the multiaddresses you wish to dial 
+let dialAddrArray = ['/ip6/2607:fea8:fec0:8526:11c6:f7d2:4537:bbca/udp/39849/webrtc-direct/certhash/uEiCdIot7k1VoSPrlnLvpvB15wRPn1poEOlozZkZi8jUiWw/p2p/12D3KooWGBXPH3JKKhLPMSuQmafBU2wvYXv5RKfn8QKUzYofstau'];
 
 let onEvent = (event) => {
     console.log(event);
 }
 
-peerpiper.connect(dialAddr, onEvent);
+peerpiper.connect(dialAddrArray, onEvent);
 
 /** 
 use the PeerPiper command API:
