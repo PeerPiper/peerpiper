@@ -3,3 +3,4 @@ dist/peerpiper_wallet_aggregate.wasm
 # Ignore all .env files
 *.env
 *local_keypair
+dist/peerpiper_wallet_aggregate.wasm
