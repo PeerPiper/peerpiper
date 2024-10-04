@@ -14,4 +14,23 @@ pub enum Error {
 
     #[error("{0}")]
     GossipSubMessageAuthenticity(&'static str),
+
+    /// From oneshot canceled error  
+    #[error("Oneshot canceled")]
+    OneshotCanceled(#[from] futures::channel::oneshot::Canceled),
+
+    /// From OutboundFailure
+    #[error("OutboundFailure: {0}")]
+    OutboundFailure(#[from] libp2p::request_response::OutboundFailure),
+
+    /// From [futures::futures_channel::mpsc::SendError]
+    #[error("SendError: {0}")]
+    SendError(#[from] futures::channel::mpsc::SendError),
+    /// From TransportError
+    #[error("TransportError: {0}")]
+    TransportIo(#[from] libp2p::core::transport::TransportError<std::io::Error>),
+
+    /// Dial Error
+    #[error("DialError: {0}")]
+    DialError(#[from] libp2p::swarm::DialError),
 }

@@ -38,7 +38,9 @@ pub async fn start(
 
     let (mut network_client, network_events, network_event_loop) = api::new(swarm).await;
 
-    spawn_local(network_event_loop.run());
+    spawn_local(async move {
+        let _ = network_event_loop.run().await;
+    });
 
     for endpoint in libp2p_endpoints.iter() {
         let mut remote_address = endpoint.parse::<Multiaddr>()?;
