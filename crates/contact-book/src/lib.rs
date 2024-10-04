@@ -43,6 +43,11 @@ fn get_templates() -> Templates {
                 "profile.html".to_owned(),
                 include_str!("templates/profile.html").to_owned(),
             ),
+            // form
+            Entry::new(
+                "form.html".to_owned(),
+                include_str!("templates/form.html").to_owned(),
+            ),
         ]),
     );
     templates
@@ -109,7 +114,8 @@ impl From<&Context> for StructContext {
             Context::Updatecontact(update) => {
                 println!("[Rust] Update Contact: {:?}", update);
                 StructContext::from(State::from_latest().update_contact(update.clone()))
-            }
+            } // SaveProfile is similar to submit new contact, but it saves the profile
+            Context::Saveprofile => StructContext::from(State::from_latest().save_profile()),
         }
     }
 }

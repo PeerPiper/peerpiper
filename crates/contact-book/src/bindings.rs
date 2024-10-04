@@ -81,12 +81,15 @@ pub mod component {
                 Invite(Contact),
                 /// Contact(s) that has been added
                 Added(_rt::Vec<Contact>),
+                /// Profile has been updated
+                Profile(Contact),
             }
             impl ::core::fmt::Debug for Message {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                     match self {
                         Message::Invite(e) => f.debug_tuple("Message::Invite").field(e).finish(),
                         Message::Added(e) => f.debug_tuple("Message::Added").field(e).finish(),
+                        Message::Profile(e) => f.debug_tuple("Message::Profile").field(e).finish(),
                     }
                 }
             }
@@ -150,6 +153,8 @@ pub mod component {
                 Invite(_rt::String),
                 /// Updates the contact with the given id to the addctx value
                 Updatecontact(Update),
+                /// Saev My Profile
+                Saveprofile,
             }
             impl ::core::fmt::Debug for Context {
                 fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
@@ -168,6 +173,7 @@ pub mod component {
                         Context::Updatecontact(e) => {
                             f.debug_tuple("Context::Updatecontact").field(e).finish()
                         }
+                        Context::Saveprofile => f.debug_tuple("Context::Saveprofile").finish(),
                     }
                 }
             }
@@ -218,22 +224,22 @@ pub mod component {
             pub fn emit(message: &Message) {
                 unsafe {
                     let mut cleanup_list = _rt::Vec::new();
-                    use super::super::super::component::contact_book::context_types::Message as V14;
+                    use super::super::super::component::contact_book::context_types::Message as V21;
                     let (
-                        result15_0,
-                        result15_1,
-                        result15_2,
-                        result15_3,
-                        result15_4,
-                        result15_5,
-                        result15_6,
-                        result15_7,
-                        result15_8,
-                        result15_9,
-                        result15_10,
-                        result15_11,
+                        result22_0,
+                        result22_1,
+                        result22_2,
+                        result22_3,
+                        result22_4,
+                        result22_5,
+                        result22_6,
+                        result22_7,
+                        result22_8,
+                        result22_9,
+                        result22_10,
+                        result22_11,
                     ) = match message {
-                        V14::Invite(e) => {
+                        V21::Invite(e) => {
                             let super::super::super::component::contact_book::context_types::Contact{ id:id0, first_name:first_name0, last_name:last_name0, email:email0, phone:phone0, } = e;
                             let (result2_0, result2_1, result2_2) = match id0 {
                                 Some(e) => {
@@ -273,7 +279,7 @@ pub mod component {
                                 len6,
                             )
                         }
-                        V14::Added(e) => {
+                        V21::Added(e) => {
                             let vec13 = e;
                             let len13 = vec13.len();
                             let layout13 =
@@ -345,6 +351,46 @@ pub mod component {
                                 0usize,
                             )
                         }
+                        V21::Profile(e) => {
+                            let super::super::super::component::contact_book::context_types::Contact{ id:id14, first_name:first_name14, last_name:last_name14, email:email14, phone:phone14, } = e;
+                            let (result16_0, result16_1, result16_2) = match id14 {
+                                Some(e) => {
+                                    let vec15 = e;
+                                    let ptr15 = vec15.as_ptr().cast::<u8>();
+                                    let len15 = vec15.len();
+
+                                    (1i32, ptr15.cast_mut(), len15)
+                                }
+                                None => (0i32, ::core::ptr::null_mut(), 0usize),
+                            };
+                            let vec17 = first_name14;
+                            let ptr17 = vec17.as_ptr().cast::<u8>();
+                            let len17 = vec17.len();
+                            let vec18 = last_name14;
+                            let ptr18 = vec18.as_ptr().cast::<u8>();
+                            let len18 = vec18.len();
+                            let vec19 = email14;
+                            let ptr19 = vec19.as_ptr().cast::<u8>();
+                            let len19 = vec19.len();
+                            let vec20 = phone14;
+                            let ptr20 = vec20.as_ptr().cast::<u8>();
+                            let len20 = vec20.len();
+
+                            (
+                                2i32,
+                                result16_0 as *mut u8,
+                                result16_1,
+                                result16_2,
+                                ptr17.cast_mut(),
+                                len17,
+                                ptr18.cast_mut(),
+                                len18,
+                                ptr19.cast_mut(),
+                                len19,
+                                ptr20.cast_mut(),
+                                len20,
+                            )
+                        }
                     };
 
                     #[cfg(target_arch = "wasm32")]
@@ -385,18 +431,18 @@ pub mod component {
                         unreachable!()
                     }
                     wit_import(
-                        result15_0,
-                        result15_1,
-                        result15_2,
-                        result15_3,
-                        result15_4,
-                        result15_5,
-                        result15_6,
-                        result15_7,
-                        result15_8,
-                        result15_9,
-                        result15_10,
-                        result15_11,
+                        result22_0,
+                        result22_1,
+                        result22_2,
+                        result22_3,
+                        result22_4,
+                        result22_5,
+                        result22_6,
+                        result22_7,
+                        result22_8,
+                        result22_9,
+                        result22_10,
+                        result22_11,
                     );
                     for (ptr, layout) in cleanup_list {
                         if layout.size() != 0 {
@@ -584,8 +630,7 @@ pub mod exports {
                             };
                             V45::Invite(e45)
                         }
-                        n => {
-                            debug_assert_eq!(n, 5, "invalid enum discriminant");
+                        5 => {
                             let e45 = {
                                 let len26 = arg2 as usize;
                                 let bytes26 = _rt::Vec::from_raw_parts(arg1.cast(), len26, len26);
@@ -687,6 +732,10 @@ pub mod exports {
               }
                             };
                             V45::Updatecontact(e45)
+                        }
+                        n => {
+                            debug_assert_eq!(n, 6, "invalid enum discriminant");
+                            V45::Saveprofile
                         }
                     };
                     let result46 = T::render(v45);
@@ -953,33 +1002,34 @@ pub(crate) use __export_example_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.25.0:example:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1160] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x8a\x08\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1185] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xa3\x08\x01A\x02\x01\
 A\x0c\x01B\x05\x01r\x02\x08selectors\x02tys\x04\0\x0elisten-details\x03\0\0\x01p\
 }\x01r\x02\x05bytes\x02\x08filenames\x04\0\x0cfile-details\x03\0\x03\x03\x01(com\
 ponent:contact-book/wurbo-types@0.1.0\x05\0\x02\x03\0\0\x0elisten-details\x02\x03\
 \0\0\x0cfile-details\x01B\x15\x02\x03\x02\x01\x01\x04\0\x0elisten-details\x03\0\0\
 \x02\x03\x02\x01\x02\x04\0\x0cfile-details\x03\0\x02\x01ks\x01r\x05\x02id\x04\x0a\
 first-names\x09last-names\x05emails\x05phones\x04\0\x07contact\x03\0\x05\x01p\x06\
-\x01q\x02\x06invite\x01\x06\0\x05added\x01\x07\0\x04\0\x07message\x03\0\x08\x01k\
-\x07\x01r\x01\x04load\x0a\x04\0\x07initial\x03\0\x0b\x01p}\x01q\x05\x0afirst-nam\
-e\x01s\0\x09last-name\x01s\0\x05email\x01s\0\x05phone\x01s\0\x0epublishing-key\x01\
-\x0d\0\x04\0\x06addctx\x03\0\x0e\x01p\x0f\x01r\x02\x02ids\x04vals\x10\x04\0\x06u\
-pdate\x03\0\x11\x01q\x06\x0ball-content\x01\x0c\0\x0cbuildcontact\x01\x0f\0\x10s\
-ubmitnewcontact\0\0\x06upload\x01\x03\0\x06invite\x01s\0\x0dupdatecontact\x01\x12\
-\0\x04\0\x07context\x03\0\x13\x03\x01*component:contact-book/context-types@0.1.0\
-\x05\x03\x02\x03\0\x01\x07message\x01B\x0a\x02\x03\x02\x01\x01\x04\0\x0elisten-d\
-etails\x03\0\0\x02\x03\x02\x01\x02\x04\0\x0cfile-details\x03\0\x02\x02\x03\x02\x01\
-\x04\x04\0\x07message\x03\0\x04\x01@\x01\x07details\x01\x01\0\x04\0\x10addeventl\
-istener\x01\x06\x01@\x01\x07message\x05\x01\0\x04\0\x04emit\x01\x07\x03\x01%comp\
-onent:contact-book/wurbo-in@0.1.0\x05\x05\x02\x03\0\x01\x07context\x01B\x10\x02\x03\
-\x02\x01\x06\x04\0\x07context\x03\0\0\x01j\x01s\x01s\x01@\x01\x03ctx\x01\0\x02\x04\
-\0\x06render\x01\x03\x01ps\x01k\x04\x01@\x01\x09selectors\x05\x01\0\x04\0\x08act\
-ivate\x01\x06\x01@\x01\x08selectors\x01\0\x04\0\x0adeactivate\x01\x07\x01o\x02ss\
-\x01p\x08\x01j\0\x01s\x01@\x01\x09templates\x09\0\x0a\x04\0\x09customize\x01\x0b\
-\x04\x01&component:contact-book/wurbo-out@0.1.0\x05\x07\x04\x01$component:contac\
-t-book/example@0.1.0\x04\0\x0b\x0d\x01\0\x07example\x03\0\0\0G\x09producers\x01\x0c\
-processed-by\x02\x0dwit-component\x070.208.1\x10wit-bindgen-rust\x060.25.0";
+\x01q\x03\x06invite\x01\x06\0\x05added\x01\x07\0\x07profile\x01\x06\0\x04\0\x07m\
+essage\x03\0\x08\x01k\x07\x01r\x01\x04load\x0a\x04\0\x07initial\x03\0\x0b\x01p}\x01\
+q\x05\x0afirst-name\x01s\0\x09last-name\x01s\0\x05email\x01s\0\x05phone\x01s\0\x0e\
+publishing-key\x01\x0d\0\x04\0\x06addctx\x03\0\x0e\x01p\x0f\x01r\x02\x02ids\x04v\
+als\x10\x04\0\x06update\x03\0\x11\x01q\x07\x0ball-content\x01\x0c\0\x0cbuildcont\
+act\x01\x0f\0\x10submitnewcontact\0\0\x06upload\x01\x03\0\x06invite\x01s\0\x0dup\
+datecontact\x01\x12\0\x0bsaveprofile\0\0\x04\0\x07context\x03\0\x13\x03\x01*comp\
+onent:contact-book/context-types@0.1.0\x05\x03\x02\x03\0\x01\x07message\x01B\x0a\
+\x02\x03\x02\x01\x01\x04\0\x0elisten-details\x03\0\0\x02\x03\x02\x01\x02\x04\0\x0c\
+file-details\x03\0\x02\x02\x03\x02\x01\x04\x04\0\x07message\x03\0\x04\x01@\x01\x07\
+details\x01\x01\0\x04\0\x10addeventlistener\x01\x06\x01@\x01\x07message\x05\x01\0\
+\x04\0\x04emit\x01\x07\x03\x01%component:contact-book/wurbo-in@0.1.0\x05\x05\x02\
+\x03\0\x01\x07context\x01B\x10\x02\x03\x02\x01\x06\x04\0\x07context\x03\0\0\x01j\
+\x01s\x01s\x01@\x01\x03ctx\x01\0\x02\x04\0\x06render\x01\x03\x01ps\x01k\x04\x01@\
+\x01\x09selectors\x05\x01\0\x04\0\x08activate\x01\x06\x01@\x01\x08selectors\x01\0\
+\x04\0\x0adeactivate\x01\x07\x01o\x02ss\x01p\x08\x01j\0\x01s\x01@\x01\x09templat\
+es\x09\0\x0a\x04\0\x09customize\x01\x0b\x04\x01&component:contact-book/wurbo-out\
+@0.1.0\x05\x07\x04\x01$component:contact-book/example@0.1.0\x04\0\x0b\x0d\x01\0\x07\
+example\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.20\
+8.1\x10wit-bindgen-rust\x060.25.0";
 
 #[inline(never)]
 #[doc(hidden)]

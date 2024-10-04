@@ -19,6 +19,8 @@ interface context-types {
     invite(contact),
     /// Contact(s) that has been added
     added(list<contact>),
+    /// Profile has been updated
+    profile(contact)
   }
 
   record initial {
@@ -52,6 +54,8 @@ interface context-types {
     invite(string),
     /// Updates the contact with the given id to the addctx value
     updatecontact(update),
+    /// Saev My Profile
+    saveprofile,
   }
 }
 

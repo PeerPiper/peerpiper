@@ -202,6 +202,7 @@ impl From<Phone> for String {
 pub enum Message {
     Invite(Contact),
     Contacts(Vec<Contact>),
+    Profile(Contact),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -251,12 +252,6 @@ impl From<Contact> for context_types::Contact {
             email: contact.email.unwrap_or_default(),
             phone: contact.phone.unwrap_or_default(),
         }
-    }
-}
-
-impl From<Contact> for context_types::Message {
-    fn from(contact: Contact) -> Self {
-        context_types::Message::Invite(contact.into())
     }
 }
 
@@ -413,7 +408,7 @@ impl ContactList {
         // Serialize the contact data and call wurbo_in::emit
         if let Some(contact) = self.get(&id) {
             // use serde json to serialize the contact into a JSON string
-            let invite = contact.clone().into();
+            let invite = context_types::Message::Invite(contact.clone().into());
 
             // Record history
             self.contacts

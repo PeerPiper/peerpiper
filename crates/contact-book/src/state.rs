@@ -1,7 +1,10 @@
 //! Module to hold the sate of this app
 use super::LAST_STATE;
 use crate::{
-    bindings::component::contact_book::context_types::{self, Addctx, Initial, Update},
+    bindings::component::contact_book::{
+        context_types::{self, Addctx, Initial, Update},
+        wurbo_in,
+    },
     contacts::{Contact, ContactList},
 };
 use wurbo::prelude::{Object, Value};
@@ -11,6 +14,7 @@ pub(crate) struct State {
     pub(crate) builder: Contact,
     pub(crate) loaded: Loaded,
     pub(crate) contacts: ContactList,
+    pub(crate) profile: Option<Contact>,
 }
 
 impl Default for State {
@@ -19,6 +23,7 @@ impl Default for State {
             builder: Contact::default(),
             loaded: Loaded::None,
             contacts: ContactList::default(),
+            profile: Default::default(),
         }
     }
 }
@@ -76,6 +81,16 @@ impl State {
     pub(crate) fn emit_invite(mut self, id: String) -> Self {
         self.contacts.emit_invite(id);
         // TODO: Track that this invite was emited inthe contact state?
+        self
+    }
+
+    /// Takes the self.builder and emits the data
+    pub(crate) fn save_profile(mut self) -> Self {
+        self.profile = Some(std::mem::take(&mut self.builder));
+
+        if let Some(profile) = self.profile.as_ref() {
+            wurbo_in::emit(&context_types::Message::Profile(profile.clone().into()));
+        }
         self
     }
 }

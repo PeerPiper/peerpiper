@@ -1,0 +1,58 @@
+<div class="flex-1">
+  <div class="flex-1">
+    <label for="first_name">First Name</label>
+  </div>
+  <div class="flex">
+    <input
+      type="text"
+      id="{{id|on('input')}}"
+      data-context-name="buildcontact"
+      data-context-value='{ "tag": "first-name" }'
+      class="rounded w-full border border-blue-400 bg-blue-100 text-neutral-700 p-2 m-2 placeholder:Enter invalid:[&:not(:placeholder-shown):not(:focus)]:border-red-500 peer"
+    />
+  </div>
+</div>
+<div class="flex-1">
+  <div class="flex-1">
+    <label for="last_name">Last Name</label>
+  </div>
+  <div class="flex">
+    <input
+      type="text"
+      id="{{id|on('input')}}"
+      data-context-name="buildcontact"
+      data-context-value='{"tag": "last-name"}'
+      class="rounded w-full border border-blue-400 bg-blue-100 text-neutral-700 p-2 m-2 placeholder:Enter invalid:[&:not(:placeholder-shown):not(:focus)]:border-red-500 peer"
+    />
+  </div>
+</div>
+<div class="flex-1">
+  <div class="flex-1">
+    <label for="email">Email</label>
+  </div>
+  <div class="flex">
+    <input
+      type="email"
+      id="{{id|on('input')}}"
+      data-context-name="buildcontact"
+      data-context-value='{"tag": "email"}'
+      class="rounded w-full border border-blue-400 bg-blue-100 text-neutral-700 p-2 m-2 placeholder:Enter invalid:[&:not(:placeholder-shown):not(:focus)]:border-red-500 peer"
+    />
+  </div>
+</div>
+<div class="flex-1">
+  <div class="flex-1">
+    <label for="phone">Phone</label>
+  </div>
+  <div class="flex-1 flex flex-row">
+    <div class="flex w-full">
+      <input
+        type="tel"
+        id="{{id|on('input')}}"
+        data-context-name="buildcontact"
+        data-context-value='{"tag": "phone"}'
+        class="rounded border border-blue-400 bg-blue-100 text-neutral-700 p-2 m-2 placeholder:Enter"
+      />
+    </div>
+  </div>
+</div>

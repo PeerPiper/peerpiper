@@ -8,4 +8,15 @@
     My Profile
   </summary>
   <!-- Verification Key? -->
+  {% include "form.html" %}
+  <div class="flex flex-col-reverse">
+    <button
+      id="{{id|on('click')}}"
+      data-context-name="saveprofile"
+      type="button"
+      class="bg-blue-500 hover:bg-blue-700 text-white font-bold p-2 m-2 rounded group-invalid:pointer-events-none group-invalid:opacity-30"
+    >
+      Save Profile
+    </button>
+  </div>
 </details>
