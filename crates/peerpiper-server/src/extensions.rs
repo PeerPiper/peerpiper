@@ -4,6 +4,8 @@ mod bindgen {
     wasmtime::component::bindgen!();
 }
 
+pub use bindgen::exports::component::extension::handlers::Message;
+
 use wasmtime::component::{Component, Linker};
 use wasmtime::{Config, Engine, Store};
 use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};
@@ -23,13 +25,6 @@ impl WasiView for MyCtx {
     }
 }
 
-/// Struct to contain topic, peer, and data for a message
-pub struct Message {
-    pub topic: String,
-    pub peer: String,
-    pub data: Vec<u8>,
-}
-
 /// ExtensionsBuilder struct to build the Extensions struct
 pub struct ExtensionsBuilder<T> {
     /// Engine to run the wasm extensions
@@ -47,8 +42,11 @@ pub struct ExtensionsBuilder<T> {
 
 /// Extension struct to hold the wasm extension files
 pub struct Extensions {
-    //. The built bindings for the wasm extensions
+    /// The built bindings for the wasm extensions
     bindings: Vec<bindgen::ExtensionWorld>,
+
+    /// The store to run the wasm extensions
+    store: Store<MyCtx>,
 }
 
 impl ExtensionsBuilder<MyCtx> {
@@ -71,6 +69,7 @@ impl ExtensionsBuilder<MyCtx> {
 
         // link imports like get_seed to our instantiation
         //bindgen::ExtensionWorld::add_to_linker(&mut linker, |state: &mut MyCtx| state)?;
+
         // link the WASI imports to our instantiation
         wasmtime_wasi::add_to_linker_sync(&mut linker)?;
 
@@ -88,7 +87,7 @@ impl ExtensionsBuilder<MyCtx> {
     }
 
     /// Builds the [Extensions] struct bu iterating over the wasm bytes and binding them
-    pub(crate) fn build(&mut self) -> Result<Extensions, Box<dyn std::error::Error>> {
+    pub(crate) fn build(mut self) -> Result<Extensions, Box<dyn std::error::Error>> {
         let bindings = self
             .wasm_bytes
             .iter()
@@ -98,14 +97,27 @@ impl ExtensionsBuilder<MyCtx> {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(Extensions { bindings })
+        Ok(Extensions {
+            bindings,
+            store: self.store,
+        })
     }
 }
 
 impl Extensions {
     /// Handles a [Message] by sending it to the wasm function
-    pub(crate) fn handle_message(&self, msg: Message) -> Result<(), Box<dyn std::error::Error>> {
-        // send msg to wasm func
+    pub(crate) fn handle_message(
+        &mut self,
+        msg: Message,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // iterate over the bindings and call the wasm function
+        // for each binding, return the responses
+        for binding in &self.bindings {
+            let result = binding
+                .component_extension_handlers()
+                .call_handle_message(&mut self.store, &msg)?;
+            println!("Bindings output: {}", result);
+        }
         Ok(())
     }
 }
@@ -133,5 +145,26 @@ pub mod utils {
         let workspace = workspace_dir();
         let wasm_path = format!("target/wasm32-wasip1/debug/{pkg_name}.wasm");
         Ok(workspace.join(wasm_path))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_handle_message() {
+        let mut builder = ExtensionsBuilder::new().unwrap();
+        let wasm_path = utils::get_wasm_path("extension-echo").unwrap();
+        let wasm_bytes = std::fs::read(wasm_path).unwrap();
+        builder.with_wasm(wasm_bytes);
+        let mut extensions = builder.build().unwrap();
+        assert_eq!(extensions.bindings.len(), 1);
+        let msg = Message {
+            topic: "topic".to_string(),
+            peer: "peer".to_string(),
+            data: vec![1, 2, 3],
+        };
+        let resp = extensions.handle_message(msg).unwrap();
     }
 }
