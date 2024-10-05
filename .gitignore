@@ -4,3 +4,5 @@ dist/peerpiper_wallet_aggregate.wasm
 *.env
 *local_keypair
 dist/peerpiper_wallet_aggregate.wasm
+crates/extension-echo/tests/exts
+crates/peerpiper-server/exts
