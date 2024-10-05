@@ -1,7 +1,16 @@
 package component:extension@0.1.0;
 
+interface types {
+    record message {
+        topic: string,
+        peer: string,
+        data: list<u8>
+    }
+}
+
 interface handlers {
-    handle-message: func(topic: string, peer: string, data: list<u8>) -> string;
+    use types.{message};
+    handle-message: func(msg: message) -> string;
 }
 
 /// An example world for the component to target.

@@ -17,7 +17,7 @@ use wasmtime::component::{Component, Linker};
 use wasmtime::{Config, Engine, Store};
 use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};
 
-use crate::bindgen::exports::component::extension::handlers;
+//use crate::bindgen::exports::component::extension::handlers;
 
 struct MyCtx {
     table: ResourceTable,
@@ -104,7 +104,7 @@ mod aggregate_peerpiper_tests {
         let state = MyCtx { table, ctx: wasi };
         let mut store = Store::new(&engine, state);
 
-        let (bindings, _) = bindgen::ExtensionWorld::instantiate(&mut store, &component, &linker)?;
+        let bindings = bindgen::ExtensionWorld::instantiate(&mut store, &component, &linker)?;
 
         // Use bindings
         //let message = WalletContext::AllContent(Content {

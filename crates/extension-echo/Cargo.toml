@@ -9,8 +9,8 @@ license.workspace = true
 wit-bindgen-rt = { workspace = true, features = ["bitflags"] }
 
 [dev-dependencies]
-wasmtime = { version = "21", features = ['component-model'] }
-wasmtime-wasi = "21"
+wasmtime = { version = "25" }
+wasmtime-wasi = "25"
 thiserror = "1.0"
 
 [lib]

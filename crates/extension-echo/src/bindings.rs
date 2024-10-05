@@ -1,4 +1,35 @@
 #[allow(dead_code)]
+pub mod component {
+    #[allow(dead_code)]
+    pub mod extension {
+        #[allow(dead_code, clippy::all)]
+        pub mod types {
+            #[used]
+            #[doc(hidden)]
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            use super::super::super::_rt;
+            #[derive(Clone)]
+            pub struct Message {
+                pub topic: _rt::String,
+                pub peer: _rt::String,
+                pub data: _rt::Vec<u8>,
+            }
+            impl ::core::fmt::Debug for Message {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    f.debug_struct("Message")
+                        .field("topic", &self.topic)
+                        .field("peer", &self.peer)
+                        .field("data", &self.data)
+                        .finish()
+                }
+            }
+        }
+    }
+}
+#[allow(dead_code)]
 pub mod exports {
     #[allow(dead_code)]
     pub mod component {
@@ -10,6 +41,7 @@ pub mod exports {
                 #[doc(hidden)]
                 static __FORCE_SECTION_REF: fn() = super::super::super::super::__link_custom_section_describing_imports;
                 use super::super::super::super::_rt;
+                pub type Message = super::super::super::super::component::extension::types::Message;
                 #[doc(hidden)]
                 #[allow(non_snake_case)]
                 pub unsafe fn _export_handle_message_cabi<T: Guest>(
@@ -26,11 +58,11 @@ pub mod exports {
                     let len1 = arg3;
                     let bytes1 = _rt::Vec::from_raw_parts(arg2.cast(), len1, len1);
                     let len2 = arg5;
-                    let result3 = T::handle_message(
-                        _rt::string_lift(bytes0),
-                        _rt::string_lift(bytes1),
-                        _rt::Vec::from_raw_parts(arg4.cast(), len2, len2),
-                    );
+                    let result3 = T::handle_message(super::super::super::super::component::extension::types::Message {
+                        topic: _rt::string_lift(bytes0),
+                        peer: _rt::string_lift(bytes1),
+                        data: _rt::Vec::from_raw_parts(arg4.cast(), len2, len2),
+                    });
                     let ptr4 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
                     let vec5 = (result3.into_bytes()).into_boxed_slice();
                     let ptr5 = vec5.as_ptr().cast::<u8>();
@@ -48,11 +80,7 @@ pub mod exports {
                     _rt::cabi_dealloc(l0, l1, 1);
                 }
                 pub trait Guest {
-                    fn handle_message(
-                        topic: _rt::String,
-                        peer: _rt::String,
-                        data: _rt::Vec<u8>,
-                    ) -> _rt::String;
+                    fn handle_message(msg: Message) -> _rt::String;
                 }
                 #[doc(hidden)]
                 macro_rules! __export_component_extension_handlers_0_1_0_cabi {
@@ -82,11 +110,12 @@ pub mod exports {
     }
 }
 mod _rt {
+    pub use alloc_crate::string::String;
+    pub use alloc_crate::vec::Vec;
     #[cfg(target_arch = "wasm32")]
     pub fn run_ctors_once() {
         wit_bindgen_rt::run_ctors_once();
     }
-    pub use alloc_crate::vec::Vec;
     pub unsafe fn string_lift(bytes: Vec<u8>) -> String {
         if cfg!(debug_assertions) {
             String::from_utf8(bytes).unwrap()
@@ -101,7 +130,6 @@ mod _rt {
         let layout = alloc::Layout::from_size_align_unchecked(size, align);
         alloc::dealloc(ptr, layout);
     }
-    pub use alloc_crate::string::String;
     extern crate alloc as alloc_crate;
     pub use alloc_crate::alloc;
 }
@@ -138,13 +166,15 @@ pub(crate) use __export_extension_world_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.30.0:extension-world:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 274] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x8c\x01\x01A\x02\x01\
-A\x02\x01B\x03\x01p}\x01@\x03\x05topics\x04peers\x04data\0\0s\x04\0\x0ehandle-me\
-ssage\x01\x01\x04\x01\"component:extension/handlers@0.1.0\x05\0\x04\x01)componen\
-t:extension/extension-world@0.1.0\x04\0\x0b\x15\x01\0\x0fextension-world\x03\0\0\
-\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.215.0\x10wit-bind\
-gen-rust\x060.30.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 364] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xe6\x01\x01A\x02\x01\
+A\x05\x01B\x03\x01p}\x01r\x03\x05topics\x04peers\x04data\0\x04\0\x07message\x03\0\
+\x01\x03\x01\x1fcomponent:extension/types@0.1.0\x05\0\x02\x03\0\0\x07message\x01\
+B\x04\x02\x03\x02\x01\x01\x04\0\x07message\x03\0\0\x01@\x01\x03msg\x01\0s\x04\0\x0e\
+handle-message\x01\x02\x04\x01\"component:extension/handlers@0.1.0\x05\x02\x04\x01\
+)component:extension/extension-world@0.1.0\x04\0\x0b\x15\x01\0\x0fextension-worl\
+d\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.215.0\x10\
+wit-bindgen-rust\x060.30.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {
