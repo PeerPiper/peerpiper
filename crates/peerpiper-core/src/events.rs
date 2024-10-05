@@ -54,6 +54,7 @@ pub enum PublicEvent {
         peer: String,
         rtt: u64,
     },
+    /// Data received from a peer about a topic.
     Message {
         peer: String,
         topic: String,
