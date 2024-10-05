@@ -8,8 +8,12 @@ pub use bindgen::exports::component::extension::handlers::Message;
 
 use wasmtime::component::{Component, Linker};
 use wasmtime::{Config, Engine, Store};
-use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};
+use wasmtime_wasi::{DirPerms, FilePerms, ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};
 
+/// The host path for saving files
+const HOST_PATH: &str = "./exts";
+
+/// MyCtx struct to hold the WASI context
 struct MyCtx {
     table: ResourceTable,
     ctx: WasiCtx,
@@ -63,7 +67,20 @@ impl ExtensionsBuilder<MyCtx> {
         let mut linker = Linker::new(&engine);
 
         let table = ResourceTable::new();
-        let wasi: WasiCtx = WasiCtxBuilder::new().inherit_stdout().args(&[""]).build();
+
+        // ensure the HOST_PATH exists, if not, create it
+        std::fs::create_dir_all(HOST_PATH)?;
+
+        let guest_path = ".";
+
+        // Create a WASI context and add it to the store
+        let wasi = WasiCtxBuilder::new()
+            .inherit_stdio()
+            .inherit_stdout()
+            .args(&[""])
+            .preopened_dir(HOST_PATH, guest_path, DirPerms::all(), FilePerms::all())?
+            .build();
+
         let state = MyCtx { table, ctx: wasi };
         let store = Store::new(&engine, state);
 
@@ -115,7 +132,7 @@ impl Extensions {
         for binding in &self.bindings {
             let result = binding
                 .component_extension_handlers()
-                .call_handle_message(&mut self.store, &msg)?;
+                .call_handle_message(&mut self.store, &msg)??;
             println!("Bindings output: {}", result);
         }
         Ok(())
@@ -154,17 +171,20 @@ mod tests {
 
     #[test]
     fn test_handle_message() {
-        let mut builder = ExtensionsBuilder::new().unwrap();
         let wasm_path = utils::get_wasm_path("extension-echo").unwrap();
         let wasm_bytes = std::fs::read(wasm_path).unwrap();
+
+        let mut builder = ExtensionsBuilder::new().unwrap();
         builder.with_wasm(wasm_bytes);
         let mut extensions = builder.build().unwrap();
+
         assert_eq!(extensions.bindings.len(), 1);
+
         let msg = Message {
             topic: "topic".to_string(),
             peer: "peer".to_string(),
             data: vec![1, 2, 3],
         };
-        let resp = extensions.handle_message(msg).unwrap();
+        extensions.handle_message(msg).unwrap();
     }
 }
