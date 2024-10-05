@@ -6,14 +6,25 @@ interface types {
         peer: string,
         data: list<u8>
     }
+
+    variant error {
+        /// An error that occurred handling a message
+        handler-error(string),
+
+        /// An input output error 
+        io-error(string)
+    }
 }
 
 interface handlers {
-    use types.{message};
-    handle-message: func(msg: message) -> string;
+    use types.{message, error};
+    /// Handle a message from the world. Returns a string response or error
+    handle-message: func(msg: message) -> result<string, error>;
 }
 
 /// An example world for the component to target.
 world extension-world {
+    
+    /// Export the handlers for the extension
     export handlers;
 }

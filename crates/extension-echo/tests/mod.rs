@@ -51,6 +51,10 @@ pub enum TestError {
     /// From io
     #[error("IO: {0}")]
     Io(#[from] std::io::Error),
+
+    // From<bindgen::component::extension::types::Error>
+    #[error("Error: {0}")]
+    BindgenError(bindgen::component::extension::types::Error),
 }
 
 impl From<String> for TestError {
@@ -73,9 +77,14 @@ pub fn workspace_dir() -> PathBuf {
 }
 
 #[cfg(test)]
-mod aggregate_peerpiper_tests {
+mod test_mod_echo {
 
     use super::*;
+    use bindgen::component::extension::types::Message;
+    use wasmtime_wasi::{DirPerms, FilePerms};
+
+    const HOST_PATH: &str = "./tests/exts";
+    const GUEST_PATH: &str = ".";
 
     #[test]
     fn test_initial_load() -> wasmtime::Result<(), TestError> {
@@ -99,8 +108,17 @@ mod aggregate_peerpiper_tests {
         // link the WASI imports to our instantiation
         wasmtime_wasi::add_to_linker_sync(&mut linker)?;
 
+        // ensure the HOST_PATH exists, if not, create it
+        std::fs::create_dir_all(HOST_PATH)?;
+
         let table = ResourceTable::new();
-        let wasi: WasiCtx = WasiCtxBuilder::new().inherit_stdout().args(&[""]).build();
+        let wasi = WasiCtxBuilder::new()
+            .inherit_stdio()
+            .inherit_stdout()
+            .args(&[""])
+            .preopened_dir(HOST_PATH, GUEST_PATH, DirPerms::all(), FilePerms::all())?
+            .build();
+
         let state = MyCtx { table, ctx: wasi };
         let mut store = Store::new(&engine, state);
 
@@ -121,10 +139,11 @@ mod aggregate_peerpiper_tests {
 
         let result = bindings
             .component_extension_handlers()
-            .call_handle_message(&mut store, &topic, &peer, &data)?;
+            .call_handle_message(&mut store, &Message { topic, peer, data })?
+            .unwrap();
 
         // The result should be a string of HTML
-        eprintln!("result: {}", result);
+        //eprintln!("result: {}", result);
 
         Ok(())
     }
