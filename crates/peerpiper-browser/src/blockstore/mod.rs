@@ -168,8 +168,8 @@ impl BrowserBlockStore {
         let js_val = wasm_bindgen_futures::JsFuture::from(promise)
             .await
             .map_err(|_| JsValue::from_str("Error checking for block"))?;
-        Ok(js_val
+        js_val
             .as_bool()
-            .ok_or(JsValue::from_str("Error converting to bool"))?)
+            .ok_or(JsValue::from_str("Error converting to bool"))
     }
 }

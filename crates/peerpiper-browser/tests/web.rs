@@ -136,10 +136,14 @@ async fn test_chunker() -> Result<(), JsValue> {
 
 #[wasm_bindgen_test]
 async fn test_commander() -> Result<(), JsValue> {
-    // we need to run start before anything else
-    bindgen::start().await?;
+    // we need to create a new PeerPiper struct before we begen
+    let mut peerpiper = peerpiper_browser::bindgen::PeerPiper::new("peerpiper".to_string())
+        .await
+        .map_err(|err| JsError::new(&format!("Failed to create PeerPiper: {:?}", err)))?;
 
-    let bytes = vec![24; 24];
+    let len = 1024 * 1024;
+
+    let bytes = vec![24; len];
 
     // call crate::bindgen::command with Stringified PeerPiperCommand::SystemCommands for put, then get, compare the
     // two to ensure they match.
@@ -154,7 +158,7 @@ async fn test_commander() -> Result<(), JsValue> {
         ))
     })?;
 
-    let cid = peerpiper_browser::bindgen::command(js_cmd).await?;
+    let cid = peerpiper.command(js_cmd).await;
 
     let cid: Cid = serde_wasm_bindgen::from_value(cid).map_err(|err| {
         JsError::new(&format!(
@@ -175,7 +179,7 @@ async fn test_commander() -> Result<(), JsValue> {
         ))
     })?;
 
-    let data = peerpiper_browser::bindgen::command(json).await?;
+    let data = peerpiper.command(json).await;
 
     // data should be a JsValue that converts to bytes vector which matches the original bytes
     let data: Vec<u8> = serde_wasm_bindgen::from_value(data).map_err(|err| {

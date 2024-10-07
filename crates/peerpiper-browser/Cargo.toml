@@ -30,6 +30,7 @@ libp2p = { workspace = true, features = [
 ] }
 wasm-bindgen = "0.2.93"
 wasm-bindgen-futures = "0.4.38"
+serde = "1.0"
 serde-wasm-bindgen = "0.6.5"
 tracing-wasm = { version = "0.2.1", optional = true }
 console_error_panic_hook = { version = "0.1.7", optional = true }
@@ -42,7 +43,13 @@ send_wrapper = { version = "0.6.0", features = ["futures"] }
 chrono = "0.4"
 wnfs-unixfs-file = "0.2.0"
 tokio = { version = "1.34", features = ["io-util"] }
-instant = "0.1.12" # needed as a workaround for https://github.com/rustwasm/wasm-pack/issues/743 
+# `instant/wasm-bindgen` makes sure it will use `js_sys` for getting the system time
+# `instant/inaccurate` uses `Date.now()` instead of `performance.now()`
+# see: https://github.com/rustwasm/wasm-pack/issues/743#issuecomment-2383907212
+instant = { version = "0.1.12", features = [
+  "wasm-bindgen",
+  "inaccurate",
+] } # needed as a workaround for https://github.com/rustwasm/wasm-pack/issues/743 
 
 [target.wasm32-unknown-unknown.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
@@ -53,12 +60,5 @@ rand_chacha = "0.3.1"
 rand_core = "0.6.4"
 
 [features]
-# `instant/wasm-bindgen` makes sure it will use `js_sys` for getting the system time
-# `instant/inaccurate` uses `Date.now()` instead of `performance.now()`
-# see: https://github.com/rustwasm/wasm-pack/issues/743#issuecomment-2383907212
-default = [
-  "instant/wasm-bindgen", # needed as a workaround for https://github.com/rustwasm/wasm-pack/issues/743 
-  "instant/inaccurate",   # needed as a workaround for https://github.com/rustwasm/wasm-pack/issues/743 
-  "logging",
-]
+# default = ["logging"]
 logging = ["tracing-wasm", "console_error_panic_hook"]
