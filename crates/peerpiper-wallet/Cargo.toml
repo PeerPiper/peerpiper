@@ -9,7 +9,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wit-bindgen-rt = { workspace = true, features = ["bitflags"] }
-wurbo = "0.4.1"
+wurbo = "0.5"
 base64ct = { version = "1.6.0", features = ["alloc"] }
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = "1.0.68"
@@ -19,8 +19,8 @@ serde_with = { version = "3.3.0", features = ["base64"] }
 # peerpiper = { workspace = true }
 
 [dev-dependencies]
-wasmtime = { version = "21", features = ['component-model'] }
-wasmtime-wasi = "21"
+wasmtime = { version = "25" }
+wasmtime-wasi = "25"
 thiserror = "1.0"
 
 [package.metadata.component]
