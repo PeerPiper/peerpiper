@@ -14,9 +14,10 @@ build-submodules: update-remote
     fi \
   done
 
+# for each dir in crates which has a `wit` directory in it, AND has src/bindings.rs, build it
 build-wits:
  for dir in crates/*; do \
-   if [ -d $dir/wit ]; then \
+    if ([ -d $dir/wit ] && [ -f $dir/src/bindings.rs ]); then \
      cargo component build --manifest-path=$dir/Cargo.toml; \
      cargo component build --manifest-path=$dir/Cargo.toml --release; \
    fi \
@@ -61,6 +62,14 @@ dev: build-wits
   @just peerpiper-browser build
   # start the server
   just serve & cd packages/peerpiper-host && npm run dev -- --open
+
+# same as dev but skips `just serve` to connect to lipb2p bootstrap nodes 
+dev-ipfs: build-wits
+  @trap 'kill $(jobs -p)' EXIT
+  # build the browser wasm
+  @just peerpiper-browser build
+  # start the server
+  cd packages/peerpiper-host && npm run dev -- --open
 
 publish:
   # right now browser is the only thing that is set up to be published
