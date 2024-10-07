@@ -35,7 +35,7 @@ pub struct ExtensionsBuilder<T> {
     engine: Engine,
 
     /// Vector of wasm bytes for each extension
-    pub wasm_bytes: Vec<Vec<u8>>,
+    wasm_bytes: Vec<Vec<u8>>,
 
     /// Linker to link the wasm extensions
     linker: Linker<T>,
