@@ -11,13 +11,15 @@ use futures::{
 };
 use libp2p::core::transport::ListenerId;
 use libp2p::core::ConnectedPoint;
+use libp2p::kad::store::RecordStore;
 use libp2p::multiaddr::Protocol;
 use libp2p::request_response::{self, OutboundRequestId, ResponseChannel};
 use libp2p::swarm::{Swarm, SwarmEvent};
-use libp2p::{kad, ping, Multiaddr, PeerId};
+use libp2p::{identify, kad, ping, Multiaddr, PeerId};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::net::Ipv4Addr;
+use std::ops::Deref;
 use std::time::Duration;
 
 use super::delay;
@@ -216,9 +218,25 @@ pub enum Libp2pEvent {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PeerRequest(Vec<u8>);
 
+impl Deref for PeerRequest {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// Jeeves Response Bytes
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PeerResponse(Vec<u8>);
+
+impl Deref for PeerResponse {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl From<PeerPiperCommand> for Command {
     fn from(command: PeerPiperCommand) -> Self {
@@ -286,6 +304,21 @@ impl EventLoop {
     async fn handle_tick(&mut self) {
         tracing::info!("🕒 Tick");
         self.tick.reset(TICK_INTERVAL);
+
+        // Also show all kad records from kad store
+        let records = self.swarm.behaviour_mut().kad.store_mut().records();
+
+        if records.clone().count() == 0 {
+            tracing::trace!("Kad store is empty");
+        }
+
+        records.into_iter().for_each(|record| {
+            tracing::trace!(
+                "Kad Key/Value: {:?} {:?}",
+                record.key.to_vec(),
+                record.value
+            );
+        });
 
         // if let Some(Err(e)) = self
         //     .swarm
@@ -365,11 +398,11 @@ impl EventLoop {
             }
             SwarmEvent::ConnectionEstablished {
                 peer_id,
-                endpoint: ConnectedPoint::Listener { send_back_addr, .. },
+                //endpoint: ConnectedPoint::Listener { send_back_addr, .. },
                 established_in,
                 ..
             } => {
-                tracing::info!("✔️  Connection Established to {peer_id} in {established_in:?} on {send_back_addr}");
+                tracing::info!("✔️  Connection Established to {peer_id} in {established_in:?}");
                 // add as explitcit peer
                 self.swarm
                     .behaviour_mut()
@@ -387,7 +420,6 @@ impl EventLoop {
                     return Err(Error::StaticStr("Failed to send NewConnection event"));
                 }
             }
-
             SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
                 tracing::warn!("Failed to dial {peer_id:?}: {error}");
 
@@ -523,8 +555,6 @@ impl EventLoop {
                             channel,
                         }))
                         .await?;
-
-                    // TODO: Fulfill the request
                 }
                 request_response::Message::Response {
                     request_id,
@@ -587,61 +617,58 @@ impl EventLoop {
             //         debug!("Removed PEER {peer_id} from the routing table (if it was in there).");
             //     }
             // }
-            // SwarmEvent::Behaviour(BehaviourEvent::Identify(identify::Event::Received {
-            //     peer_id,
-            //     info:
-            //         identify::Info {
-            //             listen_addrs,
-            //             protocols,
-            //             observed_addr,
-            //             ..
-            //         },
-            // })) => {
-            //     debug!(
-            //         "identify::Event::Received peer {} observed_addr: {}",
-            //         peer_id, observed_addr
-            //     );
-            //
-            //     // remove warning_counters entry for this peer if it exists
-            //     self.warning_counters.remove(&peer_id);
-            //
-            //     // TODO: This needs to be improved to only add the address to the matching protocol name,
-            //     // assuming there is more than one per kad (which there shouldn't be, but there could be)
-            //     if protocols.iter().any(|p| {
-            //         self.swarm
-            //             .behaviour()
-            //             .kademlia
-            //             .as_ref()
-            //             //.unwrap()
-            //             .protocol_names()
-            //             .iter()
-            //             .any(|q| p == q)
-            //     }) {
-            //         for addr in listen_addrs {
-            //             debug!("identify::Event::Received listen addr: {}", addr);
-            //
-            //             let webrtc_address = addr
-            //                 .clone()
-            //                 .with(Protocol::WebRTCDirect)
-            //                 .with(Protocol::P2p(peer_id));
-            //
-            //             self.swarm
-            //                 .behaviour_mut()
-            //                 .kademlia
-            //                 .as_mut()
-            //                 .map(|k| k.add_address(&peer_id, webrtc_address.clone()));
-            //
-            //             // TODO (fixme): the below doesn't work because the address is still missing /webrtc/p2p even after https://github.com/libp2p/js-libp2p-webrtc/pull/121
-            //             self.swarm
-            //                 .behaviour_mut()
-            //                 .kademlia
-            //                 .as_mut()
-            //                 .map(|k| k.add_address(&peer_id, addr.clone()));
-            //
-            //             debug!("Added {webrtc_address} to the routing table.");
-            //         }
-            //     }
-            // }
+            SwarmEvent::Behaviour(BehaviourEvent::Identify(identify::Event::Received {
+                peer_id,
+                info:
+                    identify::Info {
+                        listen_addrs,
+                        protocols,
+                        observed_addr,
+                        ..
+                    },
+                ..
+            })) => {
+                tracing::debug!(
+                    "ℹ️  identify Received peer {} observed_addr: {}",
+                    peer_id,
+                    observed_addr
+                );
+
+                // remove warning_counters entry for this peer if it exists
+                //self.warning_counters.remove(&peer_id);
+
+                // Only add the address to the matching protocol name,
+                if protocols.iter().any(|p| {
+                    self.swarm
+                        .behaviour()
+                        .kad
+                        .protocol_names()
+                        .iter()
+                        .any(|q| p == q)
+                }) {
+                    for addr in listen_addrs {
+                        tracing::debug!("ℹ️  identify::Event::Received listen addr: {}", addr);
+
+                        let webrtc_address = addr
+                            .clone()
+                            .with(Protocol::WebRTCDirect)
+                            .with(Protocol::P2p(peer_id));
+
+                        self.swarm
+                            .behaviour_mut()
+                            .kad
+                            .add_address(&peer_id, webrtc_address.clone());
+
+                        // TODO (fixme): the below doesn't work because the address is still missing /webrtc/p2p even after https://github.com/libp2p/js-libp2p-webrtc/pull/121
+                        self.swarm
+                            .behaviour_mut()
+                            .kad
+                            .add_address(&peer_id, addr.clone());
+
+                        tracing::debug!("ℹ️  Added {peer_id} to the routing table.");
+                    }
+                }
+            }
             // SwarmEvent::Behaviour(BehaviourEvent::Kademlia(
             //     libp2p::kad::KademliaEvent::OutboundQueryProgressed {
             //         result: libp2p::kad::QueryResult::Bootstrap(res),
