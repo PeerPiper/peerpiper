@@ -955,7 +955,7 @@ dependencies = [
  "strum",
  "strum_macros",
  "wit-bindgen-rt 0.27.0",
- "wurbo 0.5.0",
+ "wurbo",
 ]
 
 [[package]]
@@ -2917,12 +2917,15 @@ dependencies = [
  "libp2p-kad",
  "libp2p-mdns",
  "libp2p-metrics",
+ "libp2p-noise",
  "libp2p-ping",
  "libp2p-quic",
  "libp2p-request-response",
  "libp2p-swarm",
  "libp2p-tcp",
  "libp2p-upnp",
+ "libp2p-websocket-websys",
+ "libp2p-yamux",
  "multiaddr",
  "pin-project",
  "rw-stream-sink",
@@ -3369,6 +3372,37 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+]
+
+[[package]]
+name = "libp2p-websocket-websys"
+version = "0.4.0"
+source = "git+https://github.com/libp2p/rust-libp2p.git#8ceadaac5aec4b462463ef4082d6af577a3158b1"
+dependencies = [
+ "bytes",
+ "futures",
+ "js-sys",
+ "libp2p-core",
+ "parking_lot",
+ "send_wrapper 0.6.0",
+ "thiserror",
+ "tracing",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
+name = "libp2p-yamux"
+version = "0.46.0"
+source = "git+https://github.com/libp2p/rust-libp2p.git#8ceadaac5aec4b462463ef4082d6af577a3158b1"
+dependencies = [
+ "either",
+ "futures",
+ "libp2p-core",
+ "thiserror",
+ "tracing",
+ "yamux 0.12.1",
+ "yamux 0.13.3",
 ]
 
 [[package]]
@@ -3825,6 +3859,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "nohash-hasher"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
+
+[[package]]
 name = "nom"
 version = "7.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4152,7 +4192,7 @@ dependencies = [
 
 [[package]]
 name = "peerpiper-browser"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "anyhow",
  "bytes",
@@ -4172,6 +4212,7 @@ dependencies = [
  "rand_chacha",
  "rand_core",
  "send_wrapper 0.6.0",
+ "serde",
  "serde-wasm-bindgen",
  "thiserror",
  "tokio",
@@ -4203,13 +4244,6 @@ dependencies = [
  "tracing",
  "wnfs-common",
  "zeroize",
-]
-
-[[package]]
-name = "peerpiper-handler"
-version = "0.1.0"
-dependencies = [
- "wit-bindgen-rt 0.26.0",
 ]
 
 [[package]]
@@ -4287,10 +4321,10 @@ dependencies = [
  "serde_json",
  "serde_with 3.9.0",
  "thiserror",
- "wasmtime 21.0.1",
- "wasmtime-wasi 21.0.1",
+ "wasmtime 25.0.1",
+ "wasmtime-wasi 25.0.1",
  "wit-bindgen-rt 0.26.0",
- "wurbo 0.4.1",
+ "wurbo",
 ]
 
 [[package]]
@@ -8125,22 +8159,6 @@ dependencies = [
 
 [[package]]
 name = "wurbo"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6cf55abeaaef723ceccb7b13901f260aba62605784d32c545f0e87df8b7fbc7"
-dependencies = [
- "base64ct",
- "convert_case",
- "lazy_static",
- "minijinja",
- "nanoid",
- "serde",
- "serde_json",
- "thiserror",
-]
-
-[[package]]
-name = "wurbo"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5efcb128ed9cc01ddd74249eddd09a8c821b7b46e970f4bb399fedd8430a8828"
@@ -8224,6 +8242,37 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d7d8a75eaf6557bb84a65ace8609883db44a29951042ada9b393151532e41fcb"
 dependencies = [
  "xml-rs",
+]
+
+[[package]]
+name = "yamux"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ed0164ae619f2dc144909a9f082187ebb5893693d8c0196e8085283ccd4b776"
+dependencies = [
+ "futures",
+ "log",
+ "nohash-hasher",
+ "parking_lot",
+ "pin-project",
+ "rand",
+ "static_assertions",
+]
+
+[[package]]
+name = "yamux"
+version = "0.13.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a31b5e376a8b012bee9c423acdbb835fc34d45001cfa3106236a624e4b738028"
+dependencies = [
+ "futures",
+ "log",
+ "nohash-hasher",
+ "parking_lot",
+ "pin-project",
+ "rand",
+ "static_assertions",
+ "web-time",
 ]
 
 [[package]]
