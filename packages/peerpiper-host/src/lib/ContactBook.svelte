@@ -3,7 +3,7 @@
 	import { WurboComponent, wurboIn } from 'wurbo';
 
 	// Import wasm component bytes as a url
-	import wasmURL from '../../../../target/wasm32-wasi/release/contact_book.wasm?url';
+	import wasmURL from '../../../../target/wasm32-wasip1/release/contact_book.wasm?url';
 
 	const dispatch = createEventDispatcher();
 
@@ -18,8 +18,8 @@
 		val: {}
 	};
 
-  // console when data changes
-  $: console.log('ContactBook data changed', data);
+	// console when data changes
+	$: console.log('ContactBook data changed', data);
 
 	const eventHandler = (payload) => {
 		console.log('Contact Book Wasm Component emitted an event:', payload);
@@ -29,5 +29,5 @@
 
 <!-- <WurboComponent {wasmURL} {data} {eventHandler} /> -->
 {#if WurboComponent && data && eventHandler}
-  <WurboComponent {wasmURL} {data} {eventHandler} />
+	<WurboComponent {wasmURL} {data} {eventHandler} />
 {/if}

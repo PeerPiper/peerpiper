@@ -6,16 +6,22 @@
 
 	/**
 	 * The address of the peer to connect to
-	 * @type {string}
+	 * @type {string[]}
 	 */
-	export let dialAddr;
+	export let dialAddrs = [];
 
+	/** @type {string|null} */
 	let errorConnecting = null;
 	let connectingState = 'idle';
+
+	/** @type {peerpiper.PeerPiper} */
+	let piper;
 
 	onMount(async () => {
 		try {
 			await peerpiper.default();
+			let promise = new peerpiper.PeerPiper('peerpiper-host');
+			piper = await promise;
 		} catch (error) {
 			console.error(error);
 			errorConnecting = error;
@@ -33,8 +39,8 @@
 		};
 
 		try {
-			console.log('Connecting to', dialAddr);
-			peerpiper.connect([dialAddr], onEvent);
+			console.log('Connecting to', dialAddrs);
+			piper.connect(dialAddrs, onEvent);
 			connectingState = 'connected';
 		} catch (error) {
 			console.error(error);
@@ -48,13 +54,12 @@
 	<div class="flex text-lg text-left w-full break-all">
 		<div class="flex flex-col">
 			<div class="font-semibold mb-4">Connect to a Peer using this address:</div>
-			<input
-				type="text"
-				class="p-2 border border-slate-500 rounded"
-				bind:value={dialAddr}
-				placeholder="Enter a Peer's Multiaddr"
-				disabled={connectingState !== 'idle'}
-			/>
+			<!-- show each of the dialAddrs  -->
+			{#each dialAddrs as dialAddr}
+				<div class="flex flex-col">
+					<div class="text-lg">{dialAddr}</div>
+				</div>
+			{/each}
 			<button
 				class="mt-2 p-2 text-white font-semibold rounded"
 				class:disabled={connectingState === 'connecting...'}
