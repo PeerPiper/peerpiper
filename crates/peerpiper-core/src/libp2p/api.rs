@@ -14,7 +14,7 @@ use libp2p::core::ConnectedPoint;
 use libp2p::multiaddr::Protocol;
 use libp2p::request_response::{self, OutboundRequestId, ResponseChannel};
 use libp2p::swarm::{Swarm, SwarmEvent};
-use libp2p::{ping, Multiaddr, PeerId};
+use libp2p::{kad, ping, Multiaddr, PeerId};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::net::Ipv4Addr;
@@ -66,14 +66,14 @@ impl Client {
     /// Request a response from a PeerId
     pub async fn request_response(
         &mut self,
-        request: String,
+        request: Vec<u8>,
         peer: PeerId,
     ) -> Result<Vec<u8>, Error> {
-        tracing::trace!("Sending request {request} to {peer}");
+        tracing::trace!("Sending request to {peer}");
         let (sender, receiver) = oneshot::channel();
         if let Err(e) = self
             .command_sender
-            .send(Command::RequestResponse {
+            .send(Command::Jeeves {
                 request,
                 peer,
                 sender,
@@ -83,25 +83,16 @@ impl Client {
             tracing::error!("Failed to send request response command: {:?}", e);
         }
 
-        tracing::trace!("Awaiting response");
-
-        match receiver.await {
-            Ok(response) => response,
-            Err(e) => {
-                // "Receiver oneshot was canceled."
-                tracing::error!("Oneshot was canceled: {:?}", e);
-                Err(Error::OneshotCanceled(e))
-            }
-        }
+        receiver.await.map_err(Error::OneshotCanceled)?
     }
     /// Respond with a file to a request
     pub async fn respond_file(
         &mut self,
-        file: Vec<u8>,
-        channel: ResponseChannel<FileResponse>,
+        bytes: Vec<u8>,
+        channel: ResponseChannel<PeerResponse>,
     ) -> Result<(), Error> {
         self.command_sender
-            .send(Command::RespondFile { file, channel })
+            .send(Command::RespondJeeves { bytes, channel })
             .await
             .map_err(Error::SendError)
     }
@@ -193,14 +184,21 @@ enum Command {
         peer_id: PeerId,
     },
     ShareMultiaddr,
-    RequestResponse {
-        request: String,
+    /// Jeeves RequestResponse. Ask a String from a PeerId.
+    Jeeves {
+        request: Vec<u8>,
         peer: PeerId,
         sender: oneshot::Sender<Result<Vec<u8>, Error>>,
     },
-    RespondFile {
-        file: Vec<u8>,
-        channel: ResponseChannel<FileResponse>,
+    /// Jeeves Response
+    RespondJeeves {
+        bytes: Vec<u8>,
+        channel: ResponseChannel<PeerResponse>,
+    },
+    /// Puts a Record on the DHT
+    PutRecord {
+        key: Vec<u8>,
+        value: Vec<u8>,
     },
 }
 
@@ -209,18 +207,18 @@ enum Command {
 pub enum Libp2pEvent {
     /// The unique Event to this api file that never leaves; all other events propagate out
     InboundRequest {
-        request: String,
-        channel: ResponseChannel<FileResponse>,
+        request: PeerRequest,
+        channel: ResponseChannel<PeerResponse>,
     },
 }
 
 /// Simple file exchange protocol
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct JeevesRequest(String);
+pub struct PeerRequest(Vec<u8>);
 
 /// Jeeves Response Bytes
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct FileResponse(Vec<u8>);
+pub struct PeerResponse(Vec<u8>);
 
 impl From<PeerPiperCommand> for Command {
     fn from(command: PeerPiperCommand) -> Self {
@@ -232,6 +230,7 @@ impl From<PeerPiperCommand> for Command {
             PeerPiperCommand::Subscribe { topic } => Command::Subscribe { topic },
             PeerPiperCommand::Unsubscribe { topic } => Command::Unsubscribe { topic },
             PeerPiperCommand::ShareAddress => Command::ShareMultiaddr,
+            PeerPiperCommand::PutRecord { key, value } => Command::PutRecord { key, value },
             _ => unimplemented!(),
         }
     }
@@ -249,7 +248,7 @@ pub struct EventLoop {
     /// Channel to send events from the network event loop to the user.
     event_sender: mpsc::Sender<Events>,
     /// Jeeeves Tracking
-    pending_jeeves_request: HashMap<OutboundRequestId, oneshot::Sender<Result<Vec<u8>, Error>>>,
+    pending_requests: HashMap<OutboundRequestId, oneshot::Sender<Result<Vec<u8>, Error>>>,
 }
 
 impl EventLoop {
@@ -264,7 +263,7 @@ impl EventLoop {
             swarm,
             command_receiver,
             event_sender,
-            pending_jeeves_request: HashMap::new(),
+            pending_requests: HashMap::new(),
         }
     }
 
@@ -508,17 +507,19 @@ impl EventLoop {
                     return Err(Error::StaticStr("Failed to publish welcome message"));
                 }
             }
-            SwarmEvent::Behaviour(BehaviourEvent::Jeeves(request_response::Event::Message {
-                message,
-                ..
-            })) => match message {
+            SwarmEvent::Behaviour(BehaviourEvent::PeerRequest(
+                request_response::Event::Message { message, .. },
+            )) => match message {
                 request_response::Message::Request {
                     request, channel, ..
                 } => {
                     tracing::info!("Received request: {:?}", request.0);
+
+                    // this emits an event to the user so that they can
+                    // respond to the request in the manner they see fit
                     self.event_sender
                         .send(Events::Inner(Libp2pEvent::InboundRequest {
-                            request: request.0,
+                            request,
                             channel,
                         }))
                         .await?;
@@ -528,26 +529,24 @@ impl EventLoop {
                 request_response::Message::Response {
                     request_id,
                     response,
-                } => {
-                    tracing::info!("Received response: {:?}", response.0);
-                    let _ = self
-                        .pending_jeeves_request
-                        .remove(&request_id)
-                        .ok_or(Error::StaticStr("Remove failed"))?
-                        .send(Ok(response.0));
-                }
+                } => self
+                    .pending_requests
+                    .remove(&request_id)
+                    .ok_or(Error::StaticStr("Remove failed"))?
+                    .send(Ok(response.0))
+                    .map_err(|_| Error::StaticStr("Failed to send response"))?,
             },
-            SwarmEvent::Behaviour(BehaviourEvent::Jeeves(
+            SwarmEvent::Behaviour(BehaviourEvent::PeerRequest(
                 request_response::Event::OutboundFailure {
                     request_id, error, ..
                 },
             )) => {
                 tracing::error!("Request failed, couldn't SEND JEEVES: {error} on {request_id}");
-                let _ = self
-                    .pending_jeeves_request
+                self.pending_requests
                     .remove(&request_id)
                     .ok_or(Error::StaticStr("Remove failed"))?
-                    .send(Err(Error::OutboundFailure(error)));
+                    .send(Err(Error::OutboundFailure(error)))
+                    .map_err(|_| Error::StaticStr("Failed to send response"))?;
             }
             // SwarmEvent::Behaviour(BehaviourEvent::Identify(identify::Event::Error {
             //     peer_id,
@@ -763,7 +762,7 @@ impl EventLoop {
                     tracing::error!("Failed to send share address event: {e}");
                 }
             }
-            Command::RequestResponse {
+            Command::Jeeves {
                 request,
                 peer,
                 sender,
@@ -772,17 +771,30 @@ impl EventLoop {
                 let response_id = self
                     .swarm
                     .behaviour_mut()
-                    .jeeves
-                    .send_request(&peer, JeevesRequest(request));
-                self.pending_jeeves_request.insert(response_id, sender);
+                    .peer_request
+                    .send_request(&peer, PeerRequest(request));
+                self.pending_requests.insert(response_id, sender);
             }
-            Command::RespondFile { file, channel } => {
+            Command::RespondJeeves {
+                bytes: file,
+                channel,
+            } => {
                 tracing::info!("API: Handling RespondFile command");
                 self.swarm
                     .behaviour_mut()
-                    .jeeves
-                    .send_response(channel, FileResponse(file))
+                    .peer_request
+                    .send_response(channel, PeerResponse(file))
                     .expect("Connection to peer to be still open.");
+            }
+            // Put Records on the DHT
+            Command::PutRecord { key, value } => {
+                tracing::info!("API: Handling PutRecord command");
+                let record = kad::Record::new(key, value);
+                let _ = self
+                    .swarm
+                    .behaviour_mut()
+                    .kad
+                    .put_record(record, kad::Quorum::One);
             }
         }
     }

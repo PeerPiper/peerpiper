@@ -7,9 +7,9 @@ use libp2p::{gossipsub, identify, identity::Keypair, kad, ping, swarm::NetworkBe
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-use super::api::{FileResponse, JeevesRequest};
+use super::api::{PeerRequest, PeerResponse};
 
-const JEEVES_PROTOCOL: &str = "/jeeves/1";
+const EXTENSION_PROTOCOL: &str = "/peerpiper/extensions/0.1.0";
 
 /// The [NetworkBehaviour] also creates a [BehaviourEvent] for us, which we can use to
 /// handle events from the behaviour.
@@ -23,8 +23,9 @@ pub struct Behaviour {
     pub(crate) identify: identify::Behaviour,
     /// Kademlia DHT for Peer management
     pub kad: kad::Behaviour<kad::store::MemoryStore>,
-    /// RequestResponse
-    pub(crate) jeeves: request_response::cbor::Behaviour<JeevesRequest, FileResponse>,
+    /// Use RequestResponse to send data to a peer. Extensions can be used
+    /// to encode/decode the bytes, giving users a lot of flexibility that they control.
+    pub(crate) peer_request: request_response::cbor::Behaviour<PeerRequest, PeerResponse>,
 }
 
 pub fn build(key: &Keypair) -> Behaviour {
@@ -61,13 +62,16 @@ pub fn build(key: &Keypair) -> Behaviour {
         ping: ping::Behaviour::new(ping::Config::new().with_interval(Duration::from_secs(25))),
         // Need to include identify until https://github.com/status-im/nim-libp2p/issues/924 is resolved.
         identify: identify::Behaviour::new(identify::Config::new(
-            "/interop-tests".to_owned(),
+            "/peerpiper/1.0.0".to_owned(),
             key.public(),
         )),
         gossipsub,
         kad,
-        jeeves: request_response::cbor::Behaviour::new(
-            [(StreamProtocol::new(JEEVES_PROTOCOL), ProtocolSupport::Full)],
+        peer_request: request_response::cbor::Behaviour::new(
+            [(
+                StreamProtocol::new(EXTENSION_PROTOCOL),
+                ProtocolSupport::Full,
+            )],
             request_response::Config::default().with_request_timeout(Duration::from_secs(60)),
         ),
     }

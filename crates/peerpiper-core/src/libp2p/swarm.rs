@@ -6,10 +6,23 @@ pub fn create<B: NetworkBehaviour>(
 ) -> Result<libp2p::Swarm<B>, String> {
     #[cfg(target_arch = "wasm32")]
     {
+        use libp2p::core::upgrade::Version;
+        use libp2p::{noise, websocket_websys, yamux, Transport as _};
+
         Ok(libp2p::SwarmBuilder::with_new_identity()
             .with_wasm_bindgen()
             .with_other_transport(|key| {
                 libp2p_webrtc_websys::Transport::new(libp2p_webrtc_websys::Config::new(key))
+            })
+            .expect("infalliable to never exist")
+            .with_other_transport(|local_key| {
+                Ok(websocket_websys::Transport::default()
+                    .upgrade(Version::V1Lazy)
+                    .authenticate(
+                        noise::Config::new(local_key)
+                            .map_err(|e| format!("failed to initialise noise: {:?}", e))?,
+                    )
+                    .multiplex(yamux::Config::default()))
             })
             .expect("infalliable to never exist")
             .with_behaviour(behaviour_constructor)

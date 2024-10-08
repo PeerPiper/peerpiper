@@ -62,7 +62,7 @@ impl<H: SystemCommandHandler> Commander<H> {
                 })?;
                 Ok(ReturnValues::Data(bytes))
             }
-            PeerPiperCommand::RequestResponse { request, peer_id } => match &mut self.client {
+            PeerPiperCommand::PeerRequest { request, peer_id } => match &mut self.client {
                 Some(client) => {
                     let peer_id = PeerId::from_str(&peer_id).map_err(|err| {
                         error::Error::String(format!("Failed to create PeerId: {}", err))
@@ -83,7 +83,12 @@ impl<H: SystemCommandHandler> Commander<H> {
                         .to_string(),
                 )),
             },
-            _ => {
+            // The follow commands get sent over the network and do not expect a direct response
+            PeerPiperCommand::Publish { .. }
+            | PeerPiperCommand::Subscribe { .. }
+            | PeerPiperCommand::Unsubscribe { .. }
+            | PeerPiperCommand::ShareAddress { .. }
+            | PeerPiperCommand::PutRecord { .. } => {
                 match &mut self.network {
                     Some(network) => network.send(command).await?,
                     None => {

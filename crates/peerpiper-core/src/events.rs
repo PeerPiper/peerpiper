@@ -102,12 +102,19 @@ pub enum PeerPiperCommand {
     System(SystemCommand),
     /// Request the server to emit the Multiaddr that it is listening on
     ShareAddress,
-    RequestResponse {
-        request: String,
+    /// Please peer, do something with this data and give me a response
+    PeerRequest {
+        /// serialized request data
+        request: Vec<u8>,
         peer_id: String,
     },
-    /// Request a Streamed Response
-    RequestStream(String),
+    /// Puts a Record on the DHT, and optionally provides the data for Pinning
+    PutRecord {
+        /// The Record key bytes
+        key: Vec<u8>,
+        /// The Record value bytes (ie. the CID)
+        value: Vec<u8>,
+    },
 }
 
 /// System Commands that do not go to the network, but come from componets to direct
@@ -178,8 +185,8 @@ mod tests {
                 key: "test".to_string(),
             }),
             PeerPiperCommand::ShareAddress,
-            PeerPiperCommand::RequestResponse {
-                request: "what is your fave colour?".to_string(),
+            PeerPiperCommand::PeerRequest {
+                request: "what is your fave colour?".as_bytes().to_vec(),
                 peer_id: "123DfQm3...".to_string(),
             },
         ];
