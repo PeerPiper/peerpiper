@@ -14,6 +14,8 @@ use serde_wasm_bindgen::Serializer;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 
+use std::cell::RefCell;
+
 use crate::blockstore::BrowserBlockStore;
 
 const MAX_CHANNELS: usize = 16;
@@ -53,7 +55,9 @@ pub fn start() {
 // function to the PeerPiper struct as methods.
 #[wasm_bindgen]
 pub struct PeerPiper {
-    commander: Commander<BrowserBlockStore>,
+    /// Make interior mutability possible for the Commander struct with [RefCell]
+    /// This way we can keep the idiomatic Rust way of borrowing and mutating with &self
+    commander: RefCell<Commander<BrowserBlockStore>>,
 }
 
 #[wasm_bindgen]
@@ -67,12 +71,18 @@ impl PeerPiper {
             .await
             .map_err(|err| JsValue::from_str(&format!("Error opening blockstore: {:?}", err)))?;
         let commander = Commander::new(blockstore);
-        Ok(Self { commander })
+        Ok(Self {
+            commander: RefCell::new(commander),
+        })
     }
 
     /// Connect to the network with the given a list of libp2p endpoints.
     #[wasm_bindgen]
-    pub async fn connect(&mut self, libp2p_endpoint: Vec<String>, on_event: &js_sys::Function) {
+    pub async fn connect(
+        &self,
+        libp2p_endpoint: Vec<String>,
+        on_event: &js_sys::Function,
+    ) -> Result<(), JsValue> {
         let (tx_evts, mut rx_evts) = mpsc::channel(MAX_CHANNELS);
 
         // client sync oneshot
@@ -92,6 +102,7 @@ impl PeerPiper {
         let client_handle = rx_client.await.expect("Failed to get client handle");
 
         self.commander
+            .borrow_mut()
             .with_network(command_sender)
             .with_client(client_handle);
 
@@ -100,46 +111,49 @@ impl PeerPiper {
         while let Some(event) = rx_evts.next().await {
             match event {
                 peerpiper_core::events::Events::Outer(event) => {
-                    let evt =
-                        serde_wasm_bindgen::to_value(&event).expect("Failed to serialize event");
+                    tracing::info!("[Browser] Received event: {:?}", &event);
+                    let evt = serde_wasm_bindgen::to_value(&event).map_err(|e| {
+                        JsValue::from_str(&format!("Failed to serialize event: {:?}", e))
+                    })?;
                     let _ = on_event.call1(&this, &evt);
                 }
                 _ => {}
             }
         }
+
+        Ok(())
     }
 
     /// Takes any json string from a Guest Component, and tries to deserialize it into a PeerPiperCommand,
     #[wasm_bindgen]
-    pub async fn command(&mut self, cmd: JsValue) -> Result<JsValue, JsValue> {
-        tracing::info!("Received command: {:?}", &cmd);
-
-        let example_put = PeerPiperCommand::System(SystemCommand::Put {
-            bytes: vec![1, 2, 3],
-        });
-
-        let serializer = Serializer::json_compatible();
-        tracing::debug!(
-            "Example Put Command: {:?}",
-            &example_put
-                .serialize(&serializer)
-                .expect("Failed to serialize example put command")
-        );
-
-        tracing::info!(
-            "Example RequestResponse Command: {:?}",
-            serde_wasm_bindgen::to_value(&PeerPiperCommand::PeerRequest {
-                request: "what is your fave colour?".as_bytes().to_vec(),
-                peer_id: "123DfQm3...".to_string(),
-            })
-            .expect("Failed to serialize example request response command")
-        );
+    pub async fn command(&self, cmd: JsValue) -> Result<JsValue, JsValue> {
+        //let example_put = PeerPiperCommand::System(SystemCommand::Put {
+        //    bytes: vec![1, 2, 3],
+        //});
+        //
+        //let serializer = Serializer::json_compatible();
+        //tracing::debug!(
+        //    "Example Put Command: {:?}",
+        //    &example_put
+        //        .serialize(&serializer)
+        //        .expect("Failed to serialize example put command")
+        //);
+        //
+        //tracing::info!(
+        //    "Example RequestResponse Command: {:?}",
+        //    serde_wasm_bindgen::to_value(&PeerPiperCommand::PeerRequest {
+        //        request: "what is your fave colour?".as_bytes().to_vec(),
+        //        peer_id: "123DfQm3...".to_string(),
+        //    })
+        //    .expect("Failed to serialize example request response command")
+        //);
 
         let command: PeerPiperCommand =
             serde_wasm_bindgen::from_value(cmd).expect("Failed to parse command from JSON");
 
         let maybe_result = self
             .commander
+            .borrow_mut()
             .order(command)
             .await
             .map_err(|e| JsValue::from_str(&format!("Error executing command: {:?}", e)))?;
