@@ -11,16 +11,12 @@ use peerpiper_core::events::{PeerPiperCommand, SystemCommand};
 use peerpiper_core::Commander;
 use serde::ser::Serialize;
 use serde_wasm_bindgen::Serializer;
-use std::sync::OnceLock;
-use std::{collections::HashMap, sync::Mutex};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 
 use crate::blockstore::BrowserBlockStore;
 
 const MAX_CHANNELS: usize = 16;
-
-static COMMANDER: OnceLock<Mutex<Commander<BrowserBlockStore>>> = OnceLock::new();
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "logging")] {
@@ -46,135 +42,12 @@ cfg_if::cfg_if! {
         fn init_log() {}
     }
 }
-//
-///// On start, always open up a new BrowserBlockstore named peerpiper.
-///// As a local-frst app, we always need the storage even if not yet connected.
-//#[wasm_bindgen(start)]
-//pub async fn start() -> Result<(), JsValue> {
-//    init_log();
-//
-//    let blockstore = BrowserBlockStore::new("peerpiper");
-//    blockstore
-//        .open()
-//        .await
-//        .map_err(|err| JsValue::from_str(&format!("Error opening blockstore: {:?}", err)))?;
-//    let commander = Commander::new(blockstore);
-//    COMMANDER.get_or_init(|| Mutex::new(commander));
-//
-//    tracing::info!("Initialized commander.");
-//
-//    Ok(())
-//}
-//
-///// Connect to the network with the given a list of libp2p endpoints.
-///// Pass in a JavaScript function that will be called with events from the network.
-//#[wasm_bindgen]
-//pub async fn connect(
-//    libp2p_endpoint: Vec<String>,
-//    on_event: &js_sys::Function,
-//) -> Result<(), JsError> {
-//    let (tx_evts, mut rx_evts) = mpsc::channel(MAX_CHANNELS);
-//
-//    // client sync oneshot
-//    let (tx_client, rx_client) = oneshot::channel();
-//
-//    // command_sender will be used by other wasm_bindgen functions to send commands to the network
-//    // so we will need to wrap it in a Mutex or something to make it thread safe.
-//    let (command_sender, command_receiver) = mpsc::channel(8);
-//
-//    spawn_local(async move {
-//        crate::start(tx_evts, command_receiver, tx_client, libp2p_endpoint)
-//            .await
-//            .expect("never end")
-//    });
-//
-//    // wait on rx_client to get the client handle
-//    let client_handle = rx_client
-//        .await
-//        .map_err(|err| JsError::new(&format!("Failed to get client handle: {}", err)))?;
-//
-//    COMMANDER
-//        .get()
-//        .ok_or_else(|| JsError::new("Commander not initialized. Did `start()` complete?"))?
-//        .lock()
-//        .map_err(|err| JsError::new(&format!("Failed to lock commander: {}", err)))?
-//        .with_network(command_sender)
-//        .with_client(client_handle);
-//
-//    let this = JsValue::null();
-//
-//    while let Some(event) = rx_evts.next().await {
-//        match event {
-//            peerpiper_core::events::Events::Outer(event) => {
-//                let evt = serde_wasm_bindgen::to_value(&event)
-//                    .map_err(|err| JsError::new(&format!("Failed to serialize event: {}", err)))?;
-//                let _ = on_event.call1(&this, &evt);
-//            }
-//            _ => {}
-//        }
-//    }
-//
-//    tracing::info!("Done connecting.");
-//    Ok(())
-//}
-//
-///// Takes any json string from a Guest Component, and tries to deserialize it into a PeerPiperCommand,
-///// then sends it to the COMMANDER who routes it to either the network or the system depending on the command.
-///// If it fails, returns an error.
-//#[wasm_bindgen]
-//pub async fn command(cmd: JsValue) -> Result<JsValue, JsError> {
-//    let example_put = PeerPiperCommand::System(SystemCommand::Put {
-//        bytes: vec![1, 2, 3],
-//    });
-//
-//    let serializer = Serializer::json_compatible();
-//    tracing::debug!(
-//        "Example Put Command: {:?}",
-//        &example_put
-//            .serialize(&serializer)
-//            .map_err(|e| JsValue::from_str(&e.to_string()))
-//    );
-//
-//    tracing::info!(
-//        "Example RequestResponse Command: {:?}",
-//        serde_wasm_bindgen::to_value(&PeerPiperCommand::RequestResponse {
-//            request: "what is your fave colour?".to_string(),
-//            peer_id: "123DfQm3...".to_string(),
-//        })
-//        .unwrap()
-//    );
-//
-//    let command: PeerPiperCommand = serde_wasm_bindgen::from_value(cmd).map_err(|err| {
-//        let err_str = format!("Failed to parse command from JSON: {}", err);
-//        tracing::error!(err_str);
-//        // TODO: Figure out why this error does not propagate to JavaScript as an error. It just
-//        // hangs.
-//        JsError::new(&format!(
-//            "Failed to parse command from JSON: {}. Expected format: {:?}",
-//            err.to_string(),
-//            serde_wasm_bindgen::to_value(&example_put).unwrap()
-//        ))
-//    })?;
-//
-//    let maybe_result = COMMANDER
-//        .get()
-//        .ok_or_else(|| JsError::new("Commander not initialized. Did `start()` complete?"))?
-//        .lock()
-//        .map_err(|err| JsError::new(&format!("Failed to lock commander: {}", err)))?
-//        .order(command)
-//        .await
-//        .map_err(|err| JsError::new(&format!("Failed to send command: {}", err)))?;
-//
-//    // convert the ReturnValues enum to a JsValue (Cid as String, Vec<u8> as Uint8Array, or null)
-//    let js_val = match maybe_result {
-//        peerpiper_core::ReturnValues::Data(data) => serde_wasm_bindgen::to_value(&data)
-//            .map_err(|err| JsError::new(&format!("Failed to serialize data: {}", err)))?,
-//        peerpiper_core::ReturnValues::ID(cid) => serde_wasm_bindgen::to_value(&cid)
-//            .map_err(|err| JsError::new(&format!("Failed to serialize cid: {}", err)))?,
-//        peerpiper_core::ReturnValues::None => JsValue::null(),
-//    };
-//    Ok(js_val)
-//}
+
+/// Initializes the logger
+#[wasm_bindgen(start)]
+pub fn start() {
+    init_log();
+}
 
 // Refactor all the above code to use the new PeerPiper pattern instead of start(). Move the
 // function to the PeerPiper struct as methods.
@@ -238,7 +111,9 @@ impl PeerPiper {
 
     /// Takes any json string from a Guest Component, and tries to deserialize it into a PeerPiperCommand,
     #[wasm_bindgen]
-    pub async fn command(&mut self, cmd: JsValue) -> JsValue {
+    pub async fn command(&mut self, cmd: JsValue) -> Result<JsValue, JsValue> {
+        tracing::info!("Received command: {:?}", &cmd);
+
         let example_put = PeerPiperCommand::System(SystemCommand::Put {
             bytes: vec![1, 2, 3],
         });
@@ -253,8 +128,8 @@ impl PeerPiper {
 
         tracing::info!(
             "Example RequestResponse Command: {:?}",
-            serde_wasm_bindgen::to_value(&PeerPiperCommand::RequestResponse {
-                request: "what is your fave colour?".to_string(),
+            serde_wasm_bindgen::to_value(&PeerPiperCommand::PeerRequest {
+                request: "what is your fave colour?".as_bytes().to_vec(),
                 peer_id: "123DfQm3...".to_string(),
             })
             .expect("Failed to serialize example request response command")
@@ -267,7 +142,7 @@ impl PeerPiper {
             .commander
             .order(command)
             .await
-            .expect("Failed to send command");
+            .map_err(|e| JsValue::from_str(&format!("Error executing command: {:?}", e)))?;
 
         // convert the ReturnValues enum to a JsValue (Cid as String, Vec<u8> as Uint8Array, or null)
         let js_val = match maybe_result {
@@ -279,6 +154,6 @@ impl PeerPiper {
             }
             peerpiper_core::ReturnValues::None => JsValue::null(),
         };
-        js_val
+        Ok(js_val)
     }
 }

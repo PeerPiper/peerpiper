@@ -1,6 +1,6 @@
 [package]
 name = "peerpiper-browser"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 rust-version = { workspace = true }
 authors = ["Doug Anderson <doug@peerpiper.io>"]
