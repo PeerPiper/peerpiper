@@ -61,7 +61,7 @@ dev: build-wits
   # build the browser wasm
   @just peerpiper-browser build
   # start the server
-  just serve & cd packages/peerpiper-host && npm run dev -- --open
+  @just peerpiper-server serve & cd packages/peerpiper-host && npm run dev -- --open
 
 # same as dev but skips `just serve` to connect to lipb2p bootstrap nodes 
 dev-ipfs: build-wits
