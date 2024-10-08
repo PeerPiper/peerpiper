@@ -4,6 +4,10 @@
 #[cfg(feature = "cloudflare")]
 mod cloudflare;
 
+/// Extend the functionality of the peerpiper-server with custom handlers
+#[cfg(feature = "extensions")]
+mod extensions;
+
 use anyhow::Result;
 use axum::extract::State;
 use axum::response::{Html, IntoResponse};
@@ -13,6 +17,7 @@ use futures::channel::{mpsc, oneshot};
 use futures::StreamExt;
 use libp2p::multiaddr::{Multiaddr, Protocol};
 use peerpiper::core::events::{Events, PublicEvent};
+use peerpiper::core::libp2p::api::Libp2pEvent;
 use std::net::{Ipv4Addr, SocketAddr};
 use tower_http::cors::{Any, CorsLayer};
 
@@ -64,14 +69,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let bytes = peerpiper::handler::utils::get_wasm_bytes("peerpiper_handler")?;
     // let handler = peerpiper::handler::Handler::new(bytes)?;
 
+    // create new Extensions struct with a given wasm file
+    // for now, use ../../../target/wasm32-wasip1/debug/extension_echo.wasm
+    let path = std::env::current_dir()?;
+    //let extensions = extensions::Extensions::new("peerpiper_handler")?;
+
     loop {
         tokio::select! {
             Some(msg) = rx.next() => {
                 match msg {
-                    Events::Outer(ref m @ PublicEvent::Message { ref topic, ref peer, .. }) => {
-                        tracing::info!("Received msg on topic {:?} from peer: {:?}", topic, peer);
+                    Events::Outer(ref m @ PublicEvent::Message { ref topic, ref peer, ref data }) => {
+                        tracing::info!("Received msg on topic {:?} from peer: {:?}, {:?}", topic, peer, data);
+                        //let res = extensions.handle_message(extensions::Message { topic: topic.clone(), peer: peer.clone(), data: data.clone() });
                         // let r = handler.handle(m.clone()).await?;
                         // tracing::info!("Handler returned: {:?}", r);
+                    }
+                    Events::Inner(Libp2pEvent::InboundRequest {request, channel }) => {
+                        tracing::info!("InboundRequest: {:?}", request);
+                        // iterate over extensions and allows them to handle fulfilling the
+                        // request, if applicable to them.
                     }
                     Events::Outer(PublicEvent::ListenAddr { address: _, .. }) => {
                         // TODO: Figure out what we want to do with the other new addresses.
