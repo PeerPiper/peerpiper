@@ -15,7 +15,7 @@ use libp2p::Multiaddr;
 use std::env;
 
 /// The maximum number of TXT records to keep in Cloudflare
-const MAX_RECORDS: usize = 4;
+const MAX_RECORDS: usize = 2;
 
 /// Cloudflare DNS Errors
 #[derive(Debug, thiserror::Error)]
