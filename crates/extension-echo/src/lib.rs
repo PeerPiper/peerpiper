@@ -32,6 +32,12 @@ impl Guest for Component {
 
         Ok(phrase)
     }
+
+    /// Respond to a request with the given bytes
+    fn handle_request(data: Vec<u8>) -> Result<Vec<u8>, Error> {
+        println!("Received request: {:?}", data);
+        Ok(data)
+    }
 }
 
 bindings::export!(Component with_types_in bindings);

@@ -5,15 +5,13 @@ pub(crate) mod bindgen {
     });
 }
 
-use std::mem;
-use std::ops::{Deref as _, DerefMut as _};
-use std::sync::Arc;
-
-use crate::error::Error;
+use super::Error;
 
 use anyhow::Result;
-use tokio::sync::Mutex;
-use tokio::task::JoinSet;
+use std::mem;
+use std::ops::DerefMut as _;
+use std::sync::Arc;
+use tokio::{sync::Mutex, task::JoinSet};
 use wasmtime::component::{Component, Linker};
 use wasmtime::{Config, Engine, Store};
 use wasmtime_wasi::{DirPerms, FilePerms, ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};

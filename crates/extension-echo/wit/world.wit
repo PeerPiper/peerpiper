@@ -20,6 +20,10 @@ interface handlers {
     use types.{message, error};
     /// Handle a message from the world. Returns a string response or error
     handle-message: func(msg: message) -> result<string, error>;
+
+    /// Handles inbound requests with the given bytes 
+    /// Responds with a list of bytes or an error
+    handle-request: func(data: list<u8>) -> result<list<u8>, error>;
 }
 
 /// An example world for the component to target.

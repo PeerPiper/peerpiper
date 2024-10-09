@@ -160,9 +160,90 @@ pub mod exports {
                         }
                     }
                 }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn _export_handle_request_cabi<T: Guest>(
+                    arg0: *mut u8,
+                    arg1: usize,
+                ) -> *mut u8 {
+                    #[cfg(target_arch = "wasm32")] _rt::run_ctors_once();
+                    let len0 = arg1;
+                    let result1 = T::handle_request(
+                        _rt::Vec::from_raw_parts(arg0.cast(), len0, len0),
+                    );
+                    let ptr2 = _RET_AREA.0.as_mut_ptr().cast::<u8>();
+                    match result1 {
+                        Ok(e) => {
+                            *ptr2.add(0).cast::<u8>() = (0i32) as u8;
+                            let vec3 = (e).into_boxed_slice();
+                            let ptr3 = vec3.as_ptr().cast::<u8>();
+                            let len3 = vec3.len();
+                            ::core::mem::forget(vec3);
+                            *ptr2.add(8).cast::<usize>() = len3;
+                            *ptr2.add(4).cast::<*mut u8>() = ptr3.cast_mut();
+                        }
+                        Err(e) => {
+                            *ptr2.add(0).cast::<u8>() = (1i32) as u8;
+                            use super::super::super::super::component::extension::types::Error as V6;
+                            match e {
+                                V6::HandlerError(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (0i32) as u8;
+                                    let vec4 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr4 = vec4.as_ptr().cast::<u8>();
+                                    let len4 = vec4.len();
+                                    ::core::mem::forget(vec4);
+                                    *ptr2.add(12).cast::<usize>() = len4;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr4.cast_mut();
+                                }
+                                V6::IoError(e) => {
+                                    *ptr2.add(4).cast::<u8>() = (1i32) as u8;
+                                    let vec5 = (e.into_bytes()).into_boxed_slice();
+                                    let ptr5 = vec5.as_ptr().cast::<u8>();
+                                    let len5 = vec5.len();
+                                    ::core::mem::forget(vec5);
+                                    *ptr2.add(12).cast::<usize>() = len5;
+                                    *ptr2.add(8).cast::<*mut u8>() = ptr5.cast_mut();
+                                }
+                            }
+                        }
+                    };
+                    ptr2
+                }
+                #[doc(hidden)]
+                #[allow(non_snake_case)]
+                pub unsafe fn __post_return_handle_request<T: Guest>(arg0: *mut u8) {
+                    let l0 = i32::from(*arg0.add(0).cast::<u8>());
+                    match l0 {
+                        0 => {
+                            let l1 = *arg0.add(4).cast::<*mut u8>();
+                            let l2 = *arg0.add(8).cast::<usize>();
+                            let base3 = l1;
+                            let len3 = l2;
+                            _rt::cabi_dealloc(base3, len3 * 1, 1);
+                        }
+                        _ => {
+                            let l4 = i32::from(*arg0.add(4).cast::<u8>());
+                            match l4 {
+                                0 => {
+                                    let l5 = *arg0.add(8).cast::<*mut u8>();
+                                    let l6 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l5, l6, 1);
+                                }
+                                _ => {
+                                    let l7 = *arg0.add(8).cast::<*mut u8>();
+                                    let l8 = *arg0.add(12).cast::<usize>();
+                                    _rt::cabi_dealloc(l7, l8, 1);
+                                }
+                            }
+                        }
+                    }
+                }
                 pub trait Guest {
                     /// Handle a message from the world. Returns a string response or error
                     fn handle_message(msg: Message) -> Result<_rt::String, Error>;
+                    /// Handles inbound requests with the given bytes
+                    /// Responds with a list of bytes or an error
+                    fn handle_request(data: _rt::Vec<u8>) -> Result<_rt::Vec<u8>, Error>;
                 }
                 #[doc(hidden)]
                 macro_rules! __export_component_extension_handlers_0_1_0_cabi {
@@ -177,6 +258,14 @@ pub mod exports {
                         "cabi_post_component:extension/handlers@0.1.0#handle-message"]
                         unsafe extern "C" fn _post_return_handle_message(arg0 : * mut
                         u8,) { $($path_to_types)*:: __post_return_handle_message::<$ty >
+                        (arg0) } #[export_name =
+                        "component:extension/handlers@0.1.0#handle-request"] unsafe
+                        extern "C" fn export_handle_request(arg0 : * mut u8, arg1 :
+                        usize,) -> * mut u8 { $($path_to_types)*::
+                        _export_handle_request_cabi::<$ty > (arg0, arg1) } #[export_name
+                        = "cabi_post_component:extension/handlers@0.1.0#handle-request"]
+                        unsafe extern "C" fn _post_return_handle_request(arg0 : * mut
+                        u8,) { $($path_to_types)*:: __post_return_handle_request::<$ty >
                         (arg0) } };
                     };
                 }
@@ -248,17 +337,18 @@ pub(crate) use __export_extension_world_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.30.0:extension-world:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 439] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb1\x02\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 478] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xd8\x02\x01A\x02\x01\
 A\x06\x01B\x05\x01p}\x01r\x03\x05topics\x04peers\x04data\0\x04\0\x07message\x03\0\
 \x01\x01q\x02\x0dhandler-error\x01s\0\x08io-error\x01s\0\x04\0\x05error\x03\0\x03\
 \x03\x01\x1fcomponent:extension/types@0.1.0\x05\0\x02\x03\0\0\x07message\x02\x03\
-\0\0\x05error\x01B\x07\x02\x03\x02\x01\x01\x04\0\x07message\x03\0\0\x02\x03\x02\x01\
+\0\0\x05error\x01B\x0b\x02\x03\x02\x01\x01\x04\0\x07message\x03\0\0\x02\x03\x02\x01\
 \x02\x04\0\x05error\x03\0\x02\x01j\x01s\x01\x03\x01@\x01\x03msg\x01\0\x04\x04\0\x0e\
-handle-message\x01\x05\x04\x01\"component:extension/handlers@0.1.0\x05\x03\x04\x01\
-)component:extension/extension-world@0.1.0\x04\0\x0b\x15\x01\0\x0fextension-worl\
-d\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.215.0\x10\
-wit-bindgen-rust\x060.30.0";
+handle-message\x01\x05\x01p}\x01j\x01\x06\x01\x03\x01@\x01\x04data\x06\0\x07\x04\
+\0\x0ehandle-request\x01\x08\x04\x01\"component:extension/handlers@0.1.0\x05\x03\
+\x04\x01)component:extension/extension-world@0.1.0\x04\0\x0b\x15\x01\0\x0fextens\
+ion-world\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.\
+215.0\x10wit-bindgen-rust\x060.30.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {
