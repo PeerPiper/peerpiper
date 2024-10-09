@@ -5,10 +5,15 @@ pub(crate) mod bindgen {
     });
 }
 
+use std::mem;
+use std::ops::{Deref as _, DerefMut as _};
+use std::sync::Arc;
+
 use crate::error::Error;
-use crate::utils;
 
 use anyhow::Result;
+use tokio::sync::Mutex;
+use tokio::task::JoinSet;
 use wasmtime::component::{Component, Linker};
 use wasmtime::{Config, Engine, Store};
 use wasmtime_wasi::{DirPerms, FilePerms, ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};
@@ -21,6 +26,17 @@ const HOST_PATH: &str = "./exts";
 pub struct MyCtx {
     hit: bool,
     wasi_ctx: Context,
+}
+
+impl Default for MyCtx {
+    fn default() -> Self {
+        let table = ResourceTable::new();
+        let wasi = WasiCtxBuilder::new().build();
+        Self {
+            hit: false,
+            wasi_ctx: Context { table, wasi },
+        }
+    }
 }
 
 struct Context {
@@ -38,32 +54,32 @@ impl WasiView for MyCtx {
     }
 }
 
-/// Helper function to abstract the instantiation of the WASM module
-pub async fn instantiate(
-    engine: Engine,
-    component: Component,
-    wasi_ctx: MyCtx,
-) -> Result<(Store<MyCtx>, bindgen::ExtensionWorld)> {
-    let mut linker = Linker::new(&engine);
-
-    // add wasi io, filesystem, clocks, cli_base, random, poll
-    wasmtime_wasi::add_to_linker_async(&mut linker)?;
-
-    // link OUR imports, if applicable
-    //bindgen::ExtensionWorld::add_to_linker(&mut linker, |x| x)?;
-
-    let mut store = Store::new(&engine, wasi_ctx);
-
-    let reactor =
-        bindgen::ExtensionWorld::instantiate_async(&mut store, &component, &linker).await?;
-    Ok((store, reactor))
-}
+///// Helper function to abstract the instantiation of the WASM module
+//pub async fn instantiate(
+//    engine: Engine,
+//    component: Component,
+//    wasi_ctx: MyCtx,
+//) -> Result<(Store<MyCtx>, bindgen::ExtensionWorld)> {
+//    let mut linker = Linker::new(&engine);
+//
+//    // add wasi io, filesystem, clocks, cli_base, random, poll
+//    wasmtime_wasi::add_to_linker_async(&mut linker)?;
+//
+//    // link OUR imports, if applicable
+//    //bindgen::ExtensionWorld::add_to_linker(&mut linker, |x| x)?;
+//
+//    let mut store = Store::new(&engine, wasi_ctx);
+//
+//    let reactor =
+//        bindgen::ExtensionWorld::instantiate_async(&mut store, &component, &linker).await?;
+//    Ok((store, reactor))
+//}
 
 struct PluginsBuilder<T> {
     engine: Engine,
     wasm_bytes: Vec<Vec<u8>>,
     linker: Linker<T>,
-    store: Store<T>,
+    store: Arc<Mutex<Store<T>>>,
 }
 
 impl PluginsBuilder<MyCtx> {
@@ -100,7 +116,7 @@ impl PluginsBuilder<MyCtx> {
             engine,
             wasm_bytes: vec![],
             linker,
-            store,
+            store: Arc::new(Mutex::new(store)),
         })
     }
 
@@ -111,17 +127,42 @@ impl PluginsBuilder<MyCtx> {
 
     /// Build by instantiating the wasm extensions
     pub async fn build(mut self) -> Result<Plugins, Error> {
-        let wasm_byte = self.wasm_bytes.pop().unwrap();
-        let component = Component::from_binary(&self.engine, &wasm_byte)?;
+        //let wasm_byte = self.wasm_bytes.pop().unwrap();
+        //let component = Component::from_binary(&self.engine, &wasm_byte)?;
+        //
+        //let bindings =
+        //    bindgen::ExtensionWorld::instantiate_async(&mut self.store, &component, &self.linker)
+        //        .await?;
+        let mut set = JoinSet::new();
 
-        let bindings =
-            bindgen::ExtensionWorld::instantiate_async(&mut self.store, &component, &self.linker)
-                .await?;
+        // for each wasm_bytes, generate the bindings. instantiate_async is async, so it needs to be awaited
+        for wasm_bytes in self.wasm_bytes {
+            let component = Component::from_binary(&self.engine, &wasm_bytes)?;
+            let store = self.store.clone();
+            let linker = self.linker.clone();
+            set.spawn(async move {
+                let mut linker = linker;
+                let mut store = store.lock().await;
+                let store = &mut *store;
+                let bindings =
+                    bindgen::ExtensionWorld::instantiate_async(store, &component, &linker).await?;
+                Ok(bindings)
+            });
+        }
 
-        Ok(Plugins {
-            bindings: vec![bindings],
-            store: self.store,
-        })
+        let mut bindings: Vec<bindgen::ExtensionWorld> = Vec::new();
+
+        while let Some(res) = set.join_next().await {
+            let task_result: Result<bindgen::ExtensionWorld, Error> = res?;
+
+            let final_result = task_result?;
+
+            bindings.push(final_result);
+        }
+
+        // ditch the store Arc and Mutux, set store to inner
+        let store: Store<MyCtx> = mem::take(&mut *self.store.lock().await.deref_mut());
+        Ok(Plugins { bindings, store })
     }
 }
 
@@ -134,8 +175,26 @@ pub struct Plugins {
     store: Store<MyCtx>,
 }
 
+impl Plugins {
+    /// Handles the message
+    pub async fn handle_message(
+        &mut self,
+        msg: &bindgen::exports::component::extension::handlers::Message,
+    ) -> Result<String, Error> {
+        Ok(self
+            .bindings
+            .pop()
+            .unwrap()
+            .component_extension_handlers()
+            .call_handle_message(&mut self.store, msg)
+            .await??)
+    }
+}
+
 #[cfg(test)]
 mod tests {
+
+    use crate::utils;
 
     use super::*;
     use bindgen::exports::component::extension::handlers::Message;
@@ -156,13 +215,7 @@ mod tests {
             data: vec![1, 2, 3],
         };
 
-        let _r = plugins
-            .bindings
-            .pop()
-            .unwrap()
-            .component_extension_handlers()
-            .call_handle_message(&mut plugins.store, &msg.clone())
-            .await??;
+        let _r = plugins.handle_message(&msg).await?;
 
         Ok(())
     }
