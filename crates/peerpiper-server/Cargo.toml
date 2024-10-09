@@ -3,8 +3,6 @@ name = "peerpiper-server"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 peerpiper = { workspace = true }
 
@@ -24,14 +22,10 @@ thiserror = "1.0"
 cloudflare = { version = "0.12.0", optional = true, git = "https://github.com/cloudflare/cloudflare-rs.git" }
 dotenv = { version = "0.15", optional = true }
 
-# If extensions are enables, wasmtime is required
-wasmtime = { version = "25", optional = true }
-wasmtime-wasi = { version = "25", optional = true }
+# If plugins are enabled
+peerpiper-plugins = { path = "../peerpiper-plugins", optional = true }
 
 [features]
-default = ["extensions"]
+default = ["plugins"]
 cloudflare = ["dep:dotenv", "dep:cloudflare"]
-extensions = ["dep:wasmtime", "dep:wasmtime-wasi"]
-
-# [package.metadata.component.target.dependencies]
-# "component:extension" = { path = "wit/deps/extension-world" }
+plugins = ["dep:peerpiper-plugins"]

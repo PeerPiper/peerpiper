@@ -4291,6 +4291,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "peerpiper-plugins"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "lazy_static",
+ "thiserror",
+ "tokio",
+ "wasi-common",
+ "wasmtime 25.0.1",
+ "wasmtime-wasi 25.0.1",
+]
+
+[[package]]
 name = "peerpiper-server"
 version = "0.1.0"
 dependencies = [
@@ -4301,6 +4314,7 @@ dependencies = [
  "futures",
  "libp2p",
  "peerpiper",
+ "peerpiper-plugins",
  "rand",
  "thiserror",
  "tokio",
@@ -4308,8 +4322,6 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "wasmtime 25.0.1",
- "wasmtime-wasi 25.0.1",
 ]
 
 [[package]]
@@ -6554,6 +6566,33 @@ name = "wasi"
 version = "0.11.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
+
+[[package]]
+name = "wasi-common"
+version = "25.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4738c7ff6d16fa9f21efa1982a23d428072a930a50d7f1dcb2638e36a0a52085"
+dependencies = [
+ "anyhow",
+ "bitflags 2.6.0",
+ "cap-fs-ext",
+ "cap-rand",
+ "cap-std",
+ "cap-time-ext",
+ "fs-set-times",
+ "io-extras",
+ "io-lifetimes",
+ "log",
+ "once_cell",
+ "rustix",
+ "system-interface",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "wasmtime 25.0.1",
+ "wiggle 25.0.1",
+ "windows-sys 0.52.0",
+]
 
 [[package]]
 name = "wasm-bindgen"

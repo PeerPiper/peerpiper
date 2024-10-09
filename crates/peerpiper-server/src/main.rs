@@ -4,10 +4,6 @@
 #[cfg(feature = "cloudflare")]
 mod cloudflare;
 
-/// Extend the functionality of the peerpiper-server with custom handlers
-#[cfg(feature = "extensions")]
-mod extensions;
-
 use anyhow::Result;
 use axum::extract::State;
 use axum::response::{Html, IntoResponse};
@@ -22,6 +18,9 @@ use std::net::{Ipv4Addr, SocketAddr};
 use tower_http::cors::{Any, CorsLayer};
 
 const MAX_CHANNELS: usize = 16;
+
+/// The plugins directory
+const PLUGINS_DIR: &str = "./plugins";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -71,8 +70,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // create new Extensions struct with a given wasm file
     // for now, use ../../../target/wasm32-wasip1/debug/extension_echo.wasm
-    let path = std::env::current_dir()?;
-    //let extensions = extensions::Extensions::new("peerpiper_handler")?;
+
+    #[cfg(feature = "plugins")]
+    async fn load_plugins(wasms: &[&str]) -> Option<peerpiper_plugins::tokio::Plugins> {
+        let path = std::env::current_dir().ok()?;
+        let mut plugins = peerpiper_plugins::tokio::PluginsBuilder::new().unwrap();
+        // convert wasms to Paths, then use to load the wasm files
+        for wasm in wasms.iter() {
+            // join src/wasm
+            let path = path.join("src").join(wasm);
+            tracing::info!("Loading wasm file: {:?}", path);
+            let wasm_bytes = std::fs::read(path).unwrap();
+            plugins.with_wasm(wasm_bytes);
+        }
+
+        let runner = plugins.build().await.ok()?;
+        Some(runner)
+    }
+
+    #[cfg(feature = "plugins")]
+    let wasms = [
+        "../../../target/wasm32-wasip1/debug/extension_echo.wasm",
+        "../../../../bestsign/target/wasm32-wasip1/debug/plugin.wasm",
+    ];
+    #[cfg(feature = "plugins")]
+    let mut plugs = load_plugins(&wasms).await;
 
     loop {
         tokio::select! {
@@ -85,9 +107,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         // tracing::info!("Handler returned: {:?}", r);
                     }
                     Events::Inner(Libp2pEvent::InboundRequest {request, channel }) => {
-                        tracing::info!("InboundRequest: {:?}", request);
+                        tracing::trace!("InboundRequest: {:?}", request);
                         // iterate over extensions and allows them to handle fulfilling the
                         // request, if applicable to them.
+                        #[cfg(feature = "plugins")]
+                        {
+                            // if load_plugins(), iterate over them passing the request into each
+                            // and returning the response
+                            for plugin in plugs.iter_mut() {
+                                let result = plugin.handle_request(request.to_vec()).await?;
+                                println!("Plugin output: {:?}", result);
+                            }
+
+                        }
                     }
                     Events::Outer(PublicEvent::ListenAddr { address: _, .. }) => {
                         // TODO: Figure out what we want to do with the other new addresses.

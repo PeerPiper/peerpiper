@@ -545,7 +545,7 @@ impl EventLoop {
                 request_response::Message::Request {
                     request, channel, ..
                 } => {
-                    tracing::info!("Received request: {:?}", request.0);
+                    tracing::trace!("Received request: {:?}", request.0);
 
                     // this emits an event to the user so that they can
                     // respond to the request in the manner they see fit

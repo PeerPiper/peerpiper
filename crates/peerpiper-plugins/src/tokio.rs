@@ -161,6 +161,17 @@ impl Plugins {
             .call_handle_message(&mut self.store, msg)
             .await??)
     }
+
+    /// Handles requests
+    pub async fn handle_request(&mut self, data: Vec<u8>) -> Result<Vec<u8>, Error> {
+        Ok(self
+            .bindings
+            .pop()
+            .unwrap()
+            .component_extension_handlers()
+            .call_handle_request(&mut self.store, &data)
+            .await??)
+    }
 }
 
 #[cfg(test)]
