@@ -26,7 +26,7 @@ const PLUGINS_DIR: &str = "./plugins";
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(
-            "info,interop_tests_native=debug,peerpiper_native=debug,libp2p_webrtc=off,libp2p_ping=debug,libp2p_gossipsub=info",
+            "info,peerpiper_core=debug,interop_tests_native=debug,peerpiper_native=debug,libp2p_webrtc=off,libp2p_ping=debug,libp2p_gossipsub=info",
         )
         .try_init();
 
@@ -35,13 +35,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (tx, mut rx) = mpsc::channel(MAX_CHANNELS);
     let (_command_sender, command_receiver) = mpsc::channel(8);
     let tx_clone = tx.clone();
-    let (tx_client, _rx_client) = oneshot::channel();
+    let (tx_client, rx_client) = oneshot::channel();
 
     tokio::spawn(async move {
         peerpiper::start(tx_clone, command_receiver, tx_client)
             .await
             .unwrap();
     });
+
+    // await on rx_client to get the client handle
+    let mut client_handle = rx_client.await?;
 
     tracing::info!("Started.");
 
@@ -96,37 +99,52 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     #[cfg(feature = "plugins")]
     let mut plugs = load_plugins(&wasms).await;
 
+    let mut handle_event = async |msg| -> Result<(), Box<dyn std::error::Error>> {
+        match msg {
+            Events::Outer(
+                ref m @ PublicEvent::Message {
+                    ref topic,
+                    ref peer,
+                    ref data,
+                },
+            ) => {
+                tracing::info!(
+                    "Received msg on topic {:?} from peer: {:?}, {:?}",
+                    topic,
+                    peer,
+                    data
+                );
+            }
+            Events::Inner(Libp2pEvent::InboundRequest { request, channel }) => {
+                tracing::trace!("InboundRequest: {:?}", request);
+
+                #[cfg(feature = "plugins")]
+                {
+                    // set up a loop over the plugins, and call handle_request on each
+                    // then break loop and return the first Ok response,if Err keep looping
+                    // until all plugins have been called
+                    for plugin in plugs.iter_mut() {
+                        if let Ok(bytes) = plugin.handle_request(request.to_vec()).await {
+                            tracing::info!("Plugin output: {:?}", bytes);
+                            client_handle.respond_bytes(bytes, channel).await?;
+                            break;
+                        }
+                    }
+                }
+            }
+            Events::Outer(PublicEvent::ListenAddr { address: _, .. }) => {
+                // TODO: Figure out what we want to do with the other new addresses.
+                //handle_new_address(&address).await;
+            }
+            _ => {}
+        }
+        Ok(())
+    };
+
     loop {
         tokio::select! {
             Some(msg) = rx.next() => {
-                match msg {
-                    Events::Outer(ref m @ PublicEvent::Message { ref topic, ref peer, ref data }) => {
-                        tracing::info!("Received msg on topic {:?} from peer: {:?}, {:?}", topic, peer, data);
-                        //let res = extensions.handle_message(extensions::Message { topic: topic.clone(), peer: peer.clone(), data: data.clone() });
-                        // let r = handler.handle(m.clone()).await?;
-                        // tracing::info!("Handler returned: {:?}", r);
-                    }
-                    Events::Inner(Libp2pEvent::InboundRequest {request, channel }) => {
-                        tracing::trace!("InboundRequest: {:?}", request);
-                        // iterate over extensions and allows them to handle fulfilling the
-                        // request, if applicable to them.
-                        #[cfg(feature = "plugins")]
-                        {
-                            // if load_plugins(), iterate over them passing the request into each
-                            // and returning the response
-                            for plugin in plugs.iter_mut() {
-                                let result = plugin.handle_request(request.to_vec()).await?;
-                                println!("Plugin output: {:?}", result);
-                            }
-
-                        }
-                    }
-                    Events::Outer(PublicEvent::ListenAddr { address: _, .. }) => {
-                        // TODO: Figure out what we want to do with the other new addresses.
-                        //handle_new_address(&address).await;
-                    }
-                    _ => {}
-                }
+                handle_event(msg).await?;
             }
             _ = tokio::signal::ctrl_c() => {
                 tracing::info!("Received ctrl-c");

@@ -88,7 +88,7 @@ impl Client {
         receiver.await.map_err(Error::OneshotCanceled)?
     }
     /// Respond with a file to a request
-    pub async fn respond_file(
+    pub async fn respond_bytes(
         &mut self,
         bytes: Vec<u8>,
         channel: ResponseChannel<PeerResponse>,
@@ -313,7 +313,7 @@ impl EventLoop {
         }
 
         records.into_iter().for_each(|record| {
-            tracing::trace!(
+            tracing::debug!(
                 "Kad Key/Value: {:?} {:?}",
                 record.key.to_vec(),
                 record.value
@@ -568,10 +568,15 @@ impl EventLoop {
             },
             SwarmEvent::Behaviour(BehaviourEvent::PeerRequest(
                 request_response::Event::OutboundFailure {
-                    request_id, error, ..
+                    request_id,
+                    error,
+                    peer,
+                    ..
                 },
             )) => {
-                tracing::error!("Request failed, couldn't SEND JEEVES: {error} on {request_id}");
+                tracing::error!(
+                    "Request failed, couldn't SEND JEEVES to peer {peer}: {error} on request_id: {request_id}"
+                );
                 self.pending_requests
                     .remove(&request_id)
                     .ok_or(Error::StaticStr("Remove failed"))?
