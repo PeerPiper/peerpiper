@@ -9,7 +9,7 @@ test:
   wasm-pack test --headless --chrome
 
 # npm publish the package in ./pkg/ directory
-publish: 
+publish: build 
   npm publish ./pkg --access public
 
 # Update ChromeDriver

@@ -38,7 +38,7 @@ cfg_if::cfg_if! {
             // tracing_wasm::set_as_global_default_with_config(layer_config);
             console_error_panic_hook::set_once();
             tracing_wasm::set_as_global_default();
-            tracing::info!("Initialized logging");
+            tracing::info!("Initialized logging peerpiper-browser v0.1.4");
         }
     } else {
         fn init_log() {}
