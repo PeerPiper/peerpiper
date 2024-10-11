@@ -2,7 +2,6 @@
 
 use cid::Cid;
 pub use peerpiper_core::events::PeerPiperCommand;
-use wasm_bindgen::prelude::*;
 use wasm_bindgen::{JsError, JsValue};
 use wasm_bindgen_test::wasm_bindgen_test_configure;
 use wasm_bindgen_test::*;
@@ -137,7 +136,7 @@ async fn test_chunker() -> Result<(), JsValue> {
 #[wasm_bindgen_test]
 async fn test_commander() -> Result<(), JsValue> {
     // we need to create a new PeerPiper struct before we begen
-    let mut peerpiper = peerpiper_browser::bindgen::PeerPiper::new("peerpiper".to_string())
+    let peerpiper = peerpiper_browser::bindgen::PeerPiper::new("peerpiper".to_string())
         .await
         .map_err(|err| JsError::new(&format!("Failed to create PeerPiper: {:?}", err)))?;
 
