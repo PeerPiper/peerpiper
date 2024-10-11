@@ -107,13 +107,17 @@ impl<H: SystemCommandHandler> Commander<H> {
 /// System specific implementation must have a put and get command to save and retrieve data.
 pub trait SystemCommandHandler {
     type Error: std::error::Error;
+
+    /// Save the bytes to the system, return the Cid
     fn put(
         &self,
         bytes: Vec<u8>,
     ) -> impl std::future::Future<Output = Result<Cid, Self::Error>> + CondSend;
+
+    /// Get the bytes from the system using Cid bytes
     fn get(
         &self,
-        key: String,
+        key: Vec<u8>,
     ) -> impl std::future::Future<Output = Result<Vec<u8>, Self::Error>> + CondSend;
 }
 

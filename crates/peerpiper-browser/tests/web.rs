@@ -1,8 +1,8 @@
 #![cfg(target_arch = "wasm32")] // <== So that peerpiper_browser::bindgen references are valid
 
 use cid::Cid;
-use peerpiper_browser::bindgen;
 pub use peerpiper_core::events::PeerPiperCommand;
+use wasm_bindgen::prelude::*;
 use wasm_bindgen::{JsError, JsValue};
 use wasm_bindgen_test::wasm_bindgen_test_configure;
 use wasm_bindgen_test::*;
@@ -158,36 +158,25 @@ async fn test_commander() -> Result<(), JsValue> {
         ))
     })?;
 
-    let cid = peerpiper.command(js_cmd).await;
+    let cid = peerpiper.command(js_cmd).await?;
 
-    let cid: Cid = serde_wasm_bindgen::from_value(cid).map_err(|err| {
-        JsError::new(&format!(
-            "Failed to deserialize Cid from JsValue: {:?}",
-            err.to_string()
-        ))
-    })?;
-
-    let cid = cid.to_string();
+    let cid: Cid = serde_wasm_bindgen::from_value(cid)?;
 
     // now get the data back from cid string
-    let command = PeerPiperCommand::System(peerpiper_core::events::SystemCommand::Get { key: cid });
+    let command =
+        PeerPiperCommand::System(peerpiper_core::events::SystemCommand::Get { key: cid.into() });
 
-    let json = serde_wasm_bindgen::to_value(&command).map_err(|err| {
+    let json = serde_wasm_bindgen::to_value(&command).map_err(|e| {
         JsError::new(&format!(
             "Failed to serialize PeerPiperCommand::SystemCommands: {:?}",
-            err.to_string()
+            e.to_string()
         ))
     })?;
 
-    let data = peerpiper.command(json).await;
+    let data = peerpiper.command(json).await?;
 
     // data should be a JsValue that converts to bytes vector which matches the original bytes
-    let data: Vec<u8> = serde_wasm_bindgen::from_value(data).map_err(|err| {
-        JsError::new(&format!(
-            "Failed to deserialize data from JsValue: {:?}",
-            err.to_string()
-        ))
-    })?;
+    let data: Vec<u8> = serde_wasm_bindgen::from_value(data)?;
 
     assert_eq!(data, bytes);
 

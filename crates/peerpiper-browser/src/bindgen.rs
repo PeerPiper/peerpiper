@@ -7,10 +7,8 @@ use futures::{
     channel::{mpsc, oneshot},
     StreamExt,
 };
-use peerpiper_core::events::{PeerPiperCommand, SystemCommand};
+use peerpiper_core::events::PeerPiperCommand;
 use peerpiper_core::Commander;
-use serde::ser::Serialize;
-use serde_wasm_bindgen::Serializer;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 

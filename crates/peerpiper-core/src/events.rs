@@ -122,7 +122,7 @@ pub enum PeerPiperCommand {
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub enum SystemCommand {
     Put { bytes: Vec<u8> },
-    Get { key: String },
+    Get { key: Vec<u8> },
 }
 
 pub mod test_helpers {

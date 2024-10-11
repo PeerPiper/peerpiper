@@ -10,7 +10,6 @@ use futures::{
     SinkExt,
 };
 use libp2p::core::transport::ListenerId;
-use libp2p::core::ConnectedPoint;
 use libp2p::kad::store::RecordStore;
 use libp2p::multiaddr::Protocol;
 use libp2p::request_response::{self, OutboundRequestId, ResponseChannel};

@@ -99,8 +99,8 @@ impl SystemCommandHandler for BrowserBlockStore {
         Ok(root_cid)
     }
 
-    async fn get(&self, cid: String) -> Result<Vec<u8>, Self::Error> {
-        let cid = Cid::try_from(cid).map_err(|err| {
+    async fn get(&self, key: Vec<u8>) -> Result<Vec<u8>, Self::Error> {
+        let cid = Cid::try_from(key).map_err(|err| {
             error::Error::Anyhow(anyhow::Error::msg(format!("Failed to parse CID: {}", err)))
         })?;
         let file = UnixFsFile::load(&cid, &self).await.map_err(|err| {
