@@ -16,7 +16,7 @@ use wasmtime::{Config, Engine, Store};
 use wasmtime_wasi::{DirPerms, FilePerms, ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};
 
 /// The host path for saving files
-const HOST_PATH: &str = "./exts";
+const HOST_PATH: &str = "./plugin_data";
 
 /// Struct to hold the data we want to pass in
 /// plus the WASI properties in order to use WASI
@@ -152,6 +152,10 @@ impl<T: Default + Send + Clone> Plugin<T> {
     /// Creates and instantiates a new [Plugin]
     pub async fn new(env: Environment<'_, T>, wasm_bytes: &[u8], state: T) -> Result<Self, Error> {
         let component = Component::from_binary(&env.engine, wasm_bytes)?;
+
+        // ensure the HOST_PATH exists, if not, create it
+        std::fs::create_dir_all(HOST_PATH)?;
+
         let wasi = WasiCtxBuilder::new()
             .inherit_stdio()
             .inherit_stdout()
@@ -303,6 +307,8 @@ mod tests {
             );
             assert_eq!(data.inner.hit, i == 0);
         }
+
+        std::fs::remove_dir_all(HOST_PATH)?;
 
         Ok(())
     }
