@@ -7,3 +7,4 @@ dist/peerpiper_wallet_aggregate.wasm
 crates/extension-echo/tests/exts
 crates/peerpiper-server/exts
 crates/peerpiper-plugins/exts
+crates/peerpiper-plugins/peerpiper_plugins/log.txt
