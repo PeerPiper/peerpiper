@@ -12,7 +12,7 @@ pub enum Error {
 
     /// tokio_two Error
     #[error("Plugin Component Error: {0}")]
-    TokioTwo(#[from] crate::tokio::bindgen::component::extension::types::Error),
+    TokioTwo(#[from] crate::tokio_compat::bindgen::component::extension::types::Error),
 
     /// sync modul errors
     #[error("Plugin Component Error: {0}")]

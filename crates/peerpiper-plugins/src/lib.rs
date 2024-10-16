@@ -2,7 +2,7 @@
 
 mod error;
 pub mod sync;
-pub mod tokio;
+pub mod tokio_compat;
 mod utils;
 
 pub use error::Error;
