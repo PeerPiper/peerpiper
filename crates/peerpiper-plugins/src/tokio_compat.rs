@@ -243,13 +243,13 @@ impl<T: Default + Send + Clone> Environment<T> {
     ///     // Your custom state goes here, if any
     /// }
     ///
-    /// let env: Environment<'_, State> = Environment::new()
+    /// let env: Environment<State> = Environment::new()
     /// .unwrap()
-    /// .with_vars(&[("NAME", "Doug"), ("AGE", "42")]);
+    /// .with_vars(vec![
+    ///     ("NAME".to_owned(), "Doug".to_owned()),
+    ///     ("AGE".to_owned(), "42".to_owned()),
+    /// ]);
     ///
-    /// # let env = Environment::<'_, State>::new()
-    /// # .unwrap()
-    /// # .with_vars(&[("NAME", "Doug"), ("AGE", "42")]);
     /// # });
     /// ```
     pub fn with_vars(mut self, vars: Vec<(String, String)>) -> Self {
