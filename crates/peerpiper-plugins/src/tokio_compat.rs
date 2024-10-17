@@ -150,7 +150,7 @@ pub struct Plugin<T: Default> {
 
 impl<T: Default + Send + Clone> Plugin<T> {
     /// Creates and instantiates a new [Plugin]
-    pub async fn new(env: Environment<'_, T>, wasm_bytes: &[u8], state: T) -> Result<Self, Error> {
+    pub async fn new(env: Environment<T>, wasm_bytes: &[u8], state: T) -> Result<Self, Error> {
         let component = Component::from_binary(&env.engine, wasm_bytes)?;
 
         // ensure the HOST_PATH exists, if not, create it
@@ -159,7 +159,7 @@ impl<T: Default + Send + Clone> Plugin<T> {
         let wasi = WasiCtxBuilder::new()
             .inherit_stdio()
             .inherit_stdout()
-            .envs(env.vars.unwrap_or_default())
+            .envs(&env.vars.unwrap_or_default())
             .preopened_dir(HOST_PATH, ".", DirPerms::all(), FilePerms::all())?
             .build();
 
@@ -202,13 +202,13 @@ impl<T: Default + Send + Clone> Plugin<T> {
 
 /// [Environment] struct to hold the engine and Linker
 #[derive(Clone)]
-pub struct Environment<'a, T: Default + Clone> {
+pub struct Environment<T: Default + Clone> {
     engine: Engine,
     linker: Arc<Linker<MyCtx<T>>>,
-    vars: Option<&'a [(&'a str, &'a str)]>,
+    vars: Option<Vec<(String, String)>>,
 }
 
-impl<'a, T: Default + Send + Clone> Environment<'a, T> {
+impl<T: Default + Send + Clone> Environment<T> {
     /// Creates a new [Environment]
     pub fn new() -> Result<Self, Error> {
         let mut config = Config::new();
@@ -252,7 +252,7 @@ impl<'a, T: Default + Send + Clone> Environment<'a, T> {
     /// # .with_vars(&[("NAME", "Doug"), ("AGE", "42")]);
     /// # });
     /// ```
-    pub fn with_vars(mut self, vars: &'a [(&'a str, &'a str)]) -> Self {
+    pub fn with_vars(mut self, vars: Vec<(String, String)>) -> Self {
         self.vars = Some(vars);
         self
     }
@@ -283,10 +283,16 @@ mod tests {
             data: vec![1, 2, 3],
         };
 
-        let env = Environment::<'_, State>::new()?;
-        let _env = env.with_vars(&[("NAME", "Doug"), ("AGE", "42")]);
+        let env = Environment::<State>::new()?;
+        let _env = env.with_vars(vec![
+            ("NAME".to_owned(), "Doug".to_owned()),
+            ("AGE".to_owned(), "42".to_owned()),
+        ]);
 
-        let env = Environment::new()?.with_vars(&[("NAME", "Doug"), ("AGE", "42")]);
+        let env = Environment::new()?.with_vars(vec![
+            ("NAME".to_owned(), "Doug".to_owned()),
+            ("AGE".to_owned(), "42".to_owned()),
+        ]);
 
         // enumerate insteead, so we can test State hit value
         for (i, (wasm, input)) in [

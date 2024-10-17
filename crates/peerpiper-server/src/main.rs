@@ -14,6 +14,7 @@ use futures::StreamExt;
 use libp2p::multiaddr::{Multiaddr, Protocol};
 use peerpiper::core::events::{Events, PublicEvent};
 use peerpiper::core::libp2p::api::Libp2pEvent;
+use peerpiper_plugins::tokio_compat::Plugin;
 use std::net::{Ipv4Addr, SocketAddr};
 use tower_http::cors::{Any, CorsLayer};
 
@@ -21,6 +22,11 @@ const MAX_CHANNELS: usize = 16;
 
 /// The plugins directory
 const PLUGINS_DIR: &str = "./plugins";
+
+#[derive(Debug, Default, Clone)]
+struct PluginsState {
+    //
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -67,37 +73,42 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     handle_new_address(&address).await;
 
-    // TODO: Insert handler (WIT components) here.
-    // let bytes = peerpiper::handler::utils::get_wasm_bytes("peerpiper_handler")?;
-    // let handler = peerpiper::handler::Handler::new(bytes)?;
+    // Use WIT component handlers here.
+    async fn load_plugins(
+        wasms: &[&str],
+    ) -> Vec<peerpiper_plugins::tokio_compat::Plugin<PluginsState>> {
+        let mut plugins = Vec::new();
 
-    // create new Extensions struct with a given wasm file
-    // for now, use ../../../target/wasm32-wasip1/debug/extension_echo.wasm
+        // if env err, return emtpy vec from load_plugins() fn
+        let Ok(env) = peerpiper_plugins::tokio_compat::Environment::<PluginsState>::new() else {
+            return plugins;
+        };
 
-    #[cfg(feature = "plugins")]
-    async fn load_plugins(wasms: &[&str]) -> Option<peerpiper_plugins::tokio::Plugins> {
-        let path = std::env::current_dir().ok()?;
-        let mut plugins = peerpiper_plugins::tokio::PluginsBuilder::new().unwrap();
+        let Ok(path) = std::env::current_dir() else {
+            return plugins;
+        };
+
         // convert wasms to Paths, then use to load the wasm files
         for wasm in wasms.iter() {
             // join src/wasm
             let path = path.join("src").join(wasm);
             tracing::info!("Loading wasm file: {:?}", path);
             let wasm_bytes = std::fs::read(path).unwrap();
-            plugins.with_wasm(wasm_bytes);
+            let Ok(plugin) = Plugin::new(env.clone(), &wasm_bytes, PluginsState::default()).await
+            else {
+                continue;
+            };
+            plugins.push(plugin);
         }
 
-        let runner = plugins.build().await.ok()?;
-        Some(runner)
+        plugins
     }
 
-    #[cfg(feature = "plugins")]
     let wasms = [
         "../../../target/wasm32-wasip1/debug/extension_echo.wasm",
         "../../../../bestsign/target/wasm32-wasip1/debug/plugin.wasm",
     ];
-    #[cfg(feature = "plugins")]
-    let mut plugs = load_plugins(&wasms).await;
+    let mut plugins = load_plugins(&wasms).await;
 
     let mut handle_event = async |msg| -> Result<(), Box<dyn std::error::Error>> {
         match msg {
@@ -118,17 +129,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Events::Inner(Libp2pEvent::InboundRequest { request, channel }) => {
                 tracing::trace!("InboundRequest: {:?}", request);
 
-                #[cfg(feature = "plugins")]
-                {
-                    // set up a loop over the plugins, and call handle_request on each
-                    // then break loop and return the first Ok response,if Err keep looping
-                    // until all plugins have been called
-                    for plugin in plugs.iter_mut() {
-                        if let Ok(bytes) = plugin.handle_request(request.to_vec()).await {
-                            tracing::info!("Plugin output: {:?}", bytes);
-                            client_handle.respond_bytes(bytes, channel).await?;
-                            break;
-                        }
+                // set up a loop over the plugins, and call handle_request on each
+                // then break loop and return the first Ok response,if Err keep looping
+                // until all plugins have been called
+                for plugin in &mut plugins {
+                    if let Ok(bytes) = plugin.handle_request(request.to_vec()).await {
+                        tracing::info!("Plugin output: {:?}", bytes);
+                        client_handle.respond_bytes(bytes, channel).await?;
+                        break;
                     }
                 }
             }
@@ -144,7 +152,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         tokio::select! {
             Some(msg) = rx.next() => {
-                handle_event(msg).await?;
+                if let Err(e) = handle_event(msg).await {
+                    tracing::error!(%e, "Error handling event");
+                }
             }
             _ = tokio::signal::ctrl_c() => {
                 tracing::info!("Received ctrl-c");
