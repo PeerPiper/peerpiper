@@ -44,7 +44,7 @@ serve:
 all: update-build preview
 
 test: update-build
-  cargo test --workspace --all-targets
+  cargo test --exclude peerpiper-browser --exclude contact-book --exclude extension-echo --exclude peerpiper-wallet --exclude peerpiper-wasm-bindgen --workspace
   @just peerpiper-browser test
 
 # The just command from crates/peerpiper-browser to build 

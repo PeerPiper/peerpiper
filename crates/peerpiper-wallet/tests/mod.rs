@@ -155,7 +155,7 @@ mod aggregate_peerpiper_tests {
         // get the target/wasm32-wasi/debug/CARGO_PKG_NAME.wasm file
         let pkg_name = std::env::var("CARGO_PKG_NAME")?.replace('-', "_");
         let workspace = workspace_dir();
-        let wasm_path = format!("target/wasm32-wasi/debug/{}.wasm", pkg_name);
+        let wasm_path = format!("target/wasm32-wasip1/debug/{}.wasm", pkg_name);
         let wasm_path = workspace.join(wasm_path);
 
         let mut config = Config::new();
@@ -177,7 +177,7 @@ mod aggregate_peerpiper_tests {
         let state = MyCtx { table, ctx: wasi };
         let mut store = Store::new(&engine, state);
 
-        let (bindings, _) = bindgen::Peerpiper::instantiate(&mut store, &component, &linker)?;
+        let bindings = bindgen::Peerpiper::instantiate(&mut store, &component, &linker)?;
 
         // Use bindings
         // Call render with initial data, should return all HTML

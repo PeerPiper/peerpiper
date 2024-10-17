@@ -1,7 +1,4 @@
-#[cfg(target_arch = "wasm32")] // <== Required otherwise  workspace build break
 pub mod bindgen;
-
-#[cfg(target_arch = "wasm32")] // <== Required otherwise  workspace build break
 pub mod blockstore;
 
 mod error;
