@@ -115,6 +115,14 @@ pub enum PeerPiperCommand {
         /// The Record value bytes (ie. the CID)
         value: Vec<u8>,
     },
+    /// Gets the Providers of a Record on the DHT
+    GetProviders {
+        key: Vec<u8>,
+    },
+    /// Start Providing a Record on the DHT
+    StartProviding {
+        key: Vec<u8>,
+    },
 }
 
 /// System Commands that do not go to the network, but come from componets to direct
@@ -182,7 +190,7 @@ mod tests {
                 bytes: vec![1, 2, 3],
             }),
             PeerPiperCommand::System(SystemCommand::Get {
-                key: "test".to_string(),
+                key: "test".to_string().into(),
             }),
             PeerPiperCommand::ShareAddress,
             PeerPiperCommand::PeerRequest {

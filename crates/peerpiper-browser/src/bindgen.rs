@@ -139,14 +139,13 @@ impl PeerPiper {
         //        .expect("Failed to serialize example put command")
         //);
         //
-        //tracing::info!(
-        //    "Example RequestResponse Command: {:?}",
-        //    serde_wasm_bindgen::to_value(&PeerPiperCommand::PeerRequest {
-        //        request: "what is your fave colour?".as_bytes().to_vec(),
-        //        peer_id: "123DfQm3...".to_string(),
-        //    })
-        //    .expect("Failed to serialize example request response command")
-        //);
+        tracing::info!(
+            "Example GetProviders Command: {:?}",
+            serde_wasm_bindgen::to_value(&PeerPiperCommand::GetProviders { key: vec![1, 2, 3] })
+                .expect("Failed to serialize example request response command")
+        );
+
+        tracing::info!("[ppb v0.1.6] Received command: {:?}", &cmd);
 
         let command: PeerPiperCommand = serde_wasm_bindgen::from_value(cmd)?;
 
@@ -159,9 +158,16 @@ impl PeerPiper {
 
         // convert the ReturnValues enum to a JsValue (Cid as String, Vec<u8> as Uint8Array, or null)
         let js_val = match maybe_result {
+            peerpiper_core::ReturnValues::None => JsValue::null(),
             peerpiper_core::ReturnValues::Data(data) => serde_wasm_bindgen::to_value(&data)?,
             peerpiper_core::ReturnValues::ID(cid) => serde_wasm_bindgen::to_value(&cid)?,
-            peerpiper_core::ReturnValues::None => JsValue::null(),
+            peerpiper_core::ReturnValues::Providers(providers) => {
+                let js_providers = js_sys::Array::new();
+                for provider in providers {
+                    js_providers.push(&JsValue::from_str(&provider.to_string()));
+                }
+                js_providers.into()
+            }
         };
         Ok(js_val)
     }

@@ -16,6 +16,7 @@ use peerpiper::core::events::{Events, PublicEvent};
 use peerpiper::core::libp2p::api::Libp2pEvent;
 use peerpiper_plugins::tokio_compat::Plugin;
 use std::net::{Ipv4Addr, SocketAddr};
+use std::path::Path;
 use tower_http::cors::{Any, CorsLayer};
 
 const MAX_CHANNELS: usize = 16;
@@ -26,6 +27,12 @@ const PLUGINS_DIR: &str = "./plugins";
 #[derive(Debug, Default, Clone)]
 struct PluginsState {
     //
+}
+
+impl peerpiper_plugins::tokio_compat::Inner for PluginsState {
+    fn start_providing(&mut self, key: Vec<u8>) {
+        // tracing::info!("State: {:?}", key);
+    }
 }
 
 #[tokio::main]
@@ -80,7 +87,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut plugins = Vec::new();
 
         // if env err, return emtpy vec from load_plugins() fn
-        let Ok(env) = peerpiper_plugins::tokio_compat::Environment::<PluginsState>::new() else {
+        let Ok(env) = peerpiper_plugins::tokio_compat::Environment::<PluginsState>::new(
+            Path::new(PLUGINS_DIR).to_path_buf(),
+        ) else {
             return plugins;
         };
 
@@ -94,7 +103,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let path = path.join("src").join(wasm);
             tracing::info!("Loading wasm file: {:?}", path);
             let wasm_bytes = std::fs::read(path).unwrap();
-            let Ok(plugin) = Plugin::new(env.clone(), &wasm_bytes, PluginsState::default()).await
+            let Ok(plugin) =
+                Plugin::new(env.clone(), "a_wasm", &wasm_bytes, PluginsState::default()).await
             else {
                 continue;
             };

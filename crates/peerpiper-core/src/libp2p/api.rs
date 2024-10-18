@@ -16,7 +16,7 @@ use libp2p::request_response::{self, OutboundRequestId, ResponseChannel};
 use libp2p::swarm::{Swarm, SwarmEvent};
 use libp2p::{identify, kad, ping, Multiaddr, PeerId};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::net::Ipv4Addr;
 use std::ops::Deref;
 use std::time::Duration;
@@ -97,6 +97,18 @@ impl Client {
             .await
             .map_err(Error::SendError)
     }
+
+    /// Get a record from the DHT given the key
+    pub(crate) async fn get_providers(&mut self, key: Vec<u8>) -> Result<HashSet<PeerId>, Error> {
+        let (sender, receiver) = oneshot::channel();
+        self.command_sender
+            .send(Command::GetProviders { key, sender })
+            .await
+            .map_err(Error::SendError)?;
+        receiver.await.map_err(Error::OneshotCanceled)
+    }
+
+    /// Add a peer to the routing table
     pub async fn add_peer(&mut self, peer_id: PeerId) -> Result<(), Error> {
         self.command_sender
             .send(Command::AddPeer { peer_id })
@@ -201,6 +213,15 @@ enum Command {
         key: Vec<u8>,
         value: Vec<u8>,
     },
+    /// Get a record from the DHT
+    GetProviders {
+        key: Vec<u8>,
+        sender: oneshot::Sender<HashSet<PeerId>>,
+    },
+    /// Start providing a key on the DHT
+    StartProviding {
+        key: Vec<u8>,
+    },
 }
 
 /// Libp2p Events
@@ -210,6 +231,11 @@ pub enum Libp2pEvent {
     InboundRequest {
         request: PeerRequest,
         channel: ResponseChannel<PeerResponse>,
+    },
+    /// DHT Provider Request for when someone asks for a record
+    DhtProviderRequest {
+        key: Vec<u8>,
+        channel: ResponseChannel<Vec<u8>>,
     },
 }
 
@@ -248,6 +274,7 @@ impl From<PeerPiperCommand> for Command {
             PeerPiperCommand::Unsubscribe { topic } => Command::Unsubscribe { topic },
             PeerPiperCommand::ShareAddress => Command::ShareMultiaddr,
             PeerPiperCommand::PutRecord { key, value } => Command::PutRecord { key, value },
+            PeerPiperCommand::StartProviding { key } => Command::StartProviding { key },
             _ => unimplemented!(),
         }
     }
@@ -266,6 +293,9 @@ pub struct EventLoop {
     event_sender: mpsc::Sender<Events>,
     /// Jeeeves Tracking
     pending_requests: HashMap<OutboundRequestId, oneshot::Sender<Result<Vec<u8>, Error>>>,
+
+    /// GetProviders tracking
+    pending_get_providers: HashMap<kad::QueryId, oneshot::Sender<HashSet<PeerId>>>,
 }
 
 impl EventLoop {
@@ -281,6 +311,7 @@ impl EventLoop {
             command_receiver,
             event_sender,
             pending_requests: HashMap::new(),
+            pending_get_providers: Default::default(),
         }
     }
 
@@ -308,12 +339,12 @@ impl EventLoop {
         let records = self.swarm.behaviour_mut().kad.store_mut().records();
 
         if records.clone().count() == 0 {
-            tracing::trace!("Kad store is empty");
+            tracing::debug!("Kad store is empty");
         }
 
         records.into_iter().for_each(|record| {
             tracing::debug!(
-                "Kad Key/Value: {:?} {:?}",
+                "Kad Key: {:?} \n\n Value: {:?}",
                 record.key.to_vec(),
                 record.value
             );
@@ -673,6 +704,33 @@ impl EventLoop {
                     }
                 }
             }
+            SwarmEvent::Behaviour(BehaviourEvent::Kad(kad::Event::OutboundQueryProgressed {
+                id,
+                result:
+                    kad::QueryResult::GetProviders(Ok(kad::GetProvidersOk::FoundProviders {
+                        providers,
+                        ..
+                    })),
+                ..
+            })) => {
+                if let Some(sender) = self.pending_get_providers.remove(&id) {
+                    sender.send(providers).expect("Receiver not to be dropped");
+
+                    // Finish the query. We are only interested in the first result.
+                    self.swarm
+                        .behaviour_mut()
+                        .kad
+                        .query_mut(&id)
+                        .unwrap()
+                        .finish();
+                }
+            }
+            SwarmEvent::Behaviour(BehaviourEvent::Kad(kad::Event::InboundRequest { request })) => {
+                tracing::debug!("Kademlia InboundRequest event");
+            }
+            SwarmEvent::Behaviour(BehaviourEvent::Kad(evt)) => {
+                tracing::debug!("Kademlia event: {:?}", evt);
+            }
             // SwarmEvent::Behaviour(BehaviourEvent::Kademlia(
             //     libp2p::kad::KademliaEvent::OutboundQueryProgressed {
             //         result: libp2p::kad::QueryResult::Bootstrap(res),
@@ -826,6 +884,16 @@ impl EventLoop {
                     .behaviour_mut()
                     .kad
                     .put_record(record, kad::Quorum::One);
+            }
+            Command::GetProviders { key, sender } => {
+                let query_id = self.swarm.behaviour_mut().kad.get_providers(key.into());
+                self.pending_get_providers.insert(query_id, sender);
+            }
+            Command::StartProviding { key } => {
+                tracing::info!("API: Handling StartProviding command");
+                if let Err(e) = self.swarm.behaviour_mut().kad.start_providing(key.into()) {
+                    tracing::error!("Failed to start providing: {e}");
+                }
             }
         }
     }

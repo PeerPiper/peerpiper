@@ -8,12 +8,13 @@ use ::libp2p::PeerId;
 use events::{PeerPiperCommand, SystemCommand};
 use futures::channel::mpsc;
 use futures::SinkExt;
+use std::collections::HashSet;
 use std::str::FromStr;
 use wnfs_common::libipld::Cid;
 use wnfs_common::utils::CondSend;
 
 pub struct Commander<H: SystemCommandHandler> {
-    network: Option<mpsc::Sender<PeerPiperCommand>>,
+    swarm_sendr: Option<mpsc::Sender<PeerPiperCommand>>,
     system_command_handler: H,
     client: Option<Client>,
 }
@@ -21,7 +22,7 @@ pub struct Commander<H: SystemCommandHandler> {
 impl<H: SystemCommandHandler> Commander<H> {
     pub fn new(system_command_handler: H) -> Self {
         Self {
-            network: None,
+            swarm_sendr: None,
             client: None,
             system_command_handler,
         }
@@ -29,7 +30,7 @@ impl<H: SystemCommandHandler> Commander<H> {
 
     /// Set the network sender, the channel used to send commands to the network
     pub fn with_network(&mut self, network: mpsc::Sender<PeerPiperCommand>) -> &mut Self {
-        self.network = Some(network);
+        self.swarm_sendr = Some(network);
         self
     }
 
@@ -43,6 +44,7 @@ impl<H: SystemCommandHandler> Commander<H> {
 pub enum ReturnValues {
     Data(Vec<u8>),
     ID(Cid),
+    Providers(HashSet<PeerId>),
     None,
 }
 
@@ -83,14 +85,24 @@ impl<H: SystemCommandHandler> Commander<H> {
                         .to_string(),
                 )),
             },
+            PeerPiperCommand::GetProviders { key } => match &mut self.client {
+                Some(client) => {
+                    let providers = client.get_providers(key).await?;
+                    Ok(ReturnValues::Providers(providers))
+                }
+                None => Err(error::Error::String(
+                    "Tried to send a network command, but network is not initialized".to_string(),
+                )),
+            },
             // The follow commands get sent over the network and do not expect a direct response
             PeerPiperCommand::Publish { .. }
             | PeerPiperCommand::Subscribe { .. }
             | PeerPiperCommand::Unsubscribe { .. }
             | PeerPiperCommand::ShareAddress { .. }
-            | PeerPiperCommand::PutRecord { .. } => {
-                match &mut self.network {
-                    Some(network) => network.send(command).await?,
+            | PeerPiperCommand::PutRecord { .. }
+            | PeerPiperCommand::StartProviding { .. } => {
+                match &mut self.swarm_sendr {
+                    Some(swarm_sendr) => swarm_sendr.send(command).await?,
                     None => {
                         return Err(error::Error::String(
                             "Tried to send a network command, but network is not initialized"

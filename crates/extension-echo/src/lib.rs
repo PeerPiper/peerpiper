@@ -5,6 +5,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 
 use bindings::{
+    component::extension::peer_piper_commands,
     component::extension::types::{Error, Message},
     exports::component::extension::handlers::Guest,
 };
@@ -36,6 +37,7 @@ impl Guest for Component {
     /// Respond to a request with the given bytes
     fn handle_request(data: Vec<u8>) -> Result<Vec<u8>, Error> {
         println!("Received request: {:?}", data);
+        // peer_piper_commands::start_providing(&data);
         Ok(data)
     }
 }

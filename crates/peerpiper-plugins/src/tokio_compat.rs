@@ -10,7 +10,8 @@ pub(crate) mod bindgen {
 use super::Error;
 
 use anyhow::Result;
-use std::path::{Path, PathBuf};
+use std::ops::{Deref, DerefMut};
+use std::path::PathBuf;
 use std::sync::Arc;
 use wasmtime::component::{Component, Linker};
 use wasmtime::{Config, Engine, Store};
@@ -18,14 +19,14 @@ use wasmtime_wasi::{DirPerms, FilePerms, ResourceTable, WasiCtx, WasiCtxBuilder,
 
 /// Struct to hold the data we want to pass in
 /// plus the WASI properties in order to use WASI
-pub struct MyCtx<T: Default> {
+pub struct MyCtx<T: Default + Inner> {
     /// This data can be accessed from [Store] by using the data method(s)
     #[allow(dead_code)]
     inner: T,
     wasi_ctx: Context,
 }
 
-impl<T: Default> Default for MyCtx<T> {
+impl<T: Default + Inner> Default for MyCtx<T> {
     fn default() -> Self {
         let table = ResourceTable::new();
         let wasi = WasiCtxBuilder::new().build();
@@ -36,13 +37,27 @@ impl<T: Default> Default for MyCtx<T> {
     }
 }
 
+impl<T: Default + Inner> Deref for MyCtx<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<T: Default + Inner> DerefMut for MyCtx<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
+}
+
 struct Context {
     table: ResourceTable,
     wasi: WasiCtx,
 }
 
 // We need to impl to be able to use the WASI linker add_to_linker
-impl<T: Default + Send> WasiView for MyCtx<T> {
+impl<T: Default + Inner + Send> WasiView for MyCtx<T> {
     fn table(&mut self) -> &mut ResourceTable {
         &mut self.wasi_ctx.table
     }
@@ -51,8 +66,26 @@ impl<T: Default + Send> WasiView for MyCtx<T> {
     }
 }
 
+impl<T: Default + Inner + Send + Clone> bindgen::component::extension::types::Host for MyCtx<T> {}
+
+#[wasmtime_wasi::async_trait]
+impl<T: Default + Inner + Send + Clone> bindgen::component::extension::peer_piper_commands::Host
+    for MyCtx<T>
+{
+    async fn start_providing(&mut self, key: Vec<u8>) {
+        println!("MyCtx IMPL Received request: {:?}", key);
+        self.inner.start_providing(key);
+    }
+}
+
+pub trait Inner {
+    fn start_providing(&mut self, key: Vec<u8>) {
+        //
+    }
+}
+
 /// Extension struct to hold the wasm extension files
-pub struct Plugin<T: Default> {
+pub struct Plugin<T: Default + Inner> {
     /// The built bindings for the wasm extensions
     pub instance: bindgen::ExtensionWorld,
 
@@ -60,19 +93,30 @@ pub struct Plugin<T: Default> {
     store: Store<MyCtx<T>>,
 }
 
-impl<T: Default + Send + Clone> Plugin<T> {
+impl<T: Default + Inner + Send + Clone> Plugin<T> {
     /// Creates and instantiates a new [Plugin]
-    pub async fn new(env: Environment<T>, wasm_bytes: &[u8], state: T) -> Result<Self, Error> {
+    pub async fn new(
+        env: Environment<T>,
+        name: &str,
+        wasm_bytes: &[u8],
+        state: T,
+    ) -> Result<Self, Error> {
         let component = Component::from_binary(&env.engine, wasm_bytes)?;
 
-        // ensure the HOST PATH exists, if not, create it
-        std::fs::create_dir_all(&env.host_path)?;
+        // ensure the HOST PATH / name exists, if not, create it
+        let host_plugin_path_name = env.host_path.join(name);
+        std::fs::create_dir_all(&host_plugin_path_name)?;
 
         let wasi = WasiCtxBuilder::new()
             .inherit_stdio()
             .inherit_stdout()
             .envs(&env.vars.unwrap_or_default())
-            .preopened_dir(&env.host_path, ".", DirPerms::all(), FilePerms::all())?
+            .preopened_dir(
+                &host_plugin_path_name,
+                ".",
+                DirPerms::all(),
+                FilePerms::all(),
+            )?
             .build();
 
         let data = MyCtx {
@@ -83,6 +127,11 @@ impl<T: Default + Send + Clone> Plugin<T> {
             },
         };
         let mut store = Store::new(&env.engine, data);
+
+        // get a &mut linker by deref muting it
+        // let lnkr = &mut *env.linker.clone();
+        // let lnkr = &mut (*env.linker).clone();
+        // bindgen::ExtensionWorld::add_to_linker(lnkr, |state: &mut MyCtx<T>| state)?;
 
         let instance =
             bindgen::ExtensionWorld::instantiate_async(&mut store, &component, &env.linker).await?;
@@ -114,14 +163,14 @@ impl<T: Default + Send + Clone> Plugin<T> {
 
 /// [Environment] struct to hold the engine and Linker
 #[derive(Clone)]
-pub struct Environment<T: Default + Clone> {
+pub struct Environment<T: Default + Inner + Clone> {
     engine: Engine,
     linker: Arc<Linker<MyCtx<T>>>,
     vars: Option<Vec<(String, String)>>,
     host_path: PathBuf,
 }
 
-impl<T: Default + Send + Clone> Environment<T> {
+impl<T: Default + Inner + Send + Clone> Environment<T> {
     /// Creates a new [Environment]
     pub fn new(host_path: PathBuf) -> Result<Self, Error> {
         let mut config = Config::new();
@@ -131,6 +180,8 @@ impl<T: Default + Send + Clone> Environment<T> {
 
         let engine = Engine::new(&config).unwrap();
         let mut linker = Linker::new(&engine);
+
+        bindgen::ExtensionWorld::add_to_linker(&mut linker, |state: &mut MyCtx<T>| state)?;
 
         // add wasi io, filesystem, clocks, cli_base, random, poll
         wasmtime_wasi::add_to_linker_async(&mut linker)?;
@@ -148,8 +199,9 @@ impl<T: Default + Send + Clone> Environment<T> {
     /// # Example
     ///
     /// ```
-    /// use peerpiper_plugins::tokio_compat::Environment;
+    /// use peerpiper_plugins::tokio_compat::{Environment, Inner};
     /// # use tokio_test;
+    /// # use std::path::Path;
     /// # tokio_test::block_on(async {
     /// /// Custom state struct, that your host functions can use
     /// #[derive(Default, Clone)]
@@ -157,7 +209,14 @@ impl<T: Default + Send + Clone> Environment<T> {
     ///     // Your custom state goes here, if any
     /// }
     ///
-    /// let env: Environment<State> = Environment::new()
+    /// impl Inner for State {
+    ///    fn start_providing(&mut self, key: Vec<u8>) {
+    ///    // do something with the key
+    ///    }
+    /// }
+    ///
+    /// let host_path = Path::new("./test_plugins").to_path_buf();
+    /// let env: Environment<State> = Environment::new(host_path)
     /// .unwrap()
     /// .with_vars(vec![
     ///     ("NAME".to_owned(), "Doug".to_owned()),
@@ -179,16 +238,23 @@ mod tests {
 
     use super::*;
     use bindgen::exports::component::extension::handlers::Message;
+    use std::path::Path;
 
     #[derive(Default, Clone)]
     struct State {
         hit: bool,
     }
 
+    impl Inner for State {
+        fn start_providing(&mut self, key: Vec<u8>) {
+            println!("[INNER]: State: {:?}", key);
+            self.hit = true;
+        }
+    }
+
     #[tokio::test]
     async fn test_tokio_two() -> Result<(), Box<dyn std::error::Error>> {
-        let host = "./test_plugins";
-        let host_path: PathBuf = Path::new(host).to_path_buf();
+        let host_path = Path::new("./test_plugins").to_path_buf();
 
         // time execution
         let wasm_path = utils::get_wasm_path("extension-echo")?;
@@ -219,7 +285,8 @@ mod tests {
         .into_iter()
         .enumerate()
         {
-            let mut plugin = Plugin::new(env.clone(), wasm, input).await?;
+            let name = format!("plugin-{}", i);
+            let mut plugin = Plugin::new(env.clone(), &name, wasm, input).await?;
             let response = plugin.handle_message(&msg).await?;
 
             let data = plugin.store.data();
@@ -229,6 +296,10 @@ mod tests {
                 "Hello, peer! You sent me: [1, 2, 3] about topic \"topic\""
             );
             assert_eq!(data.inner.hit, i == 0);
+
+            // also test handle_request
+            let response = plugin.handle_request(vec![1, 2, 3]).await?;
+            assert_eq!(response, vec![1, 2, 3]);
         }
 
         std::fs::remove_dir_all(env.host_path)?;

@@ -29,6 +29,14 @@ impl WasiView for MyCtx {
     }
 }
 
+impl bindgen::component::extension::types::Host for MyCtx {}
+
+impl bindgen::component::extension::peer_piper_commands::Host for MyCtx {
+    fn start_providing(&mut self, data: Vec<u8>) {
+        eprintln!("HOST FUNC: start_providing: {:?}", data);
+    }
+}
+
 /// PlugisBuilder struct to build the Plugins struct
 pub struct PluginsBuilder<T> {
     /// Engine to run the wasm extensions
@@ -76,7 +84,7 @@ impl PluginsBuilder<MyCtx> {
         let store = Store::new(&engine, state);
 
         // link imports like get_seed to our instantiation
-        //bindgen::ExtensionWorld::add_to_linker(&mut linker, |state: &mut MyCtx| state)?;
+        bindgen::ExtensionWorld::add_to_linker(&mut linker, |state: &mut MyCtx| state)?;
 
         // link the WASI imports to our instantiation
         wasmtime_wasi::add_to_linker_sync(&mut linker)?;

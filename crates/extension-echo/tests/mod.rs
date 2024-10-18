@@ -34,6 +34,14 @@ impl WasiView for MyCtx {
     }
 }
 
+impl bindgen::component::extension::types::Host for MyCtx {}
+
+impl bindgen::component::extension::peer_piper_commands::Host for MyCtx {
+    fn start_providing(&mut self, data: Vec<u8>) {
+        eprintln!("HOST FUNC: start_providing: {:?}", data);
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum TestError {
     /// From String
@@ -104,7 +112,7 @@ mod test_mod_echo {
 
         let mut linker = Linker::new(&engine);
         // link imports like get_seed to our instantiation
-        //bindgen::ExtensionWorld::add_to_linker(&mut linker, |state: &mut MyCtx| state)?;
+        bindgen::ExtensionWorld::add_to_linker(&mut linker, |state: &mut MyCtx| state)?;
         // link the WASI imports to our instantiation
         wasmtime_wasi::add_to_linker_sync(&mut linker)?;
 
@@ -124,26 +132,35 @@ mod test_mod_echo {
 
         let bindings = bindgen::ExtensionWorld::instantiate(&mut store, &component, &linker)?;
 
-        // Use bindings
-        //let message = WalletContext::AllContent(Content {
-        //    app: Some(App {
-        //        title: Some("a title for the app".to_string()),
-        //    }),
-        //    seed_ui: Some(seed_ui.clone()),
-        //    delano_ui: Some(delano_ui.clone()),
-        //});
-
         let topic = "a topic".to_string();
         let peer = "a peer".to_string();
         let data = vec![1, 2, 3, 4];
 
         let result = bindings
             .component_extension_handlers()
-            .call_handle_message(&mut store, &Message { topic, peer, data })?
+            .call_handle_message(
+                &mut store,
+                &Message {
+                    topic: topic.clone(),
+                    peer: peer.clone(),
+                    data: data.clone(),
+                },
+            )?
             .unwrap();
 
-        // The result should be a string of HTML
-        //eprintln!("result: {}", result);
+        // response should match the phrase
+        assert_eq!(
+            result,
+            format!("Hello, {peer}! You sent me: {data:?} about topic {topic:?}")
+        );
+
+        // call handle_request too
+        let result = bindings
+            .component_extension_handlers()
+            .call_handle_request(&mut store, &data)?
+            .unwrap();
+
+        assert_eq!(result, data);
 
         Ok(())
     }

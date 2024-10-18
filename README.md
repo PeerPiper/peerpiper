@@ -48,7 +48,7 @@ You'll need a few dependencies to get started:
 ### 🦀 [Rust](https://www.rust-lang.org/)
 
 - [x] [Rust](https://www.rust-lang.org/) 1.80+ (use nightly as stipulated in the `rust-toolchain.toml` file)
-- [x] Add `wasm32-wasi` target: `rustup target add wasm32-wasi`
+- [x] Add `wasm32-wasip1` target: `rustup target add wasm32-wasip1`
 - [x] Add `wasm32-unknown-unknown` target: `rustup target add wasm32-unknown-unknown`
 
 ### 📦 [cargo-component](https://github.com/bytecodealliance/cargo-component)
