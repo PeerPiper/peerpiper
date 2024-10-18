@@ -10,13 +10,11 @@ pub(crate) mod bindgen {
 use super::Error;
 
 use anyhow::Result;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use wasmtime::component::{Component, Linker};
 use wasmtime::{Config, Engine, Store};
 use wasmtime_wasi::{DirPerms, FilePerms, ResourceTable, WasiCtx, WasiCtxBuilder, WasiView};
-
-/// The host path for saving files
-const HOST_PATH: &str = "./plugin_data";
 
 /// Struct to hold the data we want to pass in
 /// plus the WASI properties in order to use WASI
@@ -53,92 +51,6 @@ impl<T: Default + Send> WasiView for MyCtx<T> {
     }
 }
 
-// /// [PluginsBuilder] struct to build the [Plugins] struct
-// pub struct PluginsBuilder<T> {
-//     engine: Engine,
-//     wasm_bytes: Vec<Vec<u8>>,
-//     linker: Linker<T>,
-//     store: Arc<Mutex<Store<T>>>,
-// }
-//
-// impl<T: Default + Send> PluginsBuilder<MyCtx<T>> {
-//     /// Creates a new [ExtensionsBuilder]
-//     ///
-//     /// to which you can add wasm files that you want to use as extensions
-//     pub fn new() -> Result<Self, Error> {
-//         let mut config = Config::new();
-//         config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
-//         config.wasm_component_model(true);
-//         config.async_support(true);
-//
-//         let engine = Engine::new(&config).unwrap();
-//         let mut linker = Linker::new(&engine);
-//
-//         let guest_path = ".";
-//         let table = ResourceTable::new();
-//         let wasi = WasiCtxBuilder::new()
-//             .inherit_stdio()
-//             .inherit_stdout()
-//             .args(&["gussie", "sparky", "willa"])
-//             .preopened_dir(HOST_PATH, guest_path, DirPerms::all(), FilePerms::all())?
-//             .build();
-//
-//         let state = MyCtx {
-//             inner: Default::default(),
-//             wasi_ctx: Context { table, wasi },
-//         };
-//
-//         let store = Store::new(&engine, state);
-//
-//         // add wasi io, filesystem, clocks, cli_base, random, poll
-//         wasmtime_wasi::add_to_linker_async(&mut linker)?;
-//
-//         Ok(Self {
-//             engine,
-//             wasm_bytes: vec![],
-//             linker,
-//             store: Arc::new(Mutex::new(store)),
-//         })
-//     }
-//
-//     /// Adds a new wasm file to the extensions struct
-//     pub fn with_wasm(&mut self, wasm_bytes: Vec<u8>) {
-//         self.wasm_bytes.push(wasm_bytes);
-//     }
-//
-//     /// Build by instantiating the wasm extensions
-//     pub async fn build(self) -> Result<Plugins, Error> {
-//         let mut set: JoinSet<Result<bindgen::ExtensionWorld, Error>> = JoinSet::new();
-//
-//         // for each wasm_bytes, generate the bindings. instantiate_async is async, so it needs to be awaited
-//         for wasm_bytes in self.wasm_bytes {
-//             let component = Component::from_binary(&self.engine, &wasm_bytes)?;
-//             let store = self.store.clone();
-//             let linker = self.linker.clone();
-//             set.spawn(async move {
-//                 let linker = linker;
-//                 let mut store = store.lock().await;
-//                 let store = &mut *store;
-//                 let bindings =
-//                     bindgen::ExtensionWorld::instantiate_async(store, &component, &linker).await?;
-//                 Ok(bindings)
-//             });
-//         }
-//
-//         let mut bindings: Vec<bindgen::ExtensionWorld> = Vec::new();
-//
-//         while let Some(res) = set.join_next().await {
-//             let task_result = res?;
-//             let final_result = task_result?;
-//             bindings.push(final_result);
-//         }
-//
-//         // ditch the store Arc and Mutux, set store to inner
-//         let store: Store<MyCtx> = mem::take(&mut *self.store.lock().await.deref_mut());
-//         Ok(Plugins { bindings, store })
-//     }
-// }
-
 /// Extension struct to hold the wasm extension files
 pub struct Plugin<T: Default> {
     /// The built bindings for the wasm extensions
@@ -153,14 +65,14 @@ impl<T: Default + Send + Clone> Plugin<T> {
     pub async fn new(env: Environment<T>, wasm_bytes: &[u8], state: T) -> Result<Self, Error> {
         let component = Component::from_binary(&env.engine, wasm_bytes)?;
 
-        // ensure the HOST_PATH exists, if not, create it
-        std::fs::create_dir_all(HOST_PATH)?;
+        // ensure the HOST PATH exists, if not, create it
+        std::fs::create_dir_all(&env.host_path)?;
 
         let wasi = WasiCtxBuilder::new()
             .inherit_stdio()
             .inherit_stdout()
             .envs(&env.vars.unwrap_or_default())
-            .preopened_dir(HOST_PATH, ".", DirPerms::all(), FilePerms::all())?
+            .preopened_dir(&env.host_path, ".", DirPerms::all(), FilePerms::all())?
             .build();
 
         let data = MyCtx {
@@ -206,11 +118,12 @@ pub struct Environment<T: Default + Clone> {
     engine: Engine,
     linker: Arc<Linker<MyCtx<T>>>,
     vars: Option<Vec<(String, String)>>,
+    host_path: PathBuf,
 }
 
 impl<T: Default + Send + Clone> Environment<T> {
     /// Creates a new [Environment]
-    pub fn new() -> Result<Self, Error> {
+    pub fn new(host_path: PathBuf) -> Result<Self, Error> {
         let mut config = Config::new();
         config.wasm_backtrace_details(wasmtime::WasmBacktraceDetails::Enable);
         config.wasm_component_model(true);
@@ -226,6 +139,7 @@ impl<T: Default + Send + Clone> Environment<T> {
             engine,
             linker: Arc::new(linker),
             vars: None,
+            host_path,
         })
     }
 
@@ -273,6 +187,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_tokio_two() -> Result<(), Box<dyn std::error::Error>> {
+        let host = "./test_plugins";
+        let host_path: PathBuf = Path::new(host).to_path_buf();
+
         // time execution
         let wasm_path = utils::get_wasm_path("extension-echo")?;
         let wasm_bytes = std::fs::read(wasm_path.clone())?;
@@ -283,13 +200,13 @@ mod tests {
             data: vec![1, 2, 3],
         };
 
-        let env = Environment::<State>::new()?;
+        let env = Environment::<State>::new(host_path.clone())?;
         let _env = env.with_vars(vec![
             ("NAME".to_owned(), "Doug".to_owned()),
             ("AGE".to_owned(), "42".to_owned()),
         ]);
 
-        let env = Environment::new()?.with_vars(vec![
+        let env = Environment::new(host_path)?.with_vars(vec![
             ("NAME".to_owned(), "Doug".to_owned()),
             ("AGE".to_owned(), "42".to_owned()),
         ]);
@@ -314,7 +231,7 @@ mod tests {
             assert_eq!(data.inner.hit, i == 0);
         }
 
-        std::fs::remove_dir_all(HOST_PATH)?;
+        std::fs::remove_dir_all(env.host_path)?;
 
         Ok(())
     }
