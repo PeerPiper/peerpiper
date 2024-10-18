@@ -725,9 +725,6 @@ impl EventLoop {
                         .finish();
                 }
             }
-            SwarmEvent::Behaviour(BehaviourEvent::Kad(kad::Event::InboundRequest { request })) => {
-                tracing::debug!("Kademlia InboundRequest event");
-            }
             SwarmEvent::Behaviour(BehaviourEvent::Kad(evt)) => {
                 tracing::debug!("Kademlia event: {:?}", evt);
             }
