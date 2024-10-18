@@ -29,8 +29,9 @@ struct PluginsState {
     //
 }
 
+#[async_trait::async_trait]
 impl peerpiper_plugins::tokio_compat::Inner for PluginsState {
-    fn start_providing(&mut self, key: Vec<u8>) {
+    async fn start_providing(&mut self, key: Vec<u8>) {
         // tracing::info!("State: {:?}", key);
     }
 }

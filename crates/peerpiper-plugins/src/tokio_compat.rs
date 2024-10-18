@@ -19,25 +19,14 @@ use wasmtime_wasi::{DirPerms, FilePerms, ResourceTable, WasiCtx, WasiCtxBuilder,
 
 /// Struct to hold the data we want to pass in
 /// plus the WASI properties in order to use WASI
-pub struct MyCtx<T: Default + Inner> {
+pub struct MyCtx<T: Inner> {
     /// This data can be accessed from [Store] by using the data method(s)
     #[allow(dead_code)]
     inner: T,
     wasi_ctx: Context,
 }
 
-impl<T: Default + Inner> Default for MyCtx<T> {
-    fn default() -> Self {
-        let table = ResourceTable::new();
-        let wasi = WasiCtxBuilder::new().build();
-        Self {
-            inner: Default::default(),
-            wasi_ctx: Context { table, wasi },
-        }
-    }
-}
-
-impl<T: Default + Inner> Deref for MyCtx<T> {
+impl<T: Inner> Deref for MyCtx<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -45,7 +34,7 @@ impl<T: Default + Inner> Deref for MyCtx<T> {
     }
 }
 
-impl<T: Default + Inner> DerefMut for MyCtx<T> {
+impl<T: Inner> DerefMut for MyCtx<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
@@ -57,7 +46,7 @@ struct Context {
 }
 
 // We need to impl to be able to use the WASI linker add_to_linker
-impl<T: Default + Inner + Send> WasiView for MyCtx<T> {
+impl<T: Inner + Send> WasiView for MyCtx<T> {
     fn table(&mut self) -> &mut ResourceTable {
         &mut self.wasi_ctx.table
     }
@@ -66,26 +55,28 @@ impl<T: Default + Inner + Send> WasiView for MyCtx<T> {
     }
 }
 
-impl<T: Default + Inner + Send + Clone> bindgen::component::extension::types::Host for MyCtx<T> {}
+impl<T: Inner + Send + Clone> bindgen::component::extension::types::Host for MyCtx<T> {}
 
 #[wasmtime_wasi::async_trait]
-impl<T: Default + Inner + Send + Clone> bindgen::component::extension::peer_piper_commands::Host
+impl<T: Inner + Send + Clone> bindgen::component::extension::peer_piper_commands::Host
     for MyCtx<T>
 {
     async fn start_providing(&mut self, key: Vec<u8>) {
         println!("MyCtx IMPL Received request: {:?}", key);
-        self.inner.start_providing(key);
+        self.inner.start_providing(key).await;
     }
 }
 
+/// Inner trait to be implemented by the host
+#[wasmtime_wasi::async_trait]
 pub trait Inner {
-    fn start_providing(&mut self, key: Vec<u8>) {
+    async fn start_providing(&mut self, key: Vec<u8>) {
         //
     }
 }
 
 /// Extension struct to hold the wasm extension files
-pub struct Plugin<T: Default + Inner> {
+pub struct Plugin<T: Inner> {
     /// The built bindings for the wasm extensions
     pub instance: bindgen::ExtensionWorld,
 
@@ -93,7 +84,7 @@ pub struct Plugin<T: Default + Inner> {
     store: Store<MyCtx<T>>,
 }
 
-impl<T: Default + Inner + Send + Clone> Plugin<T> {
+impl<T: Inner + Send + Clone> Plugin<T> {
     /// Creates and instantiates a new [Plugin]
     pub async fn new(
         env: Environment<T>,
@@ -163,14 +154,14 @@ impl<T: Default + Inner + Send + Clone> Plugin<T> {
 
 /// [Environment] struct to hold the engine and Linker
 #[derive(Clone)]
-pub struct Environment<T: Default + Inner + Clone> {
+pub struct Environment<T: Inner + Clone> {
     engine: Engine,
     linker: Arc<Linker<MyCtx<T>>>,
     vars: Option<Vec<(String, String)>>,
     host_path: PathBuf,
 }
 
-impl<T: Default + Inner + Send + Clone> Environment<T> {
+impl<T: Inner + Send + Clone> Environment<T> {
     /// Creates a new [Environment]
     pub fn new(host_path: PathBuf) -> Result<Self, Error> {
         let mut config = Config::new();
@@ -245,8 +236,9 @@ mod tests {
         hit: bool,
     }
 
+    #[wasmtime_wasi::async_trait]
     impl Inner for State {
-        fn start_providing(&mut self, key: Vec<u8>) {
+        async fn start_providing(&mut self, key: Vec<u8>) {
             println!("[INNER]: State: {:?}", key);
             self.hit = true;
         }
