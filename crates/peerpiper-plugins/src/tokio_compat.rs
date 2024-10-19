@@ -96,6 +96,7 @@ impl<T: Inner + Send + Clone> Plugin<T> {
 
         // ensure the HOST PATH / name exists, if not, create it
         let host_plugin_path_name = env.host_path.join(name);
+        tracing::info!("Creating host plugin path: {:?}", host_plugin_path_name);
         std::fs::create_dir_all(&host_plugin_path_name)?;
 
         let wasi = WasiCtxBuilder::new()
@@ -191,6 +192,7 @@ impl<T: Inner + Send + Clone> Environment<T> {
     ///
     /// ```
     /// use peerpiper_plugins::tokio_compat::{Environment, Inner};
+    /// use wasmtime_wasi::async_trait; // or async_trait::async_trait
     /// # use tokio_test;
     /// # use std::path::Path;
     /// # tokio_test::block_on(async {
@@ -200,8 +202,9 @@ impl<T: Inner + Send + Clone> Environment<T> {
     ///     // Your custom state goes here, if any
     /// }
     ///
+    /// #[async_trait]
     /// impl Inner for State {
-    ///    fn start_providing(&mut self, key: Vec<u8>) {
+    ///    async fn start_providing(&mut self, key: Vec<u8>) {
     ///    // do something with the key
     ///    }
     /// }
