@@ -67,12 +67,22 @@ impl<T: Inner + Send + Clone> bindgen::component::extension::peer_piper_commands
     }
 }
 
+#[wasmtime_wasi::async_trait]
+impl<T: Inner + Send + Clone> bindgen::component::extension::logging::Host for MyCtx<T> {
+    async fn log(&mut self, msg: String) {
+        println!("MyCtx IMPL Received log: {} ", msg);
+        self.inner.log(msg).await;
+    }
+}
+
 /// Inner trait to be implemented by the host
 #[wasmtime_wasi::async_trait]
 pub trait Inner {
-    async fn start_providing(&mut self, key: Vec<u8>) {
-        //
-    }
+    /// Start providing data on the network (DHT)
+    async fn start_providing(&mut self, key: Vec<u8>);
+
+    /// Log a message
+    async fn log(&mut self, msg: String);
 }
 
 /// Extension struct to hold the wasm extension files
@@ -129,6 +139,11 @@ impl<T: Inner + Send + Clone> Plugin<T> {
             bindgen::ExtensionWorld::instantiate_async(&mut store, &component, &env.linker).await?;
 
         Ok(Self { instance, store })
+    }
+
+    /// Access to the inner state, the T in self.store: Store<MyCtx<T>>.
+    pub fn state(&self) -> &T {
+        &self.store.data().inner
     }
 
     /// Handles the message
@@ -244,6 +259,10 @@ mod tests {
         async fn start_providing(&mut self, key: Vec<u8>) {
             println!("[INNER]: State: {:?}", key);
             self.hit = true;
+        }
+
+        async fn log(&mut self, msg: String) {
+            println!("[INNER]: Log: {} ", msg);
         }
     }
 

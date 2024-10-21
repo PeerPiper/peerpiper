@@ -9,10 +9,9 @@ use futures::{
 };
 use peerpiper_core::events::PeerPiperCommand;
 use peerpiper_core::Commander;
+use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
-
-use std::cell::RefCell;
 
 use crate::blockstore::BrowserBlockStore;
 
@@ -145,7 +144,7 @@ impl PeerPiper {
                 .expect("Failed to serialize example request response command")
         );
 
-        tracing::info!("[ppb v0.1.6] Received command: {:?}", &cmd);
+        tracing::info!("[ppb v0.1.7] Received command");
 
         let command: PeerPiperCommand = serde_wasm_bindgen::from_value(cmd)?;
 
@@ -159,6 +158,7 @@ impl PeerPiper {
         // convert the ReturnValues enum to a JsValue (Cid as String, Vec<u8> as Uint8Array, or null)
         let js_val = match maybe_result {
             peerpiper_core::ReturnValues::None => JsValue::null(),
+            // convert Vec<u8> to serde_bytes byte buffer so it comes out Uint8Array in JS
             peerpiper_core::ReturnValues::Data(data) => serde_wasm_bindgen::to_value(&data)?,
             peerpiper_core::ReturnValues::ID(cid) => serde_wasm_bindgen::to_value(&cid)?,
             peerpiper_core::ReturnValues::Providers(providers) => {

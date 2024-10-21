@@ -35,11 +35,19 @@ interface peer-piper-commands {
     start-providing: func(key: list<u8>);
 }
 
+interface logging {
+    /// Log a message 
+    log: func(message: string);
+}
+
 /// An example world for the component to target.
 world extension-world {
 
     /// Import PeerPiperCommand interface
     import peer-piper-commands;
+
+    /// Import the logging interface 
+    import logging;
 
     /// Export the handlers for the extension
     export handlers;
