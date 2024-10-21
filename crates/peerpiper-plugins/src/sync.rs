@@ -37,6 +37,12 @@ impl bindgen::component::extension::peer_piper_commands::Host for MyCtx {
     }
 }
 
+impl bindgen::component::extension::logging::Host for MyCtx {
+    fn log(&mut self, msg: String) {
+        eprintln!("HOST FUNC: log: {} ", msg);
+    }
+}
+
 /// PlugisBuilder struct to build the Plugins struct
 pub struct PluginsBuilder<T> {
     /// Engine to run the wasm extensions
