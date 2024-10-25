@@ -31,6 +31,32 @@ pub mod component {
             }
         }
         #[allow(dead_code, clippy::all)]
+        pub mod logging {
+            #[used]
+            #[doc(hidden)]
+            static __FORCE_SECTION_REF: fn() = super::super::super::__link_custom_section_describing_imports;
+            #[allow(unused_unsafe, clippy::all)]
+            /// Log a message
+            pub fn log(message: &str) {
+                unsafe {
+                    let vec0 = message;
+                    let ptr0 = vec0.as_ptr().cast::<u8>();
+                    let len0 = vec0.len();
+                    #[cfg(target_arch = "wasm32")]
+                    #[link(wasm_import_module = "component:extension/logging@0.1.0")]
+                    extern "C" {
+                        #[link_name = "log"]
+                        fn wit_import(_: *mut u8, _: usize);
+                    }
+                    #[cfg(not(target_arch = "wasm32"))]
+                    fn wit_import(_: *mut u8, _: usize) {
+                        unreachable!()
+                    }
+                    wit_import(ptr0.cast_mut(), len0);
+                }
+            }
+        }
+        #[allow(dead_code, clippy::all)]
         pub mod types {
             #[used]
             #[doc(hidden)]
@@ -378,20 +404,21 @@ pub(crate) use __export_extension_world_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.30.0:extension-world:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 591] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xc9\x03\x01A\x02\x01\
-A\x08\x01B\x03\x01p}\x01@\x01\x03key\0\x01\0\x04\0\x0fstart-providing\x01\x01\x03\
-\x01-component:extension/peer-piper-commands@0.1.0\x05\0\x01B\x05\x01p}\x01r\x03\
-\x05topics\x04peers\x04data\0\x04\0\x07message\x03\0\x01\x01q\x03\x18unsupported\
--message-type\0\0\x0dhandler-error\x01s\0\x08io-error\x01s\0\x04\0\x05error\x03\0\
-\x03\x03\x01\x1fcomponent:extension/types@0.1.0\x05\x01\x02\x03\0\x01\x07message\
-\x02\x03\0\x01\x05error\x01B\x0b\x02\x03\x02\x01\x02\x04\0\x07message\x03\0\0\x02\
-\x03\x02\x01\x03\x04\0\x05error\x03\0\x02\x01j\x01s\x01\x03\x01@\x01\x03msg\x01\0\
-\x04\x04\0\x0ehandle-message\x01\x05\x01p}\x01j\x01\x06\x01\x03\x01@\x01\x04data\
-\x06\0\x07\x04\0\x0ehandle-request\x01\x08\x04\x01\"component:extension/handlers\
-@0.1.0\x05\x04\x04\x01)component:extension/extension-world@0.1.0\x04\0\x0b\x15\x01\
-\0\x0fextension-world\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-com\
-ponent\x070.215.0\x10wit-bindgen-rust\x060.30.0";
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 654] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x88\x04\x01A\x02\x01\
+A\x0a\x01B\x03\x01p}\x01@\x01\x03key\0\x01\0\x04\0\x0fstart-providing\x01\x01\x03\
+\x01-component:extension/peer-piper-commands@0.1.0\x05\0\x01B\x02\x01@\x01\x07me\
+ssages\x01\0\x04\0\x03log\x01\0\x03\x01!component:extension/logging@0.1.0\x05\x01\
+\x01B\x05\x01p}\x01r\x03\x05topics\x04peers\x04data\0\x04\0\x07message\x03\0\x01\
+\x01q\x03\x18unsupported-message-type\0\0\x0dhandler-error\x01s\0\x08io-error\x01\
+s\0\x04\0\x05error\x03\0\x03\x03\x01\x1fcomponent:extension/types@0.1.0\x05\x02\x02\
+\x03\0\x02\x07message\x02\x03\0\x02\x05error\x01B\x0b\x02\x03\x02\x01\x03\x04\0\x07\
+message\x03\0\0\x02\x03\x02\x01\x04\x04\0\x05error\x03\0\x02\x01j\x01s\x01\x03\x01\
+@\x01\x03msg\x01\0\x04\x04\0\x0ehandle-message\x01\x05\x01p}\x01j\x01\x06\x01\x03\
+\x01@\x01\x04data\x06\0\x07\x04\0\x0ehandle-request\x01\x08\x04\x01\"component:e\
+xtension/handlers@0.1.0\x05\x05\x04\x01)component:extension/extension-world@0.1.\
+0\x04\0\x0b\x15\x01\0\x0fextension-world\x03\0\0\0G\x09producers\x01\x0cprocesse\
+d-by\x02\x0dwit-component\x070.215.0\x10wit-bindgen-rust\x060.30.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {
