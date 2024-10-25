@@ -34,6 +34,10 @@ impl peerpiper_plugins::tokio_compat::Inner for PluginsState {
     async fn start_providing(&mut self, key: Vec<u8>) {
         // tracing::info!("State: {:?}", key);
     }
+
+    async fn log(&mut self, msg: String) {
+        // tracing::info!("State: {:?} {:?}", key, value);
+    }
 }
 
 #[tokio::main]
