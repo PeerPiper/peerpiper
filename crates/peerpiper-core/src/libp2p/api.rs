@@ -377,7 +377,7 @@ impl EventLoop {
     async fn handle_event(&mut self, event: SwarmEvent<BehaviourEvent>) -> Result<(), Error> {
         match event {
             SwarmEvent::NewListenAddr { address, .. } => {
-                tracing::info!("🌐  Listen address: {address}");
+                tracing::info!("🌐  New address: {address}");
                 let mut addr_handler = || {
                     let p2p_addr = address
                         .clone()
@@ -739,6 +739,14 @@ impl EventLoop {
             // SwarmEvent::Behaviour(BehaviourEvent::Kademlia(event)) => {
             //     debug!("Kademlia event: {:?}", event)
             // }
+
+            // ignore NewExternalAddrOfPeer
+            SwarmEvent::NewExternalAddrOfPeer { .. } => {
+                // tracing::debug!("New external address of peer {peer_id}: {address}");
+            }
+            SwarmEvent::NewExternalAddrCandidate { address } => {
+                tracing::debug!("New external address candidate: {address}");
+            }
             event => {
                 tracing::debug!("Other type of event: {:?}", event);
             }

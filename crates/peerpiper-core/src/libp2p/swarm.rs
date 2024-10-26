@@ -1,8 +1,8 @@
-use libp2p::{identity::Keypair, swarm::NetworkBehaviour};
+use libp2p::{identity::Keypair, noise, relay, swarm::NetworkBehaviour, yamux};
 use std::time::Duration;
 
-pub fn create<B: NetworkBehaviour>(
-    behaviour_constructor: impl FnOnce(&Keypair) -> B,
+pub async fn create<B: NetworkBehaviour>(
+    behaviour_constructor: impl FnOnce(&Keypair, relay::client::Behaviour) -> B,
 ) -> Result<libp2p::Swarm<B>, String> {
     #[cfg(target_arch = "wasm32")]
     {
@@ -25,6 +25,8 @@ pub fn create<B: NetworkBehaviour>(
                     .multiplex(yamux::Config::default()))
             })
             .expect("infalliable to never exist")
+            .with_relay_client(noise::Config::new, yamux::Config::default)
+            .map_err(|e| e.to_string())?
             .with_behaviour(behaviour_constructor)
             .expect("infalliable to never exist")
             // Ping does not KeepAlive, so we set the idle connection timeout to 32_212_254u64,
@@ -53,6 +55,13 @@ pub fn create<B: NetworkBehaviour>(
             .with_other_transport(|id_keys| {
                 Ok(libp2p_webrtc::tokio::Transport::new(id_keys.clone(), cert))
             })
+            .map_err(|e| e.to_string())?
+            .with_dns()
+            .map_err(|e| e.to_string())?
+            .with_websocket(noise::Config::new, yamux::Config::default)
+            .await
+            .map_err(|e| e.to_string())?
+            .with_relay_client(noise::Config::new, yamux::Config::default)
             .map_err(|e| e.to_string())?
             .with_behaviour(behaviour_constructor)
             .map_err(|e| e.to_string())?

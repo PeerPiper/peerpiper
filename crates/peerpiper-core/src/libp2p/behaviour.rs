@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use libp2p::request_response::{self, ProtocolSupport};
-use libp2p::StreamProtocol;
+use libp2p::{dcutr, relay, StreamProtocol};
 use libp2p::{gossipsub, identify, identity::Keypair, kad, ping, swarm::NetworkBehaviour};
 
 use std::collections::hash_map::DefaultHasher;
@@ -9,6 +9,10 @@ use std::hash::{Hash, Hasher};
 
 use super::api::{PeerRequest, PeerResponse};
 
+/// PiperNet protocol name
+const PROTOCOL_NAME: &str = "/peerpiper/0.1.0";
+
+/// Extension protocol name
 const EXTENSION_PROTOCOL: &str = "/peerpiper/extensions/0.1.0";
 
 /// The [NetworkBehaviour] also creates a [BehaviourEvent] for us, which we can use to
@@ -26,9 +30,13 @@ pub struct Behaviour {
     /// Use RequestResponse to send data to a peer. Extensions can be used
     /// to encode/decode the bytes, giving users a lot of flexibility that they control.
     pub(crate) peer_request: request_response::cbor::Behaviour<PeerRequest, PeerResponse>,
+    /// Relay client
+    pub(crate) relay_client: relay::client::Behaviour,
+    /// Dcutr
+    dcutr: dcutr::Behaviour,
 }
 
-pub fn build(key: &Keypair) -> Behaviour {
+pub fn build(key: &Keypair, relay_behaviour: relay::client::Behaviour) -> Behaviour {
     // To content-address message, we can take the hash of message and use it as an ID.
     let message_id_fn = |message: &gossipsub::Message| {
         let mut s = DefaultHasher::new();
@@ -53,16 +61,17 @@ pub fn build(key: &Keypair) -> Behaviour {
     )
     .expect("Config should be valid");
 
-    let kad = kad::Behaviour::new(
+    let kad = kad::Behaviour::with_config(
         key.public().to_peer_id(),
         kad::store::MemoryStore::new(key.public().to_peer_id()),
+        kad::Config::new(StreamProtocol::new(PROTOCOL_NAME)),
     );
 
     Behaviour {
         ping: ping::Behaviour::new(ping::Config::new().with_interval(Duration::from_secs(25))),
         // Need to include identify until https://github.com/status-im/nim-libp2p/issues/924 is resolved.
         identify: identify::Behaviour::new(identify::Config::new(
-            "/peerpiper/1.0.0".to_owned(),
+            "/ipfs/id/1.0.0".to_owned(),
             key.public(),
         )),
         gossipsub,
@@ -74,5 +83,7 @@ pub fn build(key: &Keypair) -> Behaviour {
             )],
             request_response::Config::default().with_request_timeout(Duration::from_secs(60)),
         ),
+        relay_client: relay_behaviour,
+        dcutr: dcutr::Behaviour::new(key.public().to_peer_id()),
     }
 }

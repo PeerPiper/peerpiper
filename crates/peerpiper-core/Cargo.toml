@@ -27,9 +27,11 @@ libp2p = { workspace = true, features = [
   "kad",
   "request-response",
   "cbor",
+  "relay",
   "noise",
   "yamux",
   "websocket-websys",
+  "dcutr",
 ] }
 libp2p-webrtc-websys = { version = "0.4.0-alpha.2", git = "https://github.com/libp2p/rust-libp2p.git" }
 
@@ -45,6 +47,14 @@ libp2p = { workspace = true, features = [
   "kad",
   "request-response",
   "cbor",
+  "relay",
+  "noise",
+  "yamux",
+  "dcutr",
+  "dns",
+  "websocket",
+  "tcp",
+  "rsa",
 ] }
 libp2p-webrtc = { version = "0.8.0-alpha", git = "https://github.com/libp2p/rust-libp2p.git", features = [
   "tokio",
