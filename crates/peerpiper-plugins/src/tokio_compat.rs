@@ -222,6 +222,10 @@ impl<T: Inner + Send + Clone> Environment<T> {
     ///    async fn start_providing(&mut self, key: Vec<u8>) {
     ///    // do something with the key
     ///    }
+    ///
+    ///    async fn log(&mut self, msg: String) {
+    ///    // log the message
+    ///    }
     /// }
     ///
     /// let host_path = Path::new("./test_plugins").to_path_buf();
