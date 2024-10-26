@@ -1,9 +1,12 @@
 mod error;
 
-use error::Error;
+pub use error::NativeError;
 use futures::channel::{mpsc, oneshot};
 use libp2p::multiaddr::{Multiaddr, Protocol};
-use std::net::Ipv6Addr;
+use std::{
+    net::{Ipv4Addr, Ipv6Addr},
+    str::FromStr,
+};
 
 use peerpiper_core::{
     error::Error as CoreError,
@@ -14,12 +17,21 @@ use peerpiper_core::{
     },
 };
 
+const BOOTNODES: [&str; 4] = [
+    "QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
+    "QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
+    "QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
+    "QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
+];
+
 pub async fn start(
     tx: mpsc::Sender<Events>,
     command_receiver: mpsc::Receiver<PeerPiperCommand>,
     tx_client: oneshot::Sender<Client>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut swarm = swarm::create(behaviour::build).map_err(CoreError::CreateSwarm)?;
+) -> Result<(), NativeError> {
+    let mut swarm = swarm::create(behaviour::build)
+        .await
+        .map_err(CoreError::CreateSwarm)?;
 
     swarm
         .behaviour_mut()
@@ -38,20 +50,28 @@ pub async fn start(
         .with(Protocol::Udp(0))
         .with(Protocol::WebRTCDirect);
 
+    let addr_webrtc_ipv4 = Multiaddr::from(Ipv4Addr::UNSPECIFIED)
+        .with(Protocol::Udp(0))
+        .with(Protocol::WebRTCDirect);
+
     for addr in [
         address_webrtc,
+        addr_webrtc_ipv4,
         // address_quic, address_tcp
     ] {
         tracing::info!("Listening on {:?}", addr.clone());
-        network_client
-            .start_listening(addr)
-            .await
-            .expect("Listening not to fail.");
+        network_client.start_listening(addr).await?;
+    }
+
+    for peer in &BOOTNODES {
+        let addr = Multiaddr::from_str("/dnsaddr/bootstrap.libp2p.io")?
+            .with(Protocol::P2p(libp2p::PeerId::from_str(peer)?));
+        network_client.dial(addr).await?;
     }
 
     tx_client.send(network_client.clone()).map_err(|_e| {
         tracing::error!("Failed to send network client to client");
-        Error::Core(CoreError::String(
+        NativeError::Core(CoreError::String(
             "Failed to send network client to client".to_string(),
         ))
     })?;
