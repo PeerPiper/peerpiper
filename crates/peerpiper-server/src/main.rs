@@ -121,7 +121,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let wasms = [
         "../../../target/wasm32-wasip1/debug/extension_echo.wasm",
-        "../../../../bestsign/target/wasm32-wasip1/debug/plugin.wasm",
+        "../../../../bestsign/target/wasm32-wasip1/debug/bestsign_plugin.wasm",
     ];
     let mut plugins = load_plugins(&wasms).await;
 
