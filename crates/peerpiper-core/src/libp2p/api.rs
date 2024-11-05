@@ -31,8 +31,8 @@ const TICK_INTERVAL: Duration = Duration::from_secs(15);
 /// - Network Event Loop: Start the network event loop
 pub async fn new(swarm: Swarm<Behaviour>) -> (Client, Receiver<Events>, EventLoop) {
     // These command senders/recvr are used to pass along parsed generic commands to the network event loop
-    let (command_sender, command_receiver) = mpsc::channel(8);
-    let (event_sender, event_receiver) = mpsc::channel(8);
+    let (command_sender, command_receiver) = mpsc::channel(32);
+    let (event_sender, event_receiver) = mpsc::channel(32);
 
     (
         Client { command_sender },
