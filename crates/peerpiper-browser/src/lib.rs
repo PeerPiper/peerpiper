@@ -24,7 +24,7 @@ pub async fn start(
 ) -> Result<(), Error> {
     tracing::info!("Spawning swarm. Using multiaddr {:?}", libp2p_endpoints);
 
-    let swarm = swarm::create(behaviour::build).map_err(|err| {
+    let swarm = swarm::create(behaviour::build).await.map_err(|err| {
         tracing::error!("Failed to create swarm: {}", err);
         Error::Core(peerpiper_core::error::Error::CreateSwarm(
             "Failed to create swarm".to_string(),
