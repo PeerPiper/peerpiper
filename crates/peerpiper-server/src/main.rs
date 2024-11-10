@@ -12,8 +12,9 @@ use futures::{SinkExt as _, StreamExt};
 use libp2p::multiaddr::{Multiaddr, Protocol};
 use peerpiper::core::events::{Events, PeerPiperCommand, PublicEvent};
 use peerpiper::core::libp2p::api::Libp2pEvent;
-use peerpiper_plugins::tokio_compat::Plugin;
+use peerpiper_plugins::tokio::Plugin;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 const MAX_CHANNELS: usize = 16;
 
@@ -36,7 +37,7 @@ impl PluginsState {
 }
 
 #[async_trait::async_trait]
-impl peerpiper_plugins::tokio_compat::Inner for PluginsState {
+impl peerpiper_plugins::tokio::Inner for PluginsState {
     async fn start_providing(&mut self, key: Vec<u8>) {
         // send to swarm via peerpiper transmitter
         match self
@@ -105,11 +106,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Use WIT component handlers here.
     let load_plugins =
-        async |wasms: &[PathBuf]| -> Vec<peerpiper_plugins::tokio_compat::Plugin<PluginsState>> {
+        async |wasms: &[PathBuf]| -> Vec<peerpiper_plugins::tokio::Plugin<PluginsState>> {
             let mut plugins = Vec::new();
 
             // if env err, return emtpy vec from load_plugins() fn
-            let Ok(env) = peerpiper_plugins::tokio_compat::Environment::<PluginsState>::new(
+            let Ok(env) = peerpiper_plugins::tokio::Environment::<PluginsState>::new(
                 Path::new(PLUGINS_DIR).to_path_buf(),
             ) else {
                 return plugins;
@@ -147,18 +148,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             plugins
         };
 
-    // every *.wasm file in the ./plugins directory
-    let wasms = std::fs::read_dir(PLUGINS_DIR)?
-        .filter_map(|entry| {
-            let entry = entry.ok()?;
-            let path = entry.path();
-            if path.extension()?.to_str()? == "wasm" {
-                Some(path)
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>();
+    // every *.wasm file in the ./plugins directory, if any
+    let wasms = match std::fs::read_dir(PLUGINS_DIR) {
+        Ok(dir) => dir
+            .filter_map(|entry| {
+                let entry = entry.ok()?;
+                let path = entry.path();
+                if path.extension()?.to_str()? == "wasm" {
+                    Some(path)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>(),
+        Err(e) => {
+            // just return empty vec if error reading plugins directory
+            tracing::error!("Error reading plugins directory: {:?}", e);
+            Vec::new()
+        }
+    };
 
     let mut plugins = load_plugins(&wasms).await;
 
@@ -201,7 +209,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     };
 
+    #[cfg(unix)]
+    let mut sigterm = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
+
     loop {
+        #[cfg(unix)]
+        let sigterm_fut = sigterm.recv();
+        #[cfg(not(unix))]
+        let sigterm_fut = std::future::pending::<()>();
+
         tokio::select! {
             Some(msg) = rx.next() => {
                 if let Err(e) = handle_event(msg).await {
@@ -212,8 +228,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 tracing::info!("Received ctrl-c");
                 break;
             }
+            _ = sigterm_fut => {
+                tracing::info!("Received SIGTERM");
+                break;
+            }
         }
     }
+
+    tracing::info!("Shutting down...");
 
     Ok(())
 }

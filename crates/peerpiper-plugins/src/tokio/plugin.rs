@@ -7,7 +7,7 @@ pub(crate) mod bindgen {
     });
 }
 
-use super::Error;
+use crate::Error;
 
 use anyhow::Result;
 use std::ops::{Deref, DerefMut};
@@ -150,7 +150,7 @@ impl<T: Inner + Send + Clone> Plugin<T> {
     pub async fn handle_message(
         &mut self,
         msg: &bindgen::exports::component::extension::handlers::Message,
-    ) -> Result<String, Error> {
+    ) -> Result<String, super::error::Error> {
         Ok(self
             .instance
             .component_extension_handlers()
@@ -159,7 +159,7 @@ impl<T: Inner + Send + Clone> Plugin<T> {
     }
 
     /// Handles requests
-    pub async fn handle_request(&mut self, data: Vec<u8>) -> Result<Vec<u8>, Error> {
+    pub async fn handle_request(&mut self, data: Vec<u8>) -> Result<Vec<u8>, super::error::Error> {
         Ok(self
             .instance
             .component_extension_handlers()

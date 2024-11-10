@@ -1,7 +1,9 @@
+#[cfg(test)]
 use std::path::{Path, PathBuf};
 
 /// Utility function to get the workspace dir
-pub fn workspace_dir() -> PathBuf {
+#[cfg(test)]
+fn workspace_dir() -> PathBuf {
     let output = std::process::Command::new(env!("CARGO"))
         .arg("locate-project")
         .arg("--workspace")
@@ -15,6 +17,8 @@ pub fn workspace_dir() -> PathBuf {
 
 /// Gets the wasm bytes path from the given package name
 /// Will convert the package name to snake case if it contains a hyphen
+/// for testing purposes
+#[cfg(test)]
 pub fn get_wasm_path(pkg_name: &str) -> Result<PathBuf, super::Error> {
     let pkg_name = pkg_name.replace('-', "_");
     let workspace = workspace_dir();

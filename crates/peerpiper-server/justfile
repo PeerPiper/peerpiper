@@ -1,3 +1,12 @@
+set dotenv-load
+
 # use cargo to start the server with the cloudflare feature
 serve:
   cargo run --features cloudflare
+
+# Secure Copy Protocol (SCP) command to copy files to a remote server
+scp:
+  scp -i ~/.ssh/id_ed25519 ../../target/release/peerpiper-server opc@$IP_ADDRESS:~
+
+connect:
+  ssh -i ~/.ssh/id_ed25519 opc@$IP_ADDRESS

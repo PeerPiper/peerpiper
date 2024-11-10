@@ -4318,7 +4318,11 @@ name = "peerpiper-plugins"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
+ "futures",
  "lazy_static",
+ "libp2p",
+ "peerpiper",
  "thiserror",
  "tokio",
  "tokio-test",

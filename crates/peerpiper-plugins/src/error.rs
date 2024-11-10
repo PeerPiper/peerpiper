@@ -10,9 +10,9 @@ pub enum Error {
     #[error("IO Error: {0}")]
     Io(#[from] std::io::Error),
 
-    /// tokio_two Error
-    #[error("Plugin Component Error: {0}")]
-    TokioTwo(#[from] crate::tokio_compat::bindgen::component::extension::types::Error),
+    /// Tokio Error from crate::tokio::error::Error as TokioError;
+    #[error("Tokio Plugin Component Error: {0}")]
+    Tokio(#[from] crate::tokio::error::Error),
 
     /// sync modul errors
     #[error("Plugin Component Error: {0}")]
