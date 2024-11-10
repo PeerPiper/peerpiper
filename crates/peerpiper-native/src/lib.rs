@@ -3,10 +3,7 @@ mod error;
 pub use error::NativeError;
 use futures::channel::{mpsc, oneshot};
 use libp2p::multiaddr::{Multiaddr, Protocol};
-use std::{
-    net::{Ipv4Addr, Ipv6Addr},
-    str::FromStr,
-};
+use std::net::{Ipv4Addr, Ipv6Addr};
 
 use peerpiper_core::{
     error::Error as CoreError,
@@ -17,12 +14,12 @@ use peerpiper_core::{
     },
 };
 
-const BOOTNODES: [&str; 4] = [
-    "QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
-    "QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
-    "QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
-    "QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
-];
+// const BOOTNODES: [&str; 4] = [
+//     "QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
+//     "QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
+//     "QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
+//     "QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
+// ];
 
 pub async fn start(
     tx: mpsc::Sender<Events>,
@@ -63,11 +60,11 @@ pub async fn start(
         network_client.start_listening(addr).await?;
     }
 
-    for peer in &BOOTNODES {
-        let addr = Multiaddr::from_str("/dnsaddr/bootstrap.libp2p.io")?
-            .with(Protocol::P2p(libp2p::PeerId::from_str(peer)?));
-        network_client.dial(addr).await?;
-    }
+    // for peer in &BOOTNODES {
+    //     let addr = Multiaddr::from_str("/dnsaddr/bootstrap.libp2p.io")?
+    //         .with(Protocol::P2p(libp2p::PeerId::from_str(peer)?));
+    //     network_client.dial(addr).await?;
+    // }
 
     tx_client.send(network_client.clone()).map_err(|_e| {
         tracing::error!("Failed to send network client to client");
