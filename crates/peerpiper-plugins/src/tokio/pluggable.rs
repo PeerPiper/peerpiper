@@ -67,6 +67,7 @@ pub struct PluggablePiper {
     pub(crate) plugins: HashMap<String, Plugin<PluginsState>>,
     plugin_receiver: mpsc::Receiver<Plugin<PluginsState>>,
     client_handle: Option<Client>,
+    evt_emitter: tokio::sync::mpsc::Sender<String>,
 }
 
 impl PluggablePiper {
@@ -87,6 +88,7 @@ impl PluggablePiper {
                 plugins: Default::default(),
                 plugin_receiver,
                 client_handle: None,
+                evt_emitter: evt_emitter.clone(),
             },
             command_receiver,
             PluginLoader::new(plugin_sender, command_sender, evt_emitter),
@@ -117,7 +119,9 @@ impl PluggablePiper {
             if let Events::Outer(PublicEvent::ListenAddr { address, .. }) =
                 rx_events.next().await.unwrap()
             {
-                tracing::info!(%address, "RXD Address");
+                let msg = format!("RXD Address: {:?}", address);
+                tracing::info!("{}", msg);
+                self.evt_emitter.send(msg).await.unwrap();
                 break address;
             }
         };
@@ -183,7 +187,9 @@ impl PluggablePiper {
                     }
                 }
             }
-            Events::Outer(PublicEvent::ListenAddr { address: _, .. }) => {
+            Events::Outer(PublicEvent::ListenAddr { address, .. }) => {
+                let msg = format!("👉 👉 Added {}", address);
+                self.evt_emitter.send(msg).await.unwrap();
                 // TODO: Figure out what we want to do with the other new addresses.
                 //handle_new_address(&address).await;
             }
