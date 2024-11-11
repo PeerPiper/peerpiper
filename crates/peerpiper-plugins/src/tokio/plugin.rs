@@ -206,7 +206,7 @@ impl<T: Inner + Send + Clone> Environment<T> {
     /// # Example
     ///
     /// ```
-    /// use peerpiper_plugins::tokio_compat::{Environment, Inner};
+    /// use peerpiper_plugins::tokio::{Environment, Inner};
     /// use wasmtime_wasi::async_trait; // or async_trait::async_trait
     /// # use tokio_test;
     /// # use std::path::Path;

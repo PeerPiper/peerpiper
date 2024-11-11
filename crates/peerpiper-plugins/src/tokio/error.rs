@@ -6,7 +6,7 @@ pub enum Error {
     #[error("Anyhow Error: {0}")]
     Anyhow(#[from] anyhow::Error),
 
-    /// tokio Error, From<tokio::tokio_compat::bindgen::component::extension::types::Error>
+    /// tokio Error, From<tokio::tokio::bindgen::component::extension::types::Error>
     #[error("Plugin Component Error: {0}")]
     TokioTwo(#[from] crate::tokio::plugin::bindgen::component::extension::types::Error),
 
