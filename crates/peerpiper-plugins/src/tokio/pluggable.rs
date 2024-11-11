@@ -145,8 +145,10 @@ impl PluggablePiper {
                 }
                 // also select to recieve plugins from the [Loader]
                 Some(plugin) = self.plugin_receiver.next() => {
-                    tracing::debug!("Received plugin: {:?}", plugin.state().name);
+                    let msg = format!("Plugin loaded: {:?}", plugin.state().name);
+                    tracing::debug!("{}", msg);
                     self.plugins.insert(plugin.state().name.clone(), plugin);
+                    self.evt_emitter.send(msg).await.unwrap();
                 }
             }
         }
@@ -177,7 +179,9 @@ impl PluggablePiper {
                 // until all plugins have been called
                 for (name, plugin) in &mut self.plugins {
                     if let Ok(bytes) = plugin.handle_request(request.to_vec()).await {
-                        tracing::debug!("[{name}] Plugin output: {:?}", bytes.len());
+                        let msg = format!("[{}] Plugin output: {:?}", name, bytes.len());
+                        tracing::debug!("{}", msg);
+                        self.evt_emitter.send(msg).await.unwrap();
                         self.client_handle
                             .as_mut()
                             .unwrap()
