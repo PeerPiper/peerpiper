@@ -47,7 +47,7 @@ You'll need a few dependencies to get started:
 
 ### 🦀 [Rust](https://www.rust-lang.org/)
 
-- [x] [Rust](https://www.rust-lang.org/) 1.80+ (use nightly as stipulated in the `rust-toolchain.toml` file)
+- [x] [Rust](https://www.rust-lang.org/) 1.80+ (uses nightly stipulated in the [`rust-toolchain.toml`](./rust-toolchain.toml
 - [x] Add `wasm32-wasip1` target: `rustup target add wasm32-wasip1`
 - [x] Add `wasm32-unknown-unknown` target: `rustup target add wasm32-unknown-unknown`
 
