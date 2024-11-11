@@ -1,4 +1,3 @@
-#![feature(ip)]
 pub mod error;
 pub mod events;
 pub mod libp2p;

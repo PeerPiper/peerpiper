@@ -403,8 +403,8 @@ impl EventLoop {
                         // Only add our globally available IPv6 addresses to the external addresses list.
                         if !ip6.is_loopback()
                             && !ip6.is_unspecified()
-                            && !ip6.is_unicast_link_local()
-                        // no fe80::/10 addresses
+                        // no fe80::/10 addresses, ie ip6.segments()[0] & 0xffc0) != 0xfe80 (!ip6.is_unicast_link_local() requires nightly)
+                        && (ip6.segments()[0] & 0xffc0) != 0xfe80
                         {
                             if let Err(e) = addr_handler() {
                                 tracing::error!("Failed to send listen address: {:?}", e);
