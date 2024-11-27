@@ -15,8 +15,9 @@ pub async fn run_test_wasm(libp2p_endpoint: String) -> Result<(), JsError> {
     let (mut command_sender, command_receiver) = mpsc::channel(8);
     let (tx_client, _rx_client) = oneshot::channel();
 
+    let libp2p_endpoints = vec![libp2p_endpoint.clone()];
     spawn_local(async move {
-        peerpiper::start(tx, command_receiver, tx_client, libp2p_endpoint)
+        peerpiper::start(tx, command_receiver, tx_client, libp2p_endpoints)
             .await
             .expect("never end")
     });
