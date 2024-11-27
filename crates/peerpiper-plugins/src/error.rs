@@ -21,4 +21,8 @@ pub enum Error {
     /// From JoinError
     #[error("JoinError: {0}")]
     JoinError(#[from] tokio::task::JoinError),
+
+    /// Unknown directory path
+    #[error("Unknown Path")]
+    UnknownPath,
 }

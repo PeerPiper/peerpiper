@@ -3,10 +3,10 @@ use futures::channel::mpsc::Sender;
 use futures::channel::{mpsc, oneshot};
 use futures::SinkExt as _;
 use futures::StreamExt as _;
+use libp2p::Multiaddr;
 use peerpiper::core::events::{Events, PeerPiperCommand, PublicEvent};
 use peerpiper::core::libp2p::api::{Client, Libp2pEvent};
 use std::collections::HashMap;
-use std::path::Path;
 
 use super::plugin::{Environment, Plugin};
 
@@ -19,14 +19,14 @@ pub struct PluginsState {
     command_sender: Sender<PeerPiperCommand>,
 
     /// An emitter to broadcast events
-    evt_emitter: tokio::sync::mpsc::Sender<String>,
+    evt_emitter: tokio::sync::mpsc::Sender<ExternalEvents>,
 }
 
 impl PluginsState {
     pub(crate) fn new(
         name: String,
         command_sender: Sender<PeerPiperCommand>,
-        evt_emitter: tokio::sync::mpsc::Sender<String>,
+        evt_emitter: tokio::sync::mpsc::Sender<ExternalEvents>,
     ) -> Self {
         Self {
             name,
@@ -58,8 +58,19 @@ impl super::Inner for PluginsState {
         // tracing::info!("State: {:?} {:?}", key, value);
         // state saved here, or in App, or both??
         // self.log.push(msg.clone());
-        self.evt_emitter.send(msg).await.unwrap();
+        self.evt_emitter
+            .send(ExternalEvents::Message(format!("[{}] {}", self.name, msg)))
+            .await
+            .unwrap();
     }
+}
+
+/// External Events emitted by Pluggable Piper
+pub enum ExternalEvents {
+    /// Address added
+    Address(Multiaddr),
+    /// A generic message
+    Message(String),
 }
 
 /// PluginsManager holds the plugins state in memory.
@@ -67,7 +78,7 @@ pub struct PluggablePiper {
     pub(crate) plugins: HashMap<String, Plugin<PluginsState>>,
     plugin_receiver: mpsc::Receiver<Plugin<PluginsState>>,
     client_handle: Option<Client>,
-    evt_emitter: tokio::sync::mpsc::Sender<String>,
+    evt_emitter: tokio::sync::mpsc::Sender<ExternalEvents>,
 }
 
 impl PluggablePiper {
@@ -77,7 +88,7 @@ impl PluggablePiper {
         Self,
         mpsc::Receiver<PeerPiperCommand>,
         PluginLoader,
-        tokio::sync::mpsc::Receiver<String>,
+        tokio::sync::mpsc::Receiver<ExternalEvents>,
     ) {
         let (plugin_sender, plugin_receiver) = mpsc::channel(8);
         let (command_sender, command_receiver) = mpsc::channel(8);
@@ -121,7 +132,10 @@ impl PluggablePiper {
             {
                 let msg = format!("RXD Address: {:?}", address);
                 tracing::info!("{}", msg);
-                self.evt_emitter.send(msg).await.unwrap();
+                self.evt_emitter
+                    .send(ExternalEvents::Address(address.clone()))
+                    .await
+                    .unwrap();
                 break address;
             }
         };
@@ -148,7 +162,9 @@ impl PluggablePiper {
                     let msg = format!("Plugin loaded: {:?}", plugin.state().name);
                     tracing::debug!("{}", msg);
                     self.plugins.insert(plugin.state().name.clone(), plugin);
-                    self.evt_emitter.send(msg).await.unwrap();
+                    self.evt_emitter.send(
+                        ExternalEvents::Message(msg)
+                        ).await.unwrap();
                 }
             }
         }
@@ -181,7 +197,10 @@ impl PluggablePiper {
                     if let Ok(bytes) = plugin.handle_request(request.to_vec()).await {
                         let msg = format!("[{}] Plugin output: {:?}", name, bytes.len());
                         tracing::debug!("{}", msg);
-                        self.evt_emitter.send(msg).await.unwrap();
+                        self.evt_emitter
+                            .send(ExternalEvents::Message(msg))
+                            .await
+                            .unwrap();
                         self.client_handle
                             .as_mut()
                             .unwrap()
@@ -193,7 +212,10 @@ impl PluggablePiper {
             }
             Events::Outer(PublicEvent::ListenAddr { address, .. }) => {
                 let msg = format!("👉 👉 Added {}", address);
-                self.evt_emitter.send(msg).await.unwrap();
+                self.evt_emitter
+                    .send(ExternalEvents::Message(msg))
+                    .await
+                    .unwrap();
                 // TODO: Figure out what we want to do with the other new addresses.
                 //handle_new_address(&address).await;
             }
@@ -201,28 +223,6 @@ impl PluggablePiper {
         }
         Ok(())
     }
-
-    // pub async fn load_plugin(
-    //     &mut self,
-    //     name: String,
-    //     wasm_bytes: &[u8],
-    // ) -> Result<(), Box<dyn std::error::Error>> {
-    //     // if env err, return emtpy vec from load_plugins() fn
-    //     let env = Environment::<PluginsState>::new(Path::new("plugins").to_path_buf())?;
-    //
-    //     // convert wasms to Paths, then use to load the wasm files
-    //     let plugin = Plugin::new(
-    //         env.clone(),
-    //         &name.clone(),
-    //         wasm_bytes,
-    //         PluginsState::new(name, self.command_sender.as_ref().unwrap().clone()),
-    //     )
-    //     .await?;
-    //
-    //     self.plugins.push(plugin);
-    //
-    //     Ok(())
-    // }
 }
 
 /// Loads plugins intot he Pluggable Piper
@@ -233,7 +233,7 @@ pub struct PluginLoader {
     /// Plugin Sender to send plugins to the Pluggable Piper
     plugin_sender: mpsc::Sender<Plugin<PluginsState>>,
     /// Events emitted by the plugins
-    evt_emitter: tokio::sync::mpsc::Sender<String>,
+    evt_emitter: tokio::sync::mpsc::Sender<ExternalEvents>,
 }
 
 impl PluginLoader {
@@ -241,7 +241,7 @@ impl PluginLoader {
     pub fn new(
         plugin_sender: mpsc::Sender<Plugin<PluginsState>>,
         command_sender: mpsc::Sender<PeerPiperCommand>,
-        evt_emitter: tokio::sync::mpsc::Sender<String>,
+        evt_emitter: tokio::sync::mpsc::Sender<ExternalEvents>,
     ) -> Self {
         Self {
             plugin_sender,
@@ -250,14 +250,26 @@ impl PluginLoader {
         }
     }
 
-    /// Loads the plugin by sending it to the [PluggablePiper]
+    /// Loads the plugin by sending it to the [PluggablePiper].
+    ///
+    /// Saves the plugin to the local directory under `data_local_dir` using the
+    /// `dirs` crate. Appends the plugin name to the path.
+    ///
+    /// # Example
+    ///
+    /// `$HOME`/.local/share|/home/alice/.local/share/pluggable_peerpiper/{plugin_name}
     pub async fn load_plugin(
         &mut self,
         name: String,
         wasm_bytes: &[u8],
     ) -> Result<(), Box<dyn std::error::Error>> {
+        // use dirs crate to join the path
+        let dir = dirs::data_local_dir()
+            .ok_or(crate::error::Error::UnknownPath)
+            .map(|dir| dir.join("pluggable_peerpiper"))?;
+
         let plugin = Plugin::new(
-            Environment::<PluginsState>::new(Path::new("plugins").to_path_buf())?,
+            Environment::<PluginsState>::new(dir)?,
             &name.clone(),
             wasm_bytes,
             PluginsState::new(name, self.command_sender.clone(), self.evt_emitter.clone()),
