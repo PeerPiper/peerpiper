@@ -9,8 +9,8 @@ pub mod tokio;
 /// Crate error module
 mod error;
 
-/// Use this module if you don't require async support
-pub mod sync;
+// [Depracted] Use this module if you don't require async support
+// pub mod sync;
 
 mod utils;
 

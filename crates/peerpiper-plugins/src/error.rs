@@ -14,10 +14,9 @@ pub enum Error {
     #[error("Tokio Plugin Component Error: {0}")]
     Tokio(#[from] crate::tokio::error::Error),
 
-    /// sync modul errors
-    #[error("Plugin Component Error: {0}")]
-    Sync(#[from] crate::sync::bindgen::component::extension::types::Error),
-
+    ///// sync module errors
+    //#[error("Plugin Component Error: {0}")]
+    //Sync(#[from] crate::sync::bindgen::component::extension::types::Error),
     /// From JoinError
     #[error("JoinError: {0}")]
     JoinError(#[from] tokio::task::JoinError),
