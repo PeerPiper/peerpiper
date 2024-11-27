@@ -77,7 +77,7 @@ impl PeerPiper {
     #[wasm_bindgen]
     pub async fn connect(
         &self,
-        libp2p_endpoint: Vec<String>,
+        libp2p_endpoints: Vec<String>,
         on_event: &js_sys::Function,
     ) -> Result<(), JsValue> {
         let (tx_evts, mut rx_evts) = mpsc::channel(MAX_CHANNELS);
@@ -90,7 +90,7 @@ impl PeerPiper {
         let (command_sender, command_receiver) = mpsc::channel(8);
 
         spawn_local(async move {
-            crate::start(tx_evts, command_receiver, tx_client, libp2p_endpoint)
+            crate::start(tx_evts, command_receiver, tx_client, libp2p_endpoints)
                 .await
                 .expect("never end")
         });
