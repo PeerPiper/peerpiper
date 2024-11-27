@@ -4319,6 +4319,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "dirs 5.0.1",
  "futures",
  "lazy_static",
  "libp2p",
