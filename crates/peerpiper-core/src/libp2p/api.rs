@@ -812,13 +812,13 @@ impl EventLoop {
                 tracing::info!("API: Successfully Subscribed to {topic}");
             }
             Command::Unsubscribe { topic } => {
-                if let Err(err) = self
+                if !self
                     .swarm
                     .behaviour_mut()
                     .gossipsub
-                    .unsubscribe(&libp2p::gossipsub::IdentTopic::new(topic))
+                    .unsubscribe(&libp2p::gossipsub::IdentTopic::new(&topic))
                 {
-                    tracing::error!("Failed to unsubscribe from topic: {err}");
+                    tracing::error!("Failed to unsubscribe from topic: {topic}");
                     let _ = self
                         .event_sender
                         .send(Events::Outer(PublicEvent::Error {
