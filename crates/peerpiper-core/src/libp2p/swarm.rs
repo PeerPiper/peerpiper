@@ -1,4 +1,4 @@
-use libp2p::{identity::Keypair, noise, relay, swarm::NetworkBehaviour, yamux};
+use libp2p::{identity::Keypair, relay, swarm::NetworkBehaviour};
 use std::time::Duration;
 
 pub async fn create<B: NetworkBehaviour>(
@@ -39,6 +39,7 @@ pub async fn create<B: NetworkBehaviour>(
     #[cfg(not(target_arch = "wasm32"))]
     {
         use crate::libp2p::config::Config;
+        use libp2p::{noise, yamux};
         use libp2p_webrtc::tokio::Certificate;
         use rand::thread_rng;
 

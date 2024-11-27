@@ -402,23 +402,23 @@ macro_rules! __export_extension_world_impl {
 #[doc(inline)]
 pub(crate) use __export_extension_world_impl as export;
 #[cfg(target_arch = "wasm32")]
-#[link_section = "component-type:wit-bindgen:0.30.0:extension-world:encoded world"]
+#[link_section = "component-type:wit-bindgen:0.35.0:component:extension@0.1.0:extension-world:encoded world"]
 #[doc(hidden)]
 pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 654] = *b"\
 \0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\x88\x04\x01A\x02\x01\
 A\x0a\x01B\x03\x01p}\x01@\x01\x03key\0\x01\0\x04\0\x0fstart-providing\x01\x01\x03\
-\x01-component:extension/peer-piper-commands@0.1.0\x05\0\x01B\x02\x01@\x01\x07me\
-ssages\x01\0\x04\0\x03log\x01\0\x03\x01!component:extension/logging@0.1.0\x05\x01\
-\x01B\x05\x01p}\x01r\x03\x05topics\x04peers\x04data\0\x04\0\x07message\x03\0\x01\
-\x01q\x03\x18unsupported-message-type\0\0\x0dhandler-error\x01s\0\x08io-error\x01\
-s\0\x04\0\x05error\x03\0\x03\x03\x01\x1fcomponent:extension/types@0.1.0\x05\x02\x02\
-\x03\0\x02\x07message\x02\x03\0\x02\x05error\x01B\x0b\x02\x03\x02\x01\x03\x04\0\x07\
-message\x03\0\0\x02\x03\x02\x01\x04\x04\0\x05error\x03\0\x02\x01j\x01s\x01\x03\x01\
+\0-component:extension/peer-piper-commands@0.1.0\x05\0\x01B\x02\x01@\x01\x07mess\
+ages\x01\0\x04\0\x03log\x01\0\x03\0!component:extension/logging@0.1.0\x05\x01\x01\
+B\x05\x01p}\x01r\x03\x05topics\x04peers\x04data\0\x04\0\x07message\x03\0\x01\x01\
+q\x03\x18unsupported-message-type\0\0\x0dhandler-error\x01s\0\x08io-error\x01s\0\
+\x04\0\x05error\x03\0\x03\x03\0\x1fcomponent:extension/types@0.1.0\x05\x02\x02\x03\
+\0\x02\x07message\x02\x03\0\x02\x05error\x01B\x0b\x02\x03\x02\x01\x03\x04\0\x07m\
+essage\x03\0\0\x02\x03\x02\x01\x04\x04\0\x05error\x03\0\x02\x01j\x01s\x01\x03\x01\
 @\x01\x03msg\x01\0\x04\x04\0\x0ehandle-message\x01\x05\x01p}\x01j\x01\x06\x01\x03\
-\x01@\x01\x04data\x06\0\x07\x04\0\x0ehandle-request\x01\x08\x04\x01\"component:e\
-xtension/handlers@0.1.0\x05\x05\x04\x01)component:extension/extension-world@0.1.\
-0\x04\0\x0b\x15\x01\0\x0fextension-world\x03\0\0\0G\x09producers\x01\x0cprocesse\
-d-by\x02\x0dwit-component\x070.215.0\x10wit-bindgen-rust\x060.30.0";
+\x01@\x01\x04data\x06\0\x07\x04\0\x0ehandle-request\x01\x08\x04\0\"component:ext\
+ension/handlers@0.1.0\x05\x05\x04\0)component:extension/extension-world@0.1.0\x04\
+\0\x0b\x15\x01\0\x0fextension-world\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\
+\x0dwit-component\x070.220.0\x10wit-bindgen-rust\x060.35.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {
