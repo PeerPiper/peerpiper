@@ -66,6 +66,7 @@ impl super::Inner for PluginsState {
 }
 
 /// External Events emitted by Pluggable Piper
+#[derive(Debug)]
 pub enum ExternalEvents {
     /// Address added
     Address(Multiaddr),
