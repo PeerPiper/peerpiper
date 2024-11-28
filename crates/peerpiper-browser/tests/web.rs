@@ -1,6 +1,7 @@
-#![cfg(target_arch = "wasm32")] // <== So that peerpiper_browser::bindgen references are valid
+//#![cfg(target_arch = "wasm32")] // <== So that peerpiper_browser::bindgen references are valid
 
 use cid::Cid;
+use peerpiper_browser::opfs::OPFSBlockstore;
 pub use peerpiper_core::events::PeerPiperCommand;
 use wasm_bindgen::{JsError, JsValue};
 use wasm_bindgen_test::wasm_bindgen_test_configure;
@@ -180,4 +181,46 @@ async fn test_commander() -> Result<(), JsValue> {
     assert_eq!(data, bytes);
 
     Ok(())
+}
+
+#[wasm_bindgen_test]
+async fn test_opfs_blockstore() {
+    let blockstore = OPFSBlockstore::new().await.unwrap();
+    let name = "hello.bin";
+    let bytes = b"Hello World".to_vec();
+    blockstore.put(name, bytes.clone()).await.unwrap();
+    let data = blockstore.get(name).await.unwrap();
+    assert_eq!(data, bytes);
+}
+
+#[wasm_bindgen_test]
+async fn test_wnfs_impl_opfs() {
+    use bytes::Bytes;
+    use wnfs::common::blockstore::BlockStore as WNFSBlockStore;
+    use wnfs::common::CODEC_RAW;
+
+    let blockstore = peerpiper_browser::opfs::OPFSBlockstore::new()
+        .await
+        .unwrap();
+
+    let bytes = vec![42; 1024 * 256]; // 256 ok, 286 nope.
+    let bytes: Bytes = bytes.into();
+    let cid = blockstore
+        .put_block(bytes.clone(), CODEC_RAW)
+        .await
+        .expect("test should be able to put a block");
+
+    let has_block = blockstore
+        .has_block(&cid)
+        .await
+        .expect("test should be able to check for block");
+
+    assert_eq!(has_block, true);
+
+    let block = blockstore
+        .get_block(&cid.into())
+        .await
+        .expect("test should be able to get a block");
+
+    assert_eq!(block, bytes);
 }

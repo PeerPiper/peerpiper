@@ -1,5 +1,6 @@
 pub mod bindgen;
 pub mod blockstore;
+pub mod opfs;
 
 mod error;
 

@@ -51,6 +51,21 @@ instant = { version = "0.1.12", features = [
   "inaccurate",
 ] } # needed as a workaround for https://github.com/rustwasm/wasm-pack/issues/743 
 
+web-sys = { version = "0.3.70", features = [
+  "Window",
+  "Navigator",
+  "Storage",
+  "StorageManager",
+  "Blob",
+  "File",
+  "FileSystem",
+  "FileSystemFileHandle",
+  "FileSystemGetFileOptions",
+  "FileSystemDirectoryHandle",
+  "FileSystemWritableFileStream",
+  "FileSystemCreateWritableOptions",
+] }
+
 [target.wasm32-unknown-unknown.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
 
