@@ -18,7 +18,7 @@ thiserror = "1"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 libp2p = { version = "0.54.1", git = "https://github.com/libp2p/rust-libp2p.git" }
-wit-bindgen-rt = { version = "0.34.0", features = ["bitflags"] }
+wit-bindgen-rt = { version = "0.36.0", features = ["bitflags"] }
 # for submodules
 bls12_381_plus = { version = "0.8.16", features = ["expose-fields", "alloc"] }
 delano-keys = { path = "./submodules/delanocreds/crates/delano-keys" }

@@ -1760,7 +1760,7 @@ dependencies = [
  "thiserror 1.0.69",
  "wasmtime",
  "wasmtime-wasi",
- "wit-bindgen-rt 0.34.0",
+ "wit-bindgen-rt 0.36.0",
 ]
 
 [[package]]
@@ -4369,6 +4369,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
+ "web-sys",
  "wnfs",
  "wnfs-unixfs-file",
 ]
@@ -4488,7 +4489,7 @@ dependencies = [
  "thiserror 1.0.69",
  "wasmtime",
  "wasmtime-wasi",
- "wit-bindgen-rt 0.34.0",
+ "wit-bindgen-rt 0.36.0",
  "wurbo",
 ]
 
@@ -7881,9 +7882,9 @@ dependencies = [
 
 [[package]]
 name = "wit-bindgen-rt"
-version = "0.34.0"
+version = "0.36.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "744845cde309b8fa32408d6fb67456449278c66ea4dcd96de29797b302721f02"
+checksum = "7947d0131c7c9da3f01dfde0ab8bd4c4cf3c5bd49b6dba0ae640f1fa752572ea"
 dependencies = [
  "bitflags 2.6.0",
 ]
