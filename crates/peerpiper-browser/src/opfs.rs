@@ -11,7 +11,7 @@ use wnfs::common::libipld::Cid;
 use wnfs::common::utils::CondSend;
 use wnfs::common::BlockStoreError;
 
-use peerpiper_core::SystemCommandHandler;
+pub use peerpiper_core::SystemCommandHandler;
 
 /// Uses Origin Privacy File System (OPFS) to store blocks
 pub struct OPFSBlockstore {
@@ -125,5 +125,17 @@ impl SystemCommandHandler for OPFSBlockstore {
         })?;
 
         Ok(res)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn is_system_command_handler<T: SystemCommandHandler>() {}
+
+    #[test]
+    fn test_traits() {
+        is_system_command_handler::<OPFSBlockstore>();
     }
 }

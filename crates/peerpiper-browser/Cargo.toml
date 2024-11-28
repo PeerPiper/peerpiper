@@ -77,3 +77,4 @@ rand_core = "0.6.4"
 [features]
 # default = ["logging"]
 logging = ["tracing-wasm", "console_error_panic_hook"]
+bindgen = []

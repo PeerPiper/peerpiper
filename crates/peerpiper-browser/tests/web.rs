@@ -1,7 +1,8 @@
-//#![cfg(target_arch = "wasm32")] // <== So that peerpiper_browser::bindgen references are valid
+#![cfg(target_arch = "wasm32")] // <== So that peerpiper_browser::bindgen references are valid
 
 use cid::Cid;
 use peerpiper_browser::opfs::OPFSBlockstore;
+use peerpiper_browser::SystemCommandHandler;
 pub use peerpiper_core::events::PeerPiperCommand;
 use wasm_bindgen::{JsError, JsValue};
 use wasm_bindgen_test::wasm_bindgen_test_configure;
@@ -10,6 +11,13 @@ use wasm_bindgen_test::*;
 wasm_bindgen_test_configure!(run_in_browser);
 
 const RAW: u64 = 0x55;
+
+fn is_system_command_handler<T: SystemCommandHandler>() {}
+
+#[wasm_bindgen_test]
+fn test_traits() {
+    is_system_command_handler::<OPFSBlockstore>();
+}
 
 #[wasm_bindgen_test]
 async fn idb_test() {

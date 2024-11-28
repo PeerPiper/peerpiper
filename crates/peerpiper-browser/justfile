@@ -6,7 +6,7 @@ build:
 
 test:
   wasm-pack build --target web
-  wasm-pack test --headless --chrome
+  wasm-pack test --headless --chrome --all-features
 
 # npm publish the package in ./pkg/ directory
 publish: build 

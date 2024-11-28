@@ -1,10 +1,14 @@
+/// bindgen behind bindgen feature flag
+#[cfg(feature = "bindgen")]
 pub mod bindgen;
+#[cfg(feature = "bindgen")]
 pub mod blockstore;
 pub mod opfs;
 
 mod error;
 
 use crate::error::Error;
+pub use crate::opfs::SystemCommandHandler;
 use peerpiper_core::events::{Events, PeerPiperCommand};
 use peerpiper_core::libp2p::api::{self, Client};
 use peerpiper_core::libp2p::{
