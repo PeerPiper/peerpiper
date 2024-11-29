@@ -4426,14 +4426,19 @@ dependencies = [
 name = "peerpiper-native"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "bytes",
+ "dirs 5.0.1",
  "futures",
  "libp2p",
  "peerpiper-core",
  "rand",
+ "tempfile",
  "thiserror 1.0.69",
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "wnfs-unixfs-file",
 ]
 
 [[package]]
