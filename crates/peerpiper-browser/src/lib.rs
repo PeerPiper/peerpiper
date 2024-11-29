@@ -1,8 +1,13 @@
+//! PeerPiper Browser. Works from both JavaScript (bindgen feature) and eframe, Leptos style systems.
+
 /// bindgen behind bindgen feature flag
 #[cfg(feature = "bindgen")]
 pub mod bindgen;
+
 #[cfg(feature = "bindgen")]
 pub mod blockstore;
+
+/// Orinin Private File System
 pub mod opfs;
 
 mod error;

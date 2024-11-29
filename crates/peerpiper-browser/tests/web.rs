@@ -232,3 +232,15 @@ async fn test_wnfs_impl_opfs() {
 
     assert_eq!(block, bytes);
 }
+
+// test 512kb into OPFS using put/get
+#[wasm_bindgen_test]
+async fn test_opfs_put_get() {
+    let blockstore = OPFSBlockstore::new().await.unwrap();
+    let name = "hello.bin";
+    let len = 1 << 19; // 512kb, 2^19
+    let bytes = vec![42; len];
+    blockstore.put(name, bytes.clone()).await.unwrap();
+    let data = blockstore.get(name).await.unwrap();
+    assert_eq!(data, bytes);
+}

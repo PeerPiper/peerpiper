@@ -12,6 +12,9 @@ use wnfs::common::utils::CondSend;
 use wnfs::common::BlockStoreError;
 
 pub use peerpiper_core::SystemCommandHandler;
+use wnfs_unixfs_file::builder::FileBuilder;
+
+use crate::error::Error;
 
 /// Uses Origin Privacy File System (OPFS) to store blocks
 pub struct OPFSBlockstore {
@@ -105,14 +108,15 @@ impl SystemCommandHandler for OPFSBlockstore {
     type Error = crate::error::Error;
 
     async fn put(&self, data: Vec<u8>) -> Result<Cid, Self::Error> {
-        let root_cid = self
-            .put_block(data, Default::default())
-            .await
-            .map_err(|err| crate::error::Error::Anyhow(err.into()))?;
+        let root_cid = put_chunks(self, data).await.map_err(|err| {
+            crate::error::Error::String(format!("Failed to put bytes in the system: {}", err))
+        })?;
+
         Ok(root_cid)
     }
 
     async fn get(&self, key: Vec<u8>) -> Result<Vec<u8>, Self::Error> {
+        // TODO: should be chunked to interop with other file systems?
         let cid = Cid::try_from(key).map_err(|err| {
             crate::error::Error::Anyhow(anyhow::Error::msg(format!("Failed to parse CID: {}", err)))
         })?;
@@ -126,6 +130,18 @@ impl SystemCommandHandler for OPFSBlockstore {
 
         Ok(res)
     }
+}
+
+/// A Chunker that takes bytes and chunks them
+pub async fn put_chunks<B: BlockStore + Clone>(blockstore: B, data: Vec<u8>) -> Result<Cid, Error> {
+    let root_cid = FileBuilder::new()
+        .content_bytes(data.clone())
+        .fixed_chunker(256 * 1024)
+        .build()?
+        .store(&blockstore)
+        .await?;
+
+    Ok(root_cid)
 }
 
 #[cfg(test)]
