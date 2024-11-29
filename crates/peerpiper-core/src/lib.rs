@@ -2,6 +2,9 @@ pub mod error;
 pub mod events;
 pub mod libp2p;
 
+// re-export Blockstore
+pub use wnfs_common::{blockstore::BlockStore, libipld::Cid, BlockStoreError};
+
 use crate::libp2p::api::Client;
 use ::libp2p::PeerId;
 use events::{PeerPiperCommand, SystemCommand};
@@ -9,7 +12,7 @@ use futures::channel::mpsc;
 use futures::SinkExt;
 use std::collections::HashSet;
 use std::str::FromStr;
-use wnfs_common::libipld::Cid;
+pub use wnfs_common;
 use wnfs_common::utils::CondSend;
 
 pub struct Commander<H: SystemCommandHandler> {

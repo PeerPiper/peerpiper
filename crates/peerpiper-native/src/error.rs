@@ -1,6 +1,4 @@
-use thiserror::Error;
-
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum NativeError {
     /// From core::Error
     #[error("Core error {0}")]
@@ -16,4 +14,24 @@ pub enum NativeError {
     /// From<libp2p::libp2p_identity::ParseError>
     #[error("Identity error")]
     Identity(#[from] libp2p::identity::ParseError),
+
+    /// Error putting data into Blockstore
+    #[error("Error putting data into Blockstore")]
+    BlockStoreError(#[from] peerpiper_core::wnfs_common::BlockStoreError),
+
+    /// From<peerpiper_core::wnfs_common::libipld::cid::Error>
+    #[error("Cid error")]
+    Cid(#[from] peerpiper_core::wnfs_common::libipld::cid::Error),
+
+    /// No data directory
+    #[error("No data directory")]
+    NoDataDir,
+
+    /// Input output error
+    #[error("IO error")]
+    Io(#[from] std::io::Error),
+
+    /// from anyhow
+    #[error("error")]
+    Anyhow(#[from] anyhow::Error),
 }

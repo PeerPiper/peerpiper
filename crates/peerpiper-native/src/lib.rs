@@ -1,4 +1,7 @@
+mod blockstore;
 mod error;
+
+pub use blockstore::{NativeBlockstore, NativeBlockstoreBuilder};
 
 pub use error::NativeError;
 use futures::channel::{mpsc, oneshot};
