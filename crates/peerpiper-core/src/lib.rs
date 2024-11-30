@@ -7,7 +7,7 @@ pub use wnfs_common::{blockstore::BlockStore, libipld::Cid, BlockStoreError};
 
 use crate::libp2p::api::Client;
 use ::libp2p::PeerId;
-use events::{PeerPiperCommand, SystemCommand};
+use events::{AllCommands, SystemCommand};
 use futures::channel::mpsc;
 use futures::SinkExt;
 use std::collections::HashSet;
@@ -15,13 +15,21 @@ use std::str::FromStr;
 pub use wnfs_common;
 use wnfs_common::utils::CondSend;
 
+/// A Commander is an aggregate structure that can send commands to the system and optionally to the network.
+///
+/// It is made by connecting the systme IO to the Network client and commander. Together, they give
+/// users a unified interface to interact with the network and the system from one place.
+#[derive(Debug, Clone)]
 pub struct Commander<H: SystemCommandHandler> {
-    swarm_sendr: Option<mpsc::Sender<PeerPiperCommand>>,
+    swarm_sendr: Option<mpsc::Sender<libp2p::api::NetworkCommand>>,
     system_command_handler: H,
     client: Option<Client>,
 }
 
 impl<H: SystemCommandHandler> Commander<H> {
+    /// Create a new Commander with the given system command handler.
+    ///
+    /// Optionally, you can set the network sender and client using the `with_network` and `with_client` methods.
     pub fn new(system_command_handler: H) -> Self {
         Self {
             swarm_sendr: None,
@@ -31,7 +39,10 @@ impl<H: SystemCommandHandler> Commander<H> {
     }
 
     /// Set the network sender, the channel used to send commands to the network
-    pub fn with_network(&mut self, network: mpsc::Sender<PeerPiperCommand>) -> &mut Self {
+    pub fn with_network(
+        &mut self,
+        network: mpsc::Sender<libp2p::api::NetworkCommand>,
+    ) -> &mut Self {
         self.swarm_sendr = Some(network);
         self
     }
@@ -52,21 +63,24 @@ pub enum ReturnValues {
 
 impl<H: SystemCommandHandler> Commander<H> {
     /// Sends the command using system, and optionally network if it's Some
-    pub async fn order(&mut self, command: PeerPiperCommand) -> Result<ReturnValues, error::Error> {
+    pub async fn order(
+        &mut self,
+        command: events::AllCommands,
+    ) -> Result<ReturnValues, error::Error> {
         match command {
-            PeerPiperCommand::System(SystemCommand::Put { bytes }) => {
+            AllCommands::System(SystemCommand::Put { bytes }) => {
                 let cid = self.system_command_handler.put(bytes).await.map_err(|e| {
                     error::Error::String(format!("Failed to put bytes in the system: {e}"))
                 })?;
                 Ok(ReturnValues::ID(cid))
             }
-            PeerPiperCommand::System(SystemCommand::Get { key }) => {
+            AllCommands::System(SystemCommand::Get { key }) => {
                 let bytes = self.system_command_handler.get(key).await.map_err(|e| {
                     error::Error::String(format!("Failed to get bytes from the system: {e}"))
                 })?;
                 Ok(ReturnValues::Data(bytes))
             }
-            PeerPiperCommand::PeerRequest { request, peer_id } => match &mut self.client {
+            AllCommands::PeerRequest { request, peer_id } => match &mut self.client {
                 Some(client) => {
                     let peer_id = PeerId::from_str(&peer_id).map_err(|err| {
                         error::Error::String(format!("Failed to create PeerId: {}", err))
@@ -87,7 +101,7 @@ impl<H: SystemCommandHandler> Commander<H> {
                         .to_string(),
                 )),
             },
-            PeerPiperCommand::GetProviders { key } => match &mut self.client {
+            AllCommands::GetProviders { key } => match &mut self.client {
                 Some(client) => {
                     let providers = client.get_providers(key).await?;
                     Ok(ReturnValues::Providers(providers))
@@ -97,14 +111,13 @@ impl<H: SystemCommandHandler> Commander<H> {
                 )),
             },
             // The follow commands get sent over the network and do not expect a direct response
-            PeerPiperCommand::Publish { .. }
-            | PeerPiperCommand::Subscribe { .. }
-            | PeerPiperCommand::Unsubscribe { .. }
-            | PeerPiperCommand::ShareAddress { .. }
-            | PeerPiperCommand::PutRecord { .. }
-            | PeerPiperCommand::StartProviding { .. } => {
+            AllCommands::Publish { .. }
+            | AllCommands::Subscribe { .. }
+            | AllCommands::Unsubscribe { .. }
+            | AllCommands::PutRecord { .. }
+            | AllCommands::StartProviding { .. } => {
                 match &mut self.swarm_sendr {
-                    Some(swarm_sendr) => swarm_sendr.send(command).await?,
+                    Some(swarm_sendr) => swarm_sendr.send(command.into()).await?,
                     None => {
                         return Err(error::Error::String(
                             "Tried to send a network command, but network is not initialized"
@@ -114,6 +127,30 @@ impl<H: SystemCommandHandler> Commander<H> {
                 }
                 Ok(ReturnValues::None)
             }
+        }
+    }
+}
+
+// From events::Command for libp2p::api::Command
+impl From<AllCommands> for libp2p::api::NetworkCommand {
+    fn from(command: AllCommands) -> Self {
+        match command {
+            AllCommands::Publish { topic, data } => {
+                libp2p::api::NetworkCommand::Publish { topic, data }
+            }
+            AllCommands::Subscribe { topic } => libp2p::api::NetworkCommand::Subscribe { topic },
+            AllCommands::Unsubscribe { topic } => {
+                libp2p::api::NetworkCommand::Unsubscribe { topic }
+            }
+            AllCommands::PutRecord { key, value } => {
+                libp2p::api::NetworkCommand::PutRecord { key, value }
+            }
+            AllCommands::StartProviding { key } => {
+                libp2p::api::NetworkCommand::StartProviding { key }
+            }
+
+            // This should only be used in one place: swarm_sendr, so it's safe to panic?
+            _ => unreachable!(),
         }
     }
 }

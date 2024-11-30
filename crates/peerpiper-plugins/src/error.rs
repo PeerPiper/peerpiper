@@ -24,4 +24,8 @@ pub enum Error {
     /// Unknown directory path
     #[error("Unknown Path")]
     UnknownPath,
+
+    /// Peerpiper error
+    #[error("PeerPiper Error: {0}")]
+    PeerPiper(#[from] peerpiper::core::error::Error),
 }

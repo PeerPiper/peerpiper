@@ -1,4 +1,4 @@
-use crate::events::{Events, Network, NetworkError, PeerPiperCommand, PublicEvent};
+use crate::events::{Events, Network, NetworkError, PublicEvent};
 use crate::libp2p::behaviour::{Behaviour, BehaviourEvent};
 use crate::libp2p::error::Error;
 use futures::StreamExt;
@@ -41,9 +41,10 @@ pub async fn new(swarm: Swarm<Behaviour>) -> (Client, Receiver<Events>, EventLoo
     )
 }
 
-#[derive(Clone)]
+/// This client is used to send [Command]s to the network event loop
+#[derive(Clone, Debug)]
 pub struct Client {
-    command_sender: mpsc::Sender<Command>,
+    command_sender: mpsc::Sender<NetworkCommand>,
 }
 
 impl Client {
@@ -51,7 +52,7 @@ impl Client {
     pub async fn start_listening(&mut self, addr: Multiaddr) -> Result<ListenerId, Error> {
         let (sender, receiver) = oneshot::channel();
         self.command_sender
-            .send(Command::StartListening { addr, sender })
+            .send(NetworkCommand::StartListening { addr, sender })
             .await?;
         receiver.await?
     }
@@ -59,7 +60,7 @@ impl Client {
     pub async fn dial(&mut self, addr: Multiaddr) -> Result<(), Error> {
         let (sender, receiver) = oneshot::channel();
         self.command_sender
-            .send(Command::Dial { addr, sender })
+            .send(NetworkCommand::Dial { addr, sender })
             .await?;
         receiver.await?
     }
@@ -74,7 +75,7 @@ impl Client {
         let (sender, receiver) = oneshot::channel();
         if let Err(e) = self
             .command_sender
-            .send(Command::Jeeves {
+            .send(NetworkCommand::Jeeves {
                 request,
                 peer,
                 sender,
@@ -93,7 +94,7 @@ impl Client {
         channel: ResponseChannel<PeerResponse>,
     ) -> Result<(), Error> {
         self.command_sender
-            .send(Command::RespondJeeves { bytes, channel })
+            .send(NetworkCommand::RespondJeeves { bytes, channel })
             .await
             .map_err(Error::SendError)
     }
@@ -102,7 +103,7 @@ impl Client {
     pub(crate) async fn get_providers(&mut self, key: Vec<u8>) -> Result<HashSet<PeerId>, Error> {
         let (sender, receiver) = oneshot::channel();
         self.command_sender
-            .send(Command::GetProviders { key, sender })
+            .send(NetworkCommand::GetProviders { key, sender })
             .await
             .map_err(Error::SendError)?;
         receiver.await.map_err(Error::OneshotCanceled)
@@ -111,14 +112,14 @@ impl Client {
     /// Add a peer to the routing table
     pub async fn add_peer(&mut self, peer_id: PeerId) -> Result<(), Error> {
         self.command_sender
-            .send(Command::AddPeer { peer_id })
+            .send(NetworkCommand::AddPeer { peer_id })
             .await
             .map_err(Error::SendError)
     }
     pub async fn publish(&mut self, message: impl AsRef<[u8]>, topic: String) -> Result<(), Error> {
         self.command_sender
-            .send(Command::Publish {
-                message: message.as_ref().to_vec(),
+            .send(NetworkCommand::Publish {
+                data: message.as_ref().to_vec(),
                 topic,
             })
             .await
@@ -126,14 +127,14 @@ impl Client {
     }
     pub async fn subscribe(&mut self, topic: String) -> Result<(), Error> {
         self.command_sender
-            .send(Command::Subscribe { topic })
+            .send(NetworkCommand::Subscribe { topic })
             .await
             .map_err(Error::SendError)
     }
     /// General command PeerPiperCommand parsed into Command then called
-    pub async fn command(&mut self, command: PeerPiperCommand) -> Result<(), Error> {
+    pub async fn command(&mut self, command: NetworkCommand) -> Result<(), Error> {
         self.command_sender
-            .send(command.into())
+            .send(command)
             .await
             .map_err(Error::SendError)
     }
@@ -144,7 +145,7 @@ impl Client {
     pub async fn run(
         &mut self,
         mut network_events: Receiver<Events>,
-        mut command_receiver: Receiver<PeerPiperCommand>,
+        mut command_receiver: Receiver<NetworkCommand>,
         mut tx: mpsc::Sender<Events>,
     ) {
         loop {
@@ -172,9 +173,9 @@ impl Client {
     }
 }
 
-/// Libp2p Commands
+/// PeerPiper Network Commands (Libp2p)
 #[derive(Debug)]
-enum Command {
+pub enum NetworkCommand {
     StartListening {
         addr: Multiaddr,
         sender: oneshot::Sender<Result<ListenerId, Error>>,
@@ -184,7 +185,7 @@ enum Command {
         sender: oneshot::Sender<Result<(), Error>>,
     },
     Publish {
-        message: Vec<u8>,
+        data: Vec<u8>,
         topic: String,
     },
     Subscribe {
@@ -263,23 +264,6 @@ impl Deref for PeerResponse {
     }
 }
 
-impl From<PeerPiperCommand> for Command {
-    fn from(command: PeerPiperCommand) -> Self {
-        match command {
-            PeerPiperCommand::Publish { topic, data } => Command::Publish {
-                topic,
-                message: data,
-            },
-            PeerPiperCommand::Subscribe { topic } => Command::Subscribe { topic },
-            PeerPiperCommand::Unsubscribe { topic } => Command::Unsubscribe { topic },
-            PeerPiperCommand::ShareAddress => Command::ShareMultiaddr,
-            PeerPiperCommand::PutRecord { key, value } => Command::PutRecord { key, value },
-            PeerPiperCommand::StartProviding { key } => Command::StartProviding { key },
-            _ => unimplemented!(),
-        }
-    }
-}
-
 /// The network event loop.
 /// Handles all the network logic for us.
 pub struct EventLoop {
@@ -288,7 +272,7 @@ pub struct EventLoop {
     /// The libp2p Swarm that handles all the network logic for us.
     swarm: Swarm<Behaviour>,
     /// Channel to send commands to the network event loop.
-    command_receiver: mpsc::Receiver<Command>,
+    command_receiver: mpsc::Receiver<NetworkCommand>,
     /// Channel to send events from the network event loop to the user.
     event_sender: mpsc::Sender<Events>,
     /// Jeeeves Tracking
@@ -302,7 +286,7 @@ impl EventLoop {
     /// Creates a new network event loop.
     fn new(
         swarm: Swarm<Behaviour>,
-        command_receiver: mpsc::Receiver<Command>,
+        command_receiver: mpsc::Receiver<NetworkCommand>,
         event_sender: mpsc::Sender<Events>,
     ) -> Self {
         Self {
@@ -754,21 +738,24 @@ impl EventLoop {
         Ok(())
     }
 
-    async fn handle_command(&mut self, command: Command) {
+    async fn handle_command(&mut self, command: NetworkCommand) {
         match command {
-            Command::StartListening { addr, sender } => {
+            NetworkCommand::StartListening { addr, sender } => {
                 let _ = match self.swarm.listen_on(addr) {
                     Ok(id) => sender.send(Ok(id)),
                     Err(e) => sender.send(Err(Error::TransportIo(e))),
                 };
             }
-            Command::Dial { addr, sender } => {
+            NetworkCommand::Dial { addr, sender } => {
                 let _ = match self.swarm.dial(addr) {
                     Ok(_) => sender.send(Ok(())),
                     Err(e) => sender.send(Err(Error::DialError(e))),
                 };
             }
-            Command::Publish { message, topic } => {
+            NetworkCommand::Publish {
+                data: message,
+                topic,
+            } => {
                 tracing::info!("API: Handling Publish command to {topic}");
                 let top = libp2p::gossipsub::IdentTopic::new(&topic);
                 if let Err(err) = self.swarm.behaviour_mut().gossipsub.publish(top, message) {
@@ -793,7 +780,7 @@ impl EventLoop {
                 }
                 tracing::info!("API: Successfully Published to {topic}");
             }
-            Command::Subscribe { topic } => {
+            NetworkCommand::Subscribe { topic } => {
                 tracing::info!("API: Handling Subscribe command to {topic}");
                 if let Err(err) = self
                     .swarm
@@ -811,7 +798,7 @@ impl EventLoop {
                 }
                 tracing::info!("API: Successfully Subscribed to {topic}");
             }
-            Command::Unsubscribe { topic } => {
+            NetworkCommand::Unsubscribe { topic } => {
                 if !self
                     .swarm
                     .behaviour_mut()
@@ -828,7 +815,7 @@ impl EventLoop {
                 }
             }
             // Add Explicit Peer by PeerId
-            Command::AddPeer { peer_id } => {
+            NetworkCommand::AddPeer { peer_id } => {
                 self.swarm
                     .behaviour_mut()
                     .gossipsub
@@ -836,7 +823,7 @@ impl EventLoop {
                 tracing::info!("API: Added Peer {peer_id} to the routing table.");
             }
             // Share the current Multiaddr for the server
-            Command::ShareMultiaddr => {
+            NetworkCommand::ShareMultiaddr => {
                 let p2p_addr = self
                     .swarm
                     .external_addresses()
@@ -856,7 +843,7 @@ impl EventLoop {
                     tracing::error!("Failed to send share address event: {e}");
                 }
             }
-            Command::Jeeves {
+            NetworkCommand::Jeeves {
                 request,
                 peer,
                 sender,
@@ -869,7 +856,7 @@ impl EventLoop {
                     .send_request(&peer, PeerRequest(request));
                 self.pending_requests.insert(response_id, sender);
             }
-            Command::RespondJeeves {
+            NetworkCommand::RespondJeeves {
                 bytes: file,
                 channel,
             } => {
@@ -881,7 +868,7 @@ impl EventLoop {
                     .expect("Connection to peer to be still open.");
             }
             // Put Records on the DHT
-            Command::PutRecord { key, value } => {
+            NetworkCommand::PutRecord { key, value } => {
                 tracing::info!("API: Handling PutRecord command");
                 let record = kad::Record::new(key, value);
                 let _ = self
@@ -890,11 +877,11 @@ impl EventLoop {
                     .kad
                     .put_record(record, kad::Quorum::One);
             }
-            Command::GetProviders { key, sender } => {
+            NetworkCommand::GetProviders { key, sender } => {
                 let query_id = self.swarm.behaviour_mut().kad.get_providers(key.into());
                 self.pending_get_providers.insert(query_id, sender);
             }
-            Command::StartProviding { key } => {
+            NetworkCommand::StartProviding { key } => {
                 tracing::info!("API: Handling StartProviding command");
                 if let Err(e) = self.swarm.behaviour_mut().kad.start_providing(key.into()) {
                     tracing::error!("Failed to start providing: {e}");

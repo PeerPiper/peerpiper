@@ -19,7 +19,7 @@ use tower_http::cors::{Any, CorsLayer};
 // use tokio::io::{AsyncBufReadExt, BufReader};
 // use tokio::process::Child;
 
-use peerpiper::core::events::{Events, PeerPiperCommand, PublicEvent};
+use peerpiper::core::events::{AllCommands, Events, PublicEvent};
 
 const MAX_CHANNELS: usize = 16;
 
@@ -68,9 +68,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                        // Once connection establish, subscribe to "test" topic
                         tracing::info!("New connection from {}, subscribing to test topic", peer);
                         command_sender
-                            .send(PeerPiperCommand::Subscribe {
+                            .send(AllCommands::Subscribe {
                                 topic: "test publish".to_string(),
-                            })
+                            }.into())
                             .await
                             .expect("Failed to send subscribe command");
                     }

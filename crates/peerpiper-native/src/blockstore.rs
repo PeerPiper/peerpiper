@@ -41,6 +41,7 @@ pub struct NativeBlockstoreBuilder {
 ///    Ok(())
 /// }
 /// ```
+#[derive(Clone, Debug)]
 pub struct NativeBlockstore {
     directory: PathBuf,
 }

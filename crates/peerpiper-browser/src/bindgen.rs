@@ -7,7 +7,7 @@ use futures::{
     channel::{mpsc, oneshot},
     StreamExt,
 };
-use peerpiper_core::events::PeerPiperCommand;
+use peerpiper_core::events::AllCommands;
 use peerpiper_core::Commander;
 use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
@@ -140,13 +140,13 @@ impl PeerPiper {
         //
         tracing::info!(
             "Example GetProviders Command: {:?}",
-            serde_wasm_bindgen::to_value(&PeerPiperCommand::GetProviders { key: vec![1, 2, 3] })
+            serde_wasm_bindgen::to_value(&AllCommands::GetProviders { key: vec![1, 2, 3] })
                 .expect("Failed to serialize example request response command")
         );
 
         tracing::info!("[ppb v0.1.7] Received command");
 
-        let command: PeerPiperCommand = serde_wasm_bindgen::from_value(cmd)?;
+        let command: AllCommands = serde_wasm_bindgen::from_value(cmd)?;
 
         let maybe_result = self
             .commander

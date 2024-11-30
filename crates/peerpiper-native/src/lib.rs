@@ -10,7 +10,7 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 
 use peerpiper_core::{
     error::Error as CoreError,
-    events::{Events, PeerPiperCommand},
+    events::Events,
     libp2p::{
         api::{self, Client},
         behaviour, swarm,
@@ -26,7 +26,7 @@ use peerpiper_core::{
 
 pub async fn start(
     tx: mpsc::Sender<Events>,
-    command_receiver: mpsc::Receiver<PeerPiperCommand>,
+    command_receiver: mpsc::Receiver<api::NetworkCommand>,
     tx_client: oneshot::Sender<Client>,
 ) -> Result<(), NativeError> {
     let mut swarm = swarm::create(behaviour::build)

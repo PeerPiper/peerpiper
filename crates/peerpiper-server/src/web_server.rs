@@ -3,7 +3,7 @@ use axum::response::{Html, IntoResponse};
 use axum::Router;
 use axum::{http::Method, routing::get};
 use libp2p::Multiaddr;
-use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr};
+use std::net::{Ipv4Addr, SocketAddr};
 use tower_http::cors::{Any, CorsLayer};
 
 /// Serve the Multiaddr we are listening on and the host files.

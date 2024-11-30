@@ -20,6 +20,7 @@ libp2p = { workspace = true, features = ["ed25519", "macros", "ping", "tokio"] }
 futures = "0.3.31"
 async-trait = "0.1.83"
 dirs = "5.0"
+peerpiper-native = { workspace = true }
 
 [dev-dependencies]
 tokio-test = "0.4.4"

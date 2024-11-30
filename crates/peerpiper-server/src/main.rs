@@ -6,58 +6,11 @@ mod cloudflare;
 mod web_server;
 
 use anyhow::Result;
-use futures::channel::mpsc::Sender;
-use futures::channel::{mpsc, oneshot};
-use futures::{SinkExt as _, StreamExt};
-use libp2p::multiaddr::{Multiaddr, Protocol};
-use peerpiper::core::events::{Events, PeerPiperCommand, PublicEvent};
-use peerpiper::core::libp2p::api::Libp2pEvent;
-use peerpiper_plugins::tokio::Plugin;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-
-const MAX_CHANNELS: usize = 16;
+use peerpiper_plugins::tokio::{ExternalEvents, PluggablePiper};
+use std::path::PathBuf;
 
 /// The plugins directory
 const PLUGINS_DIR: &str = "plugins";
-
-#[derive(Debug, Clone)]
-struct PluginsState {
-    /// Name of the plugin
-    name: String,
-
-    /// Sender to send commands to PeerPiper
-    pp_tx: Sender<PeerPiperCommand>,
-}
-
-impl PluginsState {
-    pub(crate) fn new(name: String, pp_tx: Sender<PeerPiperCommand>) -> Self {
-        Self { name, pp_tx }
-    }
-}
-
-#[async_trait::async_trait]
-impl peerpiper_plugins::tokio::Inner for PluginsState {
-    async fn start_providing(&mut self, key: Vec<u8>) {
-        // send to swarm via peerpiper transmitter
-        match self
-            .pp_tx
-            .send(PeerPiperCommand::StartProviding { key: key.clone() })
-            .await
-        {
-            Ok(_) => {
-                tracing::info!("Started providing for key: {:?}", key);
-            }
-            Err(e) => {
-                tracing::error!("Error sending command to peerpiper: {:?}", e);
-            }
-        }
-    }
-
-    async fn log(&mut self, _msg: String) {
-        // tracing::info!("State: {:?} {:?}", key, value);
-    }
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -69,84 +22,50 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::info!("Starting peerpiper-server");
 
-    let (tx, mut rx) = mpsc::channel(MAX_CHANNELS);
-    let (command_sender, command_receiver) = mpsc::channel(8);
-    let tx_clone = tx.clone();
-    let (tx_client, rx_client) = oneshot::channel();
+    let (mut pluggable, command_receiver, mut pluggable_client, mut plugin_evts) =
+        PluggablePiper::new();
 
-    tokio::spawn(async move {
-        peerpiper::start(tx_clone, command_receiver, tx_client)
-            .await
-            .unwrap();
+    // task for listening on plugin events and updating the log accoringly
+    tokio::task::spawn(async move {
+        while let Some(event) = plugin_evts.recv().await {
+            if let ExternalEvents::Address(addr) = event {
+                // handle the new address
+                tracing::debug!("Received Node Address: {:?}", addr);
+                // Serve .wasm, .js and server multiaddress over HTTP on this address.
+                tokio::spawn(web_server::serve(addr.clone()));
+                #[cfg(feature = "cloudflare")]
+                if let Err(e) = cloudflare::add_address(&addr).await {
+                    tracing::error!("Could not add address to cloudflare DNS record: {e}");
+                }
+            }
+        }
     });
 
-    // await on rx_client to get the client handle
-    let mut client_handle = rx_client.await?;
-
-    tracing::info!("Started.");
-
-    let address = loop {
-        if let Events::Outer(PublicEvent::ListenAddr { address, .. }) = rx.next().await.unwrap() {
-            tracing::info!(%address, "RXD Address");
-            break address;
-        }
-    };
-
-    // Serve .wasm, .js and server multiaddress over HTTP on this address.
-    tokio::spawn(web_server::serve(address.clone()));
-
-    let handle_new_address = async |address: &Multiaddr| {
-        #[cfg(feature = "cloudflare")]
-        if let Err(e) = cloudflare::add_address(address).await {
-            tracing::error!("Could not add address to cloudflare DNS record: {e}");
-        }
-    };
-
-    handle_new_address(&address).await;
-
     // Use WIT component handlers here.
-    let load_plugins =
-        async |wasms: &[PathBuf]| -> Vec<peerpiper_plugins::tokio::Plugin<PluginsState>> {
-            let mut plugins = Vec::new();
+    let mut load_plugins = async |wasms: &[PathBuf]| {
+        let Ok(path) = std::env::current_dir() else {
+            return;
+        };
 
-            // if env err, return emtpy vec from load_plugins() fn
-            let Ok(env) = peerpiper_plugins::tokio::Environment::<PluginsState>::new(
-                Path::new(PLUGINS_DIR).to_path_buf(),
-            ) else {
-                return plugins;
-            };
-
-            let Ok(path) = std::env::current_dir() else {
-                return plugins;
-            };
-
-            // convert wasms to Paths, then use to load the wasm files
-            for wasm in wasms.iter() {
-                // join src/wasm
-                let path = path.join(wasm);
-                tracing::info!("Loading wasm file: {:?}", path);
-                let wasm_bytes = std::fs::read(&path).unwrap();
-                let Ok(plugin) = Plugin::new(
-                    env.clone(),
+        for wasm in wasms.iter() {
+            let path = path.join(wasm);
+            tracing::info!("Loading wasm file: {:?}", path);
+            let wasm_bytes = std::fs::read(&path).unwrap();
+            if let Err(e) = pluggable_client
+                .load_plugin(
                     path.file_stem()
                         .unwrap_or_default()
                         .to_str()
-                        .unwrap_or_default(),
+                        .unwrap_or_default()
+                        .to_string(),
                     &wasm_bytes,
-                    PluginsState::new(
-                        wasm.file_stem().unwrap().to_string_lossy().to_string(),
-                        command_sender.clone(),
-                    ),
                 )
                 .await
-                else {
-                    continue;
-                };
-                plugins.push(plugin);
+            {
+                tracing::error!("Error loading plugin: {:?}", e);
             }
-
-            plugins
-        };
+        }
+    };
 
     // every *.wasm file in the ./plugins directory, if any
     let wasms = match std::fs::read_dir(PLUGINS_DIR) {
@@ -168,72 +87,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    let mut plugins = load_plugins(&wasms).await;
+    load_plugins(&wasms).await;
 
-    let mut handle_event = async |msg| -> Result<(), Box<dyn std::error::Error>> {
-        match msg {
-            Events::Outer(
-                ref m @ PublicEvent::Message {
-                    ref topic,
-                    ref peer,
-                    ref data,
-                },
-            ) => {
-                tracing::info!(
-                    "Received msg on topic {:?} from peer: {:?}, {:?}",
-                    topic,
-                    peer,
-                    data
-                );
-            }
-            Events::Inner(Libp2pEvent::InboundRequest { request, channel }) => {
-                tracing::trace!("InboundRequest: {:?}", request);
-
-                // set up a loop over the plugins, and call handle_request on each
-                // then break loop and return the first Ok response,if Err keep looping
-                // until all plugins have been called
-                for plugin in &mut plugins {
-                    if let Ok(bytes) = plugin.handle_request(request.to_vec()).await {
-                        tracing::info!("Plugin output: {:?}", bytes);
-                        client_handle.respond_bytes(bytes, channel).await?;
-                        break;
-                    }
-                }
-            }
-            Events::Outer(PublicEvent::ListenAddr { address: _, .. }) => {
-                // TODO: Figure out what we want to do with the other new addresses.
-                //handle_new_address(&address).await;
-            }
-            _ => {}
-        }
-        Ok(())
-    };
-
-    #[cfg(unix)]
-    let mut sigterm = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
-
-    loop {
-        #[cfg(unix)]
-        let sigterm_fut = sigterm.recv();
-        #[cfg(not(unix))]
-        let sigterm_fut = std::future::pending::<()>();
-
-        tokio::select! {
-            Some(msg) = rx.next() => {
-                if let Err(e) = handle_event(msg).await {
-                    tracing::error!(%e, "Error handling event");
-                }
-            }
-            _ = tokio::signal::ctrl_c() => {
-                tracing::info!("Received ctrl-c");
-                break;
-            }
-            _ = sigterm_fut => {
-                tracing::info!("Received SIGTERM");
-                break;
-            }
-        }
-    }
+    pluggable.run(command_receiver).await.unwrap_or_else(|e| {
+        tracing::error!("Failed to run PluggablePiper: {:?}", e);
+    });
 
     tracing::info!("Shutting down...");
 

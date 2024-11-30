@@ -1,9 +1,9 @@
-#![cfg(target_arch = "wasm32")] // <== So that peerpiper_browser::bindgen references are valid
+//#![cfg(target_arch = "wasm32")] // <== So that peerpiper_browser::bindgen references are valid
 
 use cid::Cid;
 use peerpiper_browser::opfs::OPFSBlockstore;
 use peerpiper_browser::SystemCommandHandler;
-pub use peerpiper_core::events::PeerPiperCommand;
+pub use peerpiper_core::events::AllCommands;
 use wasm_bindgen::{JsError, JsValue};
 use wasm_bindgen_test::wasm_bindgen_test_configure;
 use wasm_bindgen_test::*;
@@ -153,15 +153,15 @@ async fn test_commander() -> Result<(), JsValue> {
 
     let bytes = vec![24; len];
 
-    // call crate::bindgen::command with Stringified PeerPiperCommand::SystemCommands for put, then get, compare the
+    // call crate::bindgen::command with Stringified AllCommands::SystemCommands for put, then get, compare the
     // two to ensure they match.
-    let command = PeerPiperCommand::System(peerpiper_core::events::SystemCommand::Put {
+    let command = AllCommands::System(peerpiper_core::events::SystemCommand::Put {
         bytes: bytes.clone(),
     });
 
     let js_cmd = serde_wasm_bindgen::to_value(&command).map_err(|err| {
         JsError::new(&format!(
-            "Failed to serialize PeerPiperCommand::SystemCommands: {:?}",
+            "Failed to serialize AllCommands::SystemCommands: {:?}",
             err.to_string()
         ))
     })?;
@@ -172,11 +172,11 @@ async fn test_commander() -> Result<(), JsValue> {
 
     // now get the data back from cid string
     let command =
-        PeerPiperCommand::System(peerpiper_core::events::SystemCommand::Get { key: cid.into() });
+        AllCommands::System(peerpiper_core::events::SystemCommand::Get { key: cid.into() });
 
     let json = serde_wasm_bindgen::to_value(&command).map_err(|e| {
         JsError::new(&format!(
-            "Failed to serialize PeerPiperCommand::SystemCommands: {:?}",
+            "Failed to serialize AllCommands::SystemCommands: {:?}",
             e.to_string()
         ))
     })?;

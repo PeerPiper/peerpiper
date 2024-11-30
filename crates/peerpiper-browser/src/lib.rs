@@ -14,8 +14,8 @@ mod error;
 
 use crate::error::Error;
 pub use crate::opfs::SystemCommandHandler;
-use peerpiper_core::events::{Events, PeerPiperCommand};
-use peerpiper_core::libp2p::api::{self, Client};
+use peerpiper_core::events::Events;
+use peerpiper_core::libp2p::api::{self, Client, NetworkCommand};
 use peerpiper_core::libp2p::{
     behaviour::{self},
     swarm,
@@ -28,7 +28,7 @@ use wasm_bindgen_futures::spawn_local;
 
 pub async fn start(
     tx: mpsc::Sender<Events>,
-    command_receiver: mpsc::Receiver<PeerPiperCommand>,
+    command_receiver: mpsc::Receiver<NetworkCommand>,
     tx_client: oneshot::Sender<Client>,
     libp2p_endpoints: Vec<String>,
 ) -> Result<(), Error> {

@@ -4452,6 +4452,7 @@ dependencies = [
  "lazy_static",
  "libp2p",
  "peerpiper",
+ "peerpiper-native",
  "thiserror 1.0.69",
  "tokio",
  "tokio-test",

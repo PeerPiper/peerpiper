@@ -86,7 +86,7 @@ pub enum PublicEvent {
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "action")]
 //#[non_exhaustive]
-pub enum PeerPiperCommand {
+pub enum AllCommands {
     Publish {
         topic: String,
         data: Vec<u8>,
@@ -97,11 +97,11 @@ pub enum PeerPiperCommand {
     Unsubscribe {
         topic: String,
     },
-    /// System commands are a subset of PeerPiperCommands that do not go to the network, but come
+    /// System commands are a subset of [AllCommands] that do not go to the network, but come
     /// from componets to direct the system to do something, like save bytes to a file.
     System(SystemCommand),
-    /// Request the server to emit the Multiaddr that it is listening on
-    ShareAddress,
+    ///// Request the server to emit the Multiaddr that it is listening on
+    //ShareAddress,
     /// Please peer, do something with this data and give me a response
     PeerRequest {
         /// serialized request data
@@ -134,13 +134,13 @@ pub enum SystemCommand {
 }
 
 pub mod test_helpers {
-    use super::PeerPiperCommand;
+    use super::AllCommands;
     use futures::channel::mpsc;
     use futures::SinkExt;
 
-    pub async fn test_all_commands(command_sender: &mut mpsc::Sender<PeerPiperCommand>) {
+    pub async fn test_all_commands(command_sender: &mut mpsc::Sender<AllCommands>) {
         command_sender
-            .send(PeerPiperCommand::Subscribe {
+            .send(AllCommands::Subscribe {
                 topic: "test publish".to_string(),
             })
             .await
@@ -156,7 +156,7 @@ pub mod test_helpers {
 
         let data = vec![42; 690];
         match command_sender
-            .send(PeerPiperCommand::Publish {
+            .send(AllCommands::Publish {
                 topic: "test publish".to_string(),
                 data,
             })
@@ -176,24 +176,24 @@ mod tests {
     #[test]
     fn test_serde_peerpiper_command() {
         let commands = vec![
-            PeerPiperCommand::Publish {
+            AllCommands::Publish {
                 topic: "test".to_string(),
                 data: vec![1, 2, 3],
             },
-            PeerPiperCommand::Subscribe {
+            AllCommands::Subscribe {
                 topic: "test".to_string(),
             },
-            PeerPiperCommand::Unsubscribe {
+            AllCommands::Unsubscribe {
                 topic: "test".to_string(),
             },
-            PeerPiperCommand::System(SystemCommand::Put {
+            AllCommands::System(SystemCommand::Put {
                 bytes: vec![1, 2, 3],
             }),
-            PeerPiperCommand::System(SystemCommand::Get {
+            AllCommands::System(SystemCommand::Get {
                 key: "test".to_string().into(),
             }),
-            PeerPiperCommand::ShareAddress,
-            PeerPiperCommand::PeerRequest {
+            //Command::ShareAddress,
+            AllCommands::PeerRequest {
                 request: "what is your fave colour?".as_bytes().to_vec(),
                 peer_id: "123DfQm3...".to_string(),
             },
@@ -202,7 +202,7 @@ mod tests {
         for command in commands {
             let serialized = serde_json::to_string(&command).unwrap();
             println!("{}", serialized);
-            let deserialized: PeerPiperCommand = serde_json::from_str(&serialized).unwrap();
+            let deserialized: AllCommands = serde_json::from_str(&serialized).unwrap();
             assert_eq!(command, deserialized);
         }
     }

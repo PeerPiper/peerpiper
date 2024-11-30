@@ -127,7 +127,6 @@ mod tests {
     use libp2p::identity::Keypair;
     use libp2p_webrtc::tokio::Certificate;
     use std::fs;
-    use std::path::Path;
 
     #[test]
     fn test_roundtrip() {

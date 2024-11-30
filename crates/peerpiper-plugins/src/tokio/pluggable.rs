@@ -1,22 +1,25 @@
 use anyhow::Result;
-use futures::channel::mpsc::Sender;
 use futures::channel::{mpsc, oneshot};
 use futures::SinkExt as _;
 use futures::StreamExt as _;
 use libp2p::Multiaddr;
-use peerpiper::core::events::{Events, PeerPiperCommand, PublicEvent};
-use peerpiper::core::libp2p::api::{Client, Libp2pEvent};
+use peerpiper::core::events::{AllCommands, Events, PublicEvent};
+use peerpiper::core::libp2p::api::{Client, Libp2pEvent, NetworkCommand};
+use peerpiper::core::Commander;
+use peerpiper_native::{NativeBlockstore, NativeBlockstoreBuilder};
 use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use super::plugin::{Environment, Plugin};
 
 #[derive(Debug, Clone)]
-pub struct PluginsState {
+struct PluginsState {
     /// Name of the plugin
     name: String,
 
     /// Sender to send commands to PeerPiper
-    command_sender: Sender<PeerPiperCommand>,
+    commander: Arc<Mutex<Option<Commander<NativeBlockstore>>>>,
 
     /// An emitter to broadcast events
     evt_emitter: tokio::sync::mpsc::Sender<ExternalEvents>,
@@ -25,12 +28,12 @@ pub struct PluginsState {
 impl PluginsState {
     pub(crate) fn new(
         name: String,
-        command_sender: Sender<PeerPiperCommand>,
+        commander: Arc<Mutex<Option<Commander<NativeBlockstore>>>>,
         evt_emitter: tokio::sync::mpsc::Sender<ExternalEvents>,
     ) -> Self {
         Self {
             name,
-            command_sender,
+            commander,
             evt_emitter,
         }
     }
@@ -40,17 +43,15 @@ impl PluginsState {
 impl super::Inner for PluginsState {
     async fn start_providing(&mut self, key: Vec<u8>) {
         // send to swarm via peerpiper transmitter
-        match self
-            .command_sender
-            .send(PeerPiperCommand::StartProviding { key: key.clone() })
-            .await
-        {
-            Ok(_) => {
-                tracing::info!("[{}] Started providing for key: {:?}", self.name, key);
-            }
-            Err(e) => {
+        if let Some(commander) = self.commander.lock().await.as_mut() {
+            if let Err(e) = commander
+                .order(AllCommands::StartProviding { key: key.clone() })
+                .await
+            {
                 tracing::error!("Error sending command to peerpiper: {:?}", e);
             }
+        } else {
+            tracing::error!("Commander not ready");
         }
     }
 
@@ -76,10 +77,12 @@ pub enum ExternalEvents {
 
 /// PluginsManager holds the plugins state in memory.
 pub struct PluggablePiper {
-    pub(crate) plugins: HashMap<String, Plugin<PluginsState>>,
+    plugins: HashMap<String, Plugin<PluginsState>>,
     plugin_receiver: mpsc::Receiver<Plugin<PluginsState>>,
     client_handle: Option<Client>,
     evt_emitter: tokio::sync::mpsc::Sender<ExternalEvents>,
+    /// Sender to send the client handle to the Commander Client
+    client_sender: Option<tokio::sync::oneshot::Sender<Client>>,
 }
 
 impl PluggablePiper {
@@ -87,13 +90,14 @@ impl PluggablePiper {
     /// and returning a handle to it.
     pub fn new() -> (
         Self,
-        mpsc::Receiver<PeerPiperCommand>,
-        PluginLoader,
+        mpsc::Receiver<NetworkCommand>,
+        PluggableClient,
         tokio::sync::mpsc::Receiver<ExternalEvents>,
     ) {
         let (plugin_sender, plugin_receiver) = mpsc::channel(8);
-        let (command_sender, command_receiver) = mpsc::channel(8);
+        let (net_cmd_sendr, command_receiver) = mpsc::channel(8);
         let (evt_emitter, plugin_evts) = tokio::sync::mpsc::channel(100);
+        let (client_sender, client_receiver) = tokio::sync::oneshot::channel();
 
         (
             Self {
@@ -101,9 +105,10 @@ impl PluggablePiper {
                 plugin_receiver,
                 client_handle: None,
                 evt_emitter: evt_emitter.clone(),
+                client_sender: Some(client_sender),
             },
             command_receiver,
-            PluginLoader::new(plugin_sender, command_sender, evt_emitter),
+            PluggableClient::new(plugin_sender, net_cmd_sendr, evt_emitter, client_receiver),
             plugin_evts,
         )
     }
@@ -111,7 +116,7 @@ impl PluggablePiper {
     /// Runs the peerpiper service on the given plugin manager
     pub async fn run(
         &mut self,
-        command_receiver: mpsc::Receiver<PeerPiperCommand>,
+        command_receiver: mpsc::Receiver<NetworkCommand>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         tracing::debug!("Running");
 
@@ -125,7 +130,13 @@ impl PluggablePiper {
         });
 
         // await on rx_client to get the client handle
-        self.client_handle = Some(rx_client.await?);
+        let client_handle = rx_client.await?;
+        self.client_handle = Some(client_handle.clone());
+
+        // send the client_handle to the Commander Client
+        if let Some(sendr) = self.client_sender.take() {
+            sendr.send(client_handle).unwrap();
+        }
 
         let _address = loop {
             if let Events::Outer(PublicEvent::ListenAddr { address, .. }) =
@@ -226,28 +237,64 @@ impl PluggablePiper {
     }
 }
 
-/// Loads plugins intot he Pluggable Piper
+/// Gives the user the ability to control the Pluggable Instance,
+/// by Loading plugins and sending commands to the Pluggable Piper.
 #[derive(Clone)]
-pub struct PluginLoader {
-    /// Command Sender to send commands to the Pluggable Piper
-    command_sender: mpsc::Sender<PeerPiperCommand>,
+pub struct PluggableClient {
     /// Plugin Sender to send plugins to the Pluggable Piper
     plugin_sender: mpsc::Sender<Plugin<PluginsState>>,
     /// Events emitted by the plugins
     evt_emitter: tokio::sync::mpsc::Sender<ExternalEvents>,
+    /// Unified Commander to send system and netowrk commands
+    commander: Arc<Mutex<Option<Commander<NativeBlockstore>>>>,
 }
 
-impl PluginLoader {
+impl PluggableClient {
     /// Creates a new Loader
-    pub fn new(
+    fn new(
         plugin_sender: mpsc::Sender<Plugin<PluginsState>>,
-        command_sender: mpsc::Sender<PeerPiperCommand>,
+        net_cmd_sendr: mpsc::Sender<NetworkCommand>,
         evt_emitter: tokio::sync::mpsc::Sender<ExternalEvents>,
+        client_receiver: tokio::sync::oneshot::Receiver<Client>,
     ) -> Self {
+        let commander = Arc::new(Mutex::new(None));
+
+        let commander_clone = commander.clone();
+        // wait on rx_client to get the client handle
+        tokio::spawn(async move {
+            // 1. First we need a NativeBlockstore from NativeBlockstoreBuilder
+            let blockstore = NativeBlockstoreBuilder::default().open().await.unwrap();
+
+            // 2. Now we can create the basic Commander without network client or sender
+            {
+                let commander = Commander::new(blockstore);
+
+                // we can set the command_clone without network
+                let mut lock = commander_clone.lock().await;
+                *lock = Some(commander);
+
+                tracing::info!("System-only Commander ready");
+            }
+
+            // Now we wait for the network client handle
+            let client_handle = client_receiver.await.unwrap();
+            tracing::info!("Client handle received: {:?}", client_handle);
+
+            // 3. Now that we have a network conenction, we can update our Commander to
+            // incude the network sender and client
+            let mut lock = commander_clone.lock().await;
+            let commander = lock.as_mut().unwrap();
+            commander
+                .with_network(net_cmd_sendr)
+                .with_client(client_handle);
+
+            tracing::info!("NETWORKED Commander ready");
+        });
+
         Self {
             plugin_sender,
-            command_sender,
             evt_emitter,
+            commander,
         }
     }
 
@@ -273,12 +320,20 @@ impl PluginLoader {
             Environment::<PluginsState>::new(dir)?,
             &name.clone(),
             wasm_bytes,
-            PluginsState::new(name, self.command_sender.clone(), self.evt_emitter.clone()),
+            PluginsState::new(name, self.commander.clone(), self.evt_emitter.clone()),
         )
         .await?;
 
         self.plugin_sender.send(plugin).await?;
 
+        Ok(())
+    }
+
+    /// Use the Commander to order [PeerPiperCommand]s
+    pub async fn order(&mut self, command: AllCommands) -> Result<(), crate::Error> {
+        let mut lock = self.commander.lock().await;
+        let commander = lock.as_mut().unwrap();
+        commander.order(command).await?;
         Ok(())
     }
 }
