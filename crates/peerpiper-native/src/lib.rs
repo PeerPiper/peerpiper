@@ -28,6 +28,8 @@ pub async fn start(
     tx: mpsc::Sender<Events>,
     command_receiver: mpsc::Receiver<api::NetworkCommand>,
     tx_client: oneshot::Sender<Client>,
+    // TODO: This native node can dial other native nodes, like BOOTNODES
+    _libp2p_endpoints: Vec<String>,
 ) -> Result<(), NativeError> {
     let mut swarm = swarm::create(behaviour::build)
         .await
