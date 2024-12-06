@@ -1,3 +1,4 @@
+use tokio::io::AsyncReadExt as _;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
@@ -13,6 +14,7 @@ use wnfs::common::BlockStoreError;
 
 pub use peerpiper_core::SystemCommandHandler;
 use wnfs_unixfs_file::builder::FileBuilder;
+use wnfs_unixfs_file::unixfs::UnixFsFile;
 
 use crate::error::Error;
 
@@ -37,7 +39,7 @@ impl OPFSBlockstore {
     }
 
     /// Put block bytes into the OPFS under the given name
-    pub async fn put(&self, name: &str, data: Vec<u8>) -> Result<(), JsValue> {
+    pub async fn put_opfs(&self, name: &str, data: Vec<u8>) -> Result<(), JsValue> {
         let options = FileSystemGetFileOptions::new();
         options.set_create(true);
 
@@ -57,7 +59,7 @@ impl OPFSBlockstore {
     }
 
     /// Get block bytes from the OPFS by name
-    pub async fn get(&self, name: &str) -> Result<Vec<u8>, JsValue> {
+    pub async fn get_opfs(&self, name: &str) -> Result<Vec<u8>, JsValue> {
         let file_handle_result = JsFuture::from(self.inner.get_file_handle(name)).await;
 
         match file_handle_result {
@@ -78,7 +80,7 @@ impl OPFSBlockstore {
 impl BlockStore for OPFSBlockstore {
     async fn get_block(&self, cid: &Cid) -> Result<Bytes, BlockStoreError> {
         let js_uint8array = self
-            .get(cid.to_string().as_str())
+            .get_opfs(cid.to_string().as_str())
             .await
             .map_err(|_| BlockStoreError::CIDNotFound(*cid))?;
         let bytes: Bytes = js_uint8array.into();
@@ -92,7 +94,7 @@ impl BlockStore for OPFSBlockstore {
     ) -> Result<(), BlockStoreError> {
         let bytes: Bytes = bytes.into();
 
-        self.put(cid.to_string().as_str(), bytes.to_vec())
+        self.put_opfs(cid.to_string().as_str(), bytes.to_vec())
             .await
             .map_err(|_| BlockStoreError::CIDNotFound(cid))?;
 
@@ -100,7 +102,7 @@ impl BlockStore for OPFSBlockstore {
     }
 
     async fn has_block(&self, cid: &Cid) -> Result<bool, BlockStoreError> {
-        Ok(self.get(cid.to_string().as_str()).await.is_ok())
+        Ok(self.get_opfs(cid.to_string().as_str()).await.is_ok())
     }
 }
 
@@ -117,18 +119,15 @@ impl SystemCommandHandler for OPFSBlockstore {
 
     async fn get(&self, key: Vec<u8>) -> Result<Vec<u8>, Self::Error> {
         // TODO: should be chunked to interop with other file systems?
-        let cid = Cid::try_from(key).map_err(|err| {
-            crate::error::Error::Anyhow(anyhow::Error::msg(format!("Failed to parse CID: {}", err)))
-        })?;
+        let cid = Cid::try_from(key)?;
+        // because we chunked the data going in, we need to read it coming out
+        let file = UnixFsFile::load(&cid, &self).await?;
 
-        let res = self.get(cid.to_string().as_str()).await.map_err(|err| {
-            crate::error::Error::String(format!(
-                "Failed to get bytes from the system: {}",
-                err.as_string().unwrap_or_default()
-            ))
-        })?;
+        let mut buffer = Vec::new();
+        let mut reader = file.into_content_reader(&self, None)?;
+        reader.read_to_end(&mut buffer).await?;
 
-        Ok(res)
+        Ok(buffer)
     }
 }
 

@@ -159,13 +159,13 @@ impl From<AllCommands> for libp2p::api::NetworkCommand {
 pub trait SystemCommandHandler {
     type Error: std::error::Error;
 
-    /// Save the bytes to the system, return the Cid
+    /// [SystemCommandHandler] to Save the bytes to the system, return the Cid
     fn put(
         &self,
         bytes: Vec<u8>,
     ) -> impl std::future::Future<Output = Result<Cid, Self::Error>> + CondSend;
 
-    /// Get the bytes from the system using Cid bytes
+    /// [SystemCommandHandler] to Get the bytes from the system using Cid bytes
     fn get(
         &self,
         key: Vec<u8>,

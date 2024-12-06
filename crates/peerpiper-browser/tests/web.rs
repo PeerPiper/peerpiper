@@ -2,7 +2,6 @@
 
 use cid::Cid;
 use peerpiper_browser::opfs::OPFSBlockstore;
-use peerpiper_browser::SystemCommandHandler;
 pub use peerpiper_core::events::AllCommands;
 use wasm_bindgen::{JsError, JsValue};
 use wasm_bindgen_test::wasm_bindgen_test_configure;
@@ -12,10 +11,12 @@ wasm_bindgen_test_configure!(run_in_browser);
 
 const RAW: u64 = 0x55;
 
-fn is_system_command_handler<T: SystemCommandHandler>() {}
-
 #[wasm_bindgen_test]
 fn test_traits() {
+    use peerpiper_browser::SystemCommandHandler;
+
+    fn is_system_command_handler<T: SystemCommandHandler>() {}
+
     is_system_command_handler::<OPFSBlockstore>();
 }
 
@@ -196,8 +197,8 @@ async fn test_opfs_blockstore() {
     let blockstore = OPFSBlockstore::new().await.unwrap();
     let name = "hello.bin";
     let bytes = b"Hello World".to_vec();
-    blockstore.put(name, bytes.clone()).await.unwrap();
-    let data = blockstore.get(name).await.unwrap();
+    blockstore.put_opfs(name, bytes.clone()).await.unwrap();
+    let data = blockstore.get_opfs(name).await.unwrap();
     assert_eq!(data, bytes);
 }
 
@@ -234,13 +235,40 @@ async fn test_wnfs_impl_opfs() {
 }
 
 // test 512kb into OPFS using put/get
+// 2^18 is the max size for a single chunk
 #[wasm_bindgen_test]
 async fn test_opfs_put_get() {
     let blockstore = OPFSBlockstore::new().await.unwrap();
     let name = "hello.bin";
     let len = 1 << 19; // 512kb, 2^19
     let bytes = vec![42; len];
-    blockstore.put(name, bytes.clone()).await.unwrap();
-    let data = blockstore.get(name).await.unwrap();
+    blockstore.put_opfs(name, bytes.clone()).await.unwrap();
+    let data = blockstore.get_opfs(name).await.unwrap();
     assert_eq!(data, bytes);
+}
+
+#[wasm_bindgen_test]
+async fn test_opfs_system_command_handler() -> Result<(), JsValue> {
+    use peerpiper_core::SystemCommandHandler as _;
+
+    let blockstore = OPFSBlockstore::new()
+        .await
+        .map_err(|err| JsError::new(&format!("Failed to create OPFSBlockstore: {:?}", err)))?;
+
+    let len = 1 << 19; // 512kb, 2^19
+    let bytes = vec![42; len];
+
+    let root_cid = blockstore
+        .put(bytes.clone())
+        .await
+        .map_err(|err| JsError::new(&format!("Failed to put bytes in the system: {:?}", err)))?;
+
+    let data = blockstore
+        .get(root_cid.to_bytes())
+        .await
+        .map_err(|err| JsError::new(&format!("Failed to get bytes from the system: {:?}", err)))?;
+
+    assert_eq!(data, bytes);
+
+    Ok(())
 }

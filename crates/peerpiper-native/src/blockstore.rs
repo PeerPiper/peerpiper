@@ -115,6 +115,7 @@ impl SystemCommandHandler for NativeBlockstore {
 
     async fn get(&self, key: Vec<u8>) -> Result<Vec<u8>, Self::Error> {
         let cid = Cid::try_from(key)?;
+        // because we chunked the data going in, we need to read it coming out
         let file = UnixFsFile::load(&cid, &self).await?;
 
         let mut buffer = Vec::new();

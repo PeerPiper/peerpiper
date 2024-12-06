@@ -17,6 +17,9 @@ pub enum Error {
     /// From futures channel mspc send Error
     #[error("Send error {0}")]
     Send(#[from] futures::channel::mpsc::SendError),
+    /// From<peerpiper_core::wnfs_common::libipld::cid::Error>
+    #[error("Cid error {0}")]
+    Cid(#[from] peerpiper_core::wnfs_common::libipld::cid::Error),
 
     /// anyhow
     #[error("Anyhow error {0}")]
@@ -29,4 +32,8 @@ pub enum Error {
     /// From String
     #[error("{0}")]
     String(String),
+
+    /// From<std::io::Error>
+    #[error("IO error {0}")]
+    Io(#[from] std::io::Error),
 }
