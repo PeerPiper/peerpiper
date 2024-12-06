@@ -39,10 +39,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (tx_client, _rx_client) = oneshot::channel();
 
+    let libp2p_endpoints = vec![];
+
     tokio::spawn(async move {
-        peerpiper::start(tx_net_evt_clone, command_receiver, tx_client)
-            .await
-            .unwrap();
+        peerpiper::start(
+            tx_net_evt_clone,
+            command_receiver,
+            tx_client,
+            libp2p_endpoints,
+        )
+        .await
+        .unwrap();
     });
 
     tracing::info!("Started.");
