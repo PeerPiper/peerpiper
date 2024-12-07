@@ -8,13 +8,11 @@ pub mod bindgen;
 pub mod blockstore;
 
 /// Orinin Private File System
-#[cfg(target_arch = "wasm32")]
 pub mod opfs;
 
 mod error;
 
-use crate::error::Error;
-#[cfg(target_arch = "wasm32")]
+pub use crate::error::Error;
 pub use crate::opfs::SystemCommandHandler;
 use peerpiper_core::events::Events;
 use peerpiper_core::libp2p::api::{self, Client, NetworkCommand};

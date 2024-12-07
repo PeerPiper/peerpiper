@@ -20,7 +20,7 @@ pub enum NativeError {
     BlockStoreError(#[from] peerpiper_core::wnfs_common::BlockStoreError),
 
     /// From<peerpiper_core::wnfs_common::libipld::cid::Error>
-    #[error("Cid error")]
+    #[error("Cid error {0}")]
     Cid(#[from] peerpiper_core::wnfs_common::libipld::cid::Error),
 
     /// No data directory
