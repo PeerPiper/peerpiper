@@ -54,6 +54,7 @@ impl<H: SystemCommandHandler> Commander<H> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum ReturnValues {
     Data(Vec<u8>),
     ID(Cid),
