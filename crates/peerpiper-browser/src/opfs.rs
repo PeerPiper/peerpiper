@@ -19,6 +19,7 @@ use wnfs_unixfs_file::unixfs::UnixFsFile;
 use crate::error::Error;
 
 /// Uses Origin Privacy File System (OPFS) to store blocks
+#[derive(Debug)]
 pub struct OPFSBlockstore {
     inner: FileSystemDirectoryHandle,
 }
