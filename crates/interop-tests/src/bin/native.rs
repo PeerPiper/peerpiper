@@ -34,7 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Starting peerpiper-native TESTS");
 
     let (tx_net_evt, mut rx_net_evt) = mpsc::channel(MAX_CHANNELS);
-    let (mut command_sender, command_receiver) = mpsc::channel(8);
+    let (command_sender, command_receiver) = tokio::sync::mpsc::channel(8);
     let tx_net_evt_clone = tx_net_evt.clone();
 
     let (tx_client, _rx_client) = oneshot::channel();

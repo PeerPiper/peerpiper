@@ -272,3 +272,27 @@ async fn test_opfs_system_command_handler() -> Result<(), JsValue> {
 
     Ok(())
 }
+
+// test creating a OPFSBlockstore in a wasm_bindgen_futures spawn_local
+#[wasm_bindgen_test]
+async fn test_spawn_local() {
+    use crossbeam_channel::{unbounded, Receiver, Sender};
+
+    use futures::channel::oneshot;
+    use wasm_bindgen_futures::{spawn_local, JsFuture};
+
+    let (sender, receiver) = oneshot::channel();
+
+    spawn_local(async move {
+        let blockstore = OPFSBlockstore::new().await.unwrap();
+        sender.send(blockstore).unwrap();
+    });
+
+    let blockstore = receiver.await.unwrap();
+
+    //let name = "hello.bin";
+    //let bytes = b"Hello World".to_vec();
+    //blockstore.put_opfs(name, bytes.clone()).await.unwrap();
+    //let data = blockstore.get_opfs(name).await.unwrap();
+    //assert_eq!(data, bytes);
+}

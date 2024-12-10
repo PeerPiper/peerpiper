@@ -27,4 +27,8 @@ pub enum Error {
     /// SendError
     #[error("Send error")]
     SendError(#[from] futures::channel::mpsc::SendError),
+
+    /// From<tokio::sync::mpsc::error::SendError<libp2p::api::NetworkCommand>>
+    #[error("Tokio mpsc Send error")]
+    TokioSendError(#[from] tokio::sync::mpsc::error::SendError<crate::libp2p::api::NetworkCommand>),
 }

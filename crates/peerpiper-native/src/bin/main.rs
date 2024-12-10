@@ -14,7 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::info!("Starting peerpiper-native BINARY");
 
     let (tx, mut rx) = mpsc::channel(MAX_CHANNELS);
-    let (_command_sender, command_receiver) = mpsc::channel(8);
+    let (_command_sender, command_receiver) = tokio::sync::mpsc::channel(8);
     let (tx_client, _rx_client) = oneshot::channel();
     let libp2p_endpoints = vec![];
     peerpiper_native::start(tx, command_receiver, tx_client, libp2p_endpoints).await?;

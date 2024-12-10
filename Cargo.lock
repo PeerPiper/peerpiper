@@ -1194,6 +1194,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "crossbeam-channel"
+version = "0.5.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33480d6946193aa8033910124896ca395333cae7e2d1113d1fef6c3272217df2"
+dependencies = [
+ "crossbeam-utils",
+]
+
+[[package]]
 name = "crossbeam-deque"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4325,7 +4334,7 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "peerpiper"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "cfg-if",
  "futures",
@@ -4347,6 +4356,7 @@ dependencies = [
  "chrono",
  "cid 0.11.1",
  "console_error_panic_hook",
+ "crossbeam-channel",
  "futures",
  "getrandom",
  "instant",
@@ -4376,7 +4386,7 @@ dependencies = [
 
 [[package]]
 name = "peerpiper-core"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "base64 0.20.0",
  "futures",
@@ -4389,6 +4399,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+ "tokio",
  "tracing",
  "wnfs-common",
  "zeroize",

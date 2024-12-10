@@ -33,4 +33,10 @@ pub enum Error {
     /// Dial Error
     #[error("DialError: {0}")]
     DialError(#[from] libp2p::swarm::DialError),
+
+    /// From<tokio::sync::mpsc::error::SendError<libp2p::api::NetworkCommand>>
+    #[error("SendError: {0}")]
+    NetworkCommandSendError(
+        #[from] tokio::sync::mpsc::error::SendError<super::api::NetworkCommand>,
+    ),
 }

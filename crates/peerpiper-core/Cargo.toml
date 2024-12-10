@@ -1,6 +1,6 @@
 [package]
 name = "peerpiper-core"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,6 +15,7 @@ serde = { version = "1.0", features = ["derive"] }
 wnfs-common = "0.2.0"
 multibase = { version = "0.9", default-features = false }
 zeroize = "1.8.1"
+tokio = { version = "1.0", features = ["sync", "macros"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 libp2p = { workspace = true, features = [

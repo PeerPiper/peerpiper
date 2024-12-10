@@ -8,8 +8,6 @@ pub use wnfs_common::{blockstore::BlockStore, libipld::Cid, BlockStoreError};
 use crate::libp2p::api::Client;
 use ::libp2p::PeerId;
 use events::{AllCommands, SystemCommand};
-use futures::channel::mpsc;
-use futures::SinkExt;
 use std::collections::HashSet;
 use std::str::FromStr;
 pub use wnfs_common;
@@ -21,7 +19,7 @@ use wnfs_common::utils::CondSend;
 /// users a unified interface to interact with the network and the system from one place.
 #[derive(Debug, Clone)]
 pub struct Commander<H: SystemCommandHandler> {
-    swarm_sendr: Option<mpsc::Sender<libp2p::api::NetworkCommand>>,
+    swarm_sendr: Option<tokio::sync::mpsc::Sender<libp2p::api::NetworkCommand>>,
     system_command_handler: H,
     client: Option<Client>,
 }
@@ -41,7 +39,7 @@ impl<H: SystemCommandHandler> Commander<H> {
     /// Set the network sender, the channel used to send commands to the network
     pub fn with_network(
         &mut self,
-        network: mpsc::Sender<libp2p::api::NetworkCommand>,
+        network: tokio::sync::mpsc::Sender<libp2p::api::NetworkCommand>,
     ) -> &mut Self {
         self.swarm_sendr = Some(network);
         self
@@ -64,10 +62,7 @@ pub enum ReturnValues {
 
 impl<H: SystemCommandHandler> Commander<H> {
     /// Sends the command using system, and optionally network if it's Some
-    pub async fn order(
-        &mut self,
-        command: events::AllCommands,
-    ) -> Result<ReturnValues, error::Error> {
+    pub async fn order(&self, command: events::AllCommands) -> Result<ReturnValues, error::Error> {
         match command {
             AllCommands::System(SystemCommand::Put { bytes }) => {
                 let cid = self.system_command_handler.put(bytes).await.map_err(|e| {
@@ -81,7 +76,7 @@ impl<H: SystemCommandHandler> Commander<H> {
                 })?;
                 Ok(ReturnValues::Data(bytes))
             }
-            AllCommands::PeerRequest { request, peer_id } => match &mut self.client {
+            AllCommands::PeerRequest { request, peer_id } => match &self.client {
                 Some(client) => {
                     let peer_id = PeerId::from_str(&peer_id).map_err(|err| {
                         error::Error::String(format!("Failed to create PeerId: {}", err))
@@ -102,7 +97,7 @@ impl<H: SystemCommandHandler> Commander<H> {
                         .to_string(),
                 )),
             },
-            AllCommands::GetProviders { key } => match &mut self.client {
+            AllCommands::GetProviders { key } => match &self.client {
                 Some(client) => {
                     let providers = client.get_providers(key).await?;
                     Ok(ReturnValues::Providers(providers))
@@ -117,7 +112,7 @@ impl<H: SystemCommandHandler> Commander<H> {
             | AllCommands::Unsubscribe { .. }
             | AllCommands::PutRecord { .. }
             | AllCommands::StartProviding { .. } => {
-                match &mut self.swarm_sendr {
+                match &self.swarm_sendr {
                     Some(swarm_sendr) => swarm_sendr.send(command.into()).await?,
                     None => {
                         return Err(error::Error::String(

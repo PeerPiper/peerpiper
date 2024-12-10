@@ -1,7 +1,7 @@
 use crate::events::{Events, Network, NetworkError, PublicEvent};
 use crate::libp2p::behaviour::{Behaviour, BehaviourEvent};
 use crate::libp2p::error::Error;
-use futures::StreamExt;
+use futures::stream::StreamExt;
 use futures::{
     channel::{
         mpsc::{self, Receiver},
@@ -31,7 +31,7 @@ const TICK_INTERVAL: Duration = Duration::from_secs(15);
 /// - Network Event Loop: Start the network event loop
 pub async fn new(swarm: Swarm<Behaviour>) -> (Client, Receiver<Events>, EventLoop) {
     // These command senders/recvr are used to pass along parsed generic commands to the network event loop
-    let (command_sender, command_receiver) = mpsc::channel(32);
+    let (command_sender, command_receiver) = tokio::sync::mpsc::channel(32);
     let (event_sender, event_receiver) = mpsc::channel(32);
 
     (
@@ -44,7 +44,7 @@ pub async fn new(swarm: Swarm<Behaviour>) -> (Client, Receiver<Events>, EventLoo
 /// This client is used to send [Command]s to the network event loop
 #[derive(Clone, Debug)]
 pub struct Client {
-    command_sender: mpsc::Sender<NetworkCommand>,
+    command_sender: tokio::sync::mpsc::Sender<NetworkCommand>,
 }
 
 impl Client {
@@ -66,11 +66,7 @@ impl Client {
     }
 
     /// Request a response from a PeerId
-    pub async fn request_response(
-        &mut self,
-        request: Vec<u8>,
-        peer: PeerId,
-    ) -> Result<Vec<u8>, Error> {
+    pub async fn request_response(&self, request: Vec<u8>, peer: PeerId) -> Result<Vec<u8>, Error> {
         tracing::trace!("Sending request to {peer}");
         let (sender, receiver) = oneshot::channel();
         if let Err(e) = self
@@ -93,50 +89,46 @@ impl Client {
         bytes: Vec<u8>,
         channel: ResponseChannel<PeerResponse>,
     ) -> Result<(), Error> {
-        self.command_sender
+        Ok(self
+            .command_sender
             .send(NetworkCommand::RespondJeeves { bytes, channel })
-            .await
-            .map_err(Error::SendError)
+            .await?)
     }
 
     /// Get a record from the DHT given the key
-    pub(crate) async fn get_providers(&mut self, key: Vec<u8>) -> Result<HashSet<PeerId>, Error> {
+    pub(crate) async fn get_providers(&self, key: Vec<u8>) -> Result<HashSet<PeerId>, Error> {
         let (sender, receiver) = oneshot::channel();
         self.command_sender
             .send(NetworkCommand::GetProviders { key, sender })
-            .await
-            .map_err(Error::SendError)?;
+            .await?;
         receiver.await.map_err(Error::OneshotCanceled)
     }
 
     /// Add a peer to the routing table
     pub async fn add_peer(&mut self, peer_id: PeerId) -> Result<(), Error> {
-        self.command_sender
+        Ok(self
+            .command_sender
             .send(NetworkCommand::AddPeer { peer_id })
-            .await
-            .map_err(Error::SendError)
+            .await?)
     }
     pub async fn publish(&mut self, message: impl AsRef<[u8]>, topic: String) -> Result<(), Error> {
-        self.command_sender
+        Ok(self
+            .command_sender
             .send(NetworkCommand::Publish {
                 data: message.as_ref().to_vec(),
                 topic,
             })
-            .await
-            .map_err(Error::SendError)
+            .await?)
     }
     pub async fn subscribe(&mut self, topic: String) -> Result<(), Error> {
-        self.command_sender
+        Ok(self
+            .command_sender
             .send(NetworkCommand::Subscribe { topic })
-            .await
-            .map_err(Error::SendError)
+            .await?)
     }
     /// General command PeerPiperCommand parsed into Command then called
     pub async fn command(&mut self, command: NetworkCommand) -> Result<(), Error> {
-        self.command_sender
-            .send(command)
-            .await
-            .map_err(Error::SendError)
+        Ok(self.command_sender.send(command).await?)
     }
     /// Run the Client loop, awaiting commands and passing along network events.
     // Loop awaits two separate futures using select:
@@ -145,11 +137,11 @@ impl Client {
     pub async fn run(
         &mut self,
         mut network_events: Receiver<Events>,
-        mut command_receiver: Receiver<NetworkCommand>,
+        mut command_receiver: tokio::sync::mpsc::Receiver<NetworkCommand>,
         mut tx: mpsc::Sender<Events>,
     ) {
         loop {
-            futures::select! {
+            tokio::select! {
                 event = network_events.select_next_some() => {
                     tracing::trace!("Network event: {:?}", event);
                     if let Err(network_event) = tx.send(event).await {
@@ -158,7 +150,7 @@ impl Client {
                         continue;
                     }
                 },
-                command = command_receiver.next() => {
+                command = command_receiver.recv() => {
                     tracing::trace!("Received command");
                     // PeerPiperCommands cannot have channels in them, as they are not serializable
                     // So here we have to match on those with channels (.request_response), versus those without
@@ -272,7 +264,7 @@ pub struct EventLoop {
     /// The libp2p Swarm that handles all the network logic for us.
     swarm: Swarm<Behaviour>,
     /// Channel to send commands to the network event loop.
-    command_receiver: mpsc::Receiver<NetworkCommand>,
+    command_receiver: tokio::sync::mpsc::Receiver<NetworkCommand>,
     /// Channel to send events from the network event loop to the user.
     event_sender: mpsc::Sender<Events>,
     /// Jeeeves Tracking
@@ -286,7 +278,7 @@ impl EventLoop {
     /// Creates a new network event loop.
     fn new(
         swarm: Swarm<Behaviour>,
-        command_receiver: mpsc::Receiver<NetworkCommand>,
+        command_receiver: tokio::sync::mpsc::Receiver<NetworkCommand>,
         event_sender: mpsc::Sender<Events>,
     ) -> Self {
         Self {
@@ -302,9 +294,9 @@ impl EventLoop {
     /// Runs the network event loop.
     pub async fn run(mut self) -> Result<(), Error> {
         loop {
-            futures::select! {
+            tokio::select! {
                 event = self.swarm.next() => self.handle_event(event.expect("Swarm stream to be infinite.")).await?,
-                command = self.command_receiver.next() => match command {
+                command = self.command_receiver.recv() => match command {
                     Some(c) => self.handle_command(c).await,
                     // Command channel closed, thus shutting down the network event loop.
                     None => return Ok(()),

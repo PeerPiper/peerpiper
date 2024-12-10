@@ -30,7 +30,7 @@ use wasm_bindgen_futures::spawn_local;
 
 pub async fn start(
     tx: mpsc::Sender<Events>,
-    command_receiver: mpsc::Receiver<NetworkCommand>,
+    command_receiver: tokio::sync::mpsc::Receiver<NetworkCommand>,
     tx_client: oneshot::Sender<Client>,
     libp2p_endpoints: Vec<String>,
 ) -> Result<(), Error> {

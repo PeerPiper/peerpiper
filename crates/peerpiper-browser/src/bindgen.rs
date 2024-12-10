@@ -87,7 +87,7 @@ impl PeerPiper {
 
         // command_sender will be used by other wasm_bindgen functions to send commands to the network
         // so we will need to wrap it in a Mutex or something to make it thread safe.
-        let (command_sender, command_receiver) = mpsc::channel(8);
+        let (command_sender, command_receiver) = tokio::sync::mpsc::channel(8);
 
         spawn_local(async move {
             crate::start(tx_evts, command_receiver, tx_client, libp2p_endpoints)

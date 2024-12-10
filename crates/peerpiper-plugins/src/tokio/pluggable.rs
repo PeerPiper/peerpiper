@@ -90,12 +90,12 @@ impl PluggablePiper {
     /// and returning a handle to it.
     pub fn new() -> (
         Self,
-        mpsc::Receiver<NetworkCommand>,
+        tokio::sync::mpsc::Receiver<NetworkCommand>,
         PluggableClient,
         tokio::sync::mpsc::Receiver<ExternalEvents>,
     ) {
         let (plugin_sender, plugin_receiver) = mpsc::channel(8);
-        let (net_cmd_sendr, command_receiver) = mpsc::channel(8);
+        let (net_cmd_sendr, command_receiver) = tokio::sync::mpsc::channel(8);
         let (evt_emitter, plugin_evts) = tokio::sync::mpsc::channel(100);
         let (client_sender, client_receiver) = tokio::sync::oneshot::channel();
 
@@ -116,7 +116,7 @@ impl PluggablePiper {
     /// Runs the peerpiper service on the given plugin manager
     pub async fn run(
         &mut self,
-        command_receiver: mpsc::Receiver<NetworkCommand>,
+        command_receiver: tokio::sync::mpsc::Receiver<NetworkCommand>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         tracing::debug!("Running");
 
@@ -255,7 +255,7 @@ impl PluggableClient {
     /// Creates a new Loader
     fn new(
         plugin_sender: mpsc::Sender<Plugin<PluginsState>>,
-        net_cmd_sendr: mpsc::Sender<NetworkCommand>,
+        net_cmd_sendr: tokio::sync::mpsc::Sender<NetworkCommand>,
         evt_emitter: tokio::sync::mpsc::Sender<ExternalEvents>,
         client_receiver: tokio::sync::oneshot::Receiver<Client>,
     ) -> Self {
