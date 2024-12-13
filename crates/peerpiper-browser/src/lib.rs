@@ -28,9 +28,10 @@ use libp2p::core::multiaddr::Protocol;
 use libp2p::core::Multiaddr;
 use wasm_bindgen_futures::spawn_local;
 
+/// Call start in order to start the network and the event loop.
 pub async fn start(
     tx: mpsc::Sender<Events>,
-    command_receiver: tokio::sync::mpsc::Receiver<NetworkCommand>,
+    network_cmd_rx: tokio::sync::mpsc::Receiver<NetworkCommand>,
     tx_client: oneshot::Sender<Client>,
     libp2p_endpoints: Vec<String>,
 ) -> Result<(), Error> {
@@ -77,9 +78,7 @@ pub async fn start(
         ))
     })?;
 
-    network_client
-        .run(network_events, command_receiver, tx)
-        .await;
+    network_client.run(network_events, network_cmd_rx, tx).await;
 
     Ok(())
 }
