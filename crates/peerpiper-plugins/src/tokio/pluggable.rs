@@ -248,7 +248,7 @@ pub struct PluggableClient {
     /// Events emitted by the plugins
     evt_emitter: tokio::sync::mpsc::Sender<ExternalEvents>,
     /// Unified Commander to send system and netowrk commands
-    commander: Arc<Mutex<Option<Commander<NativeBlockstore>>>>,
+    pub commander: Arc<Mutex<Option<Commander<NativeBlockstore>>>>,
 }
 
 impl PluggableClient {
