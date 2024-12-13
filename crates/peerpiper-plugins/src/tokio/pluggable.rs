@@ -73,6 +73,8 @@ pub enum ExternalEvents {
     Address(Multiaddr),
     /// A generic message
     Message(String),
+    /// A Ping Ponged
+    Pong { peer: String, rtt: u64 },
 }
 
 /// PluginsManager holds the plugins state in memory.
@@ -233,7 +235,20 @@ impl PluggablePiper {
                 // TODO: Figure out what we want to do with the other new addresses.
                 //handle_new_address(&address).await;
             }
-            _ => {}
+            Events::Outer(PublicEvent::Pong { peer, rtt }) => {
+                //let msg = format!("🏓 Pong from {} in {}ms", peer, rtt);
+                self.evt_emitter
+                    .send(ExternalEvents::Pong { peer, rtt })
+                    .await
+                    .unwrap();
+            }
+            evt => {
+                tracing::info!("Unhandled event: {:?}", evt);
+                self.evt_emitter
+                    .send(ExternalEvents::Message(format!("{:?}", evt)))
+                    .await
+                    .unwrap();
+            }
         }
         Ok(())
     }
