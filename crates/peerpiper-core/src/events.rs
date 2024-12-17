@@ -83,7 +83,7 @@ pub enum PublicEvent {
 /// They should be able to be serialized and sent over the wire.
 /// They should be able to be deserialized and executed by the PeerPiper network.
 /// This is marked non-exhaustive because we may want to add new events in the future.
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize, Clone)]
 #[serde(tag = "action")]
 //#[non_exhaustive]
 pub enum AllCommands {
