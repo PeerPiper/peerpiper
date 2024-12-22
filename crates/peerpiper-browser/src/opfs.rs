@@ -7,8 +7,8 @@ use web_sys::{
 };
 
 use bytes::Bytes;
-use wnfs::common::blockstore::BlockStore;
-use wnfs::common::libipld::Cid;
+pub use wnfs::common::blockstore::BlockStore as WnfsBlockstore;
+pub use wnfs::common::libipld::Cid;
 use wnfs::common::utils::CondSend;
 use wnfs::common::BlockStoreError;
 
@@ -78,7 +78,7 @@ impl OPFSBlockstore {
     }
 }
 
-impl BlockStore for OPFSBlockstore {
+impl WnfsBlockstore for OPFSBlockstore {
     async fn get_block(&self, cid: &Cid) -> Result<Bytes, BlockStoreError> {
         let js_uint8array = self
             .get_opfs(cid.to_string().as_str())
@@ -133,7 +133,10 @@ impl SystemCommandHandler for OPFSBlockstore {
 }
 
 /// A Chunker that takes bytes and chunks them
-pub async fn put_chunks<B: BlockStore + Clone>(blockstore: B, data: Vec<u8>) -> Result<Cid, Error> {
+pub async fn put_chunks<B: WnfsBlockstore + Clone>(
+    blockstore: B,
+    data: Vec<u8>,
+) -> Result<Cid, Error> {
     let root_cid = FileBuilder::new()
         .content_bytes(data.clone())
         .fixed_chunker(256 * 1024)
