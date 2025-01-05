@@ -15,14 +15,6 @@ pub enum NativeError {
     #[error("Identity error")]
     Identity(#[from] libp2p::identity::ParseError),
 
-    /// Error putting data into Blockstore
-    #[error("Error putting data into Blockstore")]
-    BlockStoreError(#[from] peerpiper_core::wnfs_common::BlockStoreError),
-
-    /// From<peerpiper_core::wnfs_common::libipld::cid::Error>
-    #[error("Cid error {0}")]
-    Cid(#[from] peerpiper_core::wnfs_common::libipld::cid::Error),
-
     /// No data directory
     #[error("No data directory")]
     NoDataDir,

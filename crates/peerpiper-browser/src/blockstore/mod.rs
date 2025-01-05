@@ -1,17 +1,12 @@
 /// WebNative File System Blockstore module
 mod wnfs_blockstore;
 
-use crate::error;
 use js_sys::Uint8Array;
 use parking_lot::Mutex;
-use peerpiper_core::SystemCommandHandler;
+use peerpiper_core::Blockstore;
 use send_wrapper::SendWrapper;
-use tokio::io::AsyncReadExt as _;
 use wasm_bindgen::prelude::*;
 use wnfs::common::utils::Arc;
-
-use wnfs::common::libipld::Cid;
-use wnfs_unixfs_file::unixfs::UnixFsFile;
 
 #[wasm_bindgen(module = "/blockstore-idb.js")]
 extern "C" {
@@ -90,35 +85,43 @@ extern "C" {
 
 }
 
-impl SystemCommandHandler for BrowserBlockStore {
-    type Error = crate::error::Error;
-    async fn put(&self, data: Vec<u8>) -> Result<Cid, Self::Error> {
-        let root_cid = wnfs_blockstore::put_chunks(self.clone(), data)
-            .await
-            .map_err(|err| error::Error::Anyhow(err))?;
-        Ok(root_cid)
+impl Blockstore for BrowserBlockStore {
+    async fn get<const S: usize>(
+        &self,
+        cid: &cid::CidGeneric<S>,
+    ) -> blockstore::Result<Option<Vec<u8>>> {
+        let cid = CID::parse(&cid.to_string());
+        let bytes = self.get_idb(&cid).await.map_err(|e| {
+            blockstore::Error::StoredDataError(format!("Failed to get block: {:?}", e))
+        })?;
+        Ok(Some(bytes.to_vec()))
     }
 
-    async fn get(&self, key: Vec<u8>) -> Result<Vec<u8>, Self::Error> {
-        let cid = Cid::try_from(key).map_err(|err| {
-            error::Error::Anyhow(anyhow::Error::msg(format!("Failed to parse CID: {}", err)))
+    async fn put_keyed<const S: usize>(
+        &self,
+        cid: &cid::CidGeneric<S>,
+        data: &[u8],
+    ) -> blockstore::Result<()> {
+        let cid = CID::parse(&cid.to_string());
+        let bytes = Uint8Array::from(data);
+        self.put_idb(&cid, bytes).await.map_err(|e| {
+            blockstore::Error::StoredDataError(format!("Failed to put block: {:?}", e))
         })?;
-        let file = UnixFsFile::load(&cid, &self).await.map_err(|err| {
-            error::Error::Anyhow(anyhow::Error::msg(format!("Failed to load file: {}", err)))
-        })?;
+        Ok(())
+    }
 
-        let mut buffer = Vec::new();
-        let mut reader = file.into_content_reader(&self, None).map_err(|err| {
-            error::Error::Anyhow(anyhow::Error::msg(format!(
-                "Failed to create content reader: {}",
-                err
-            )))
-        })?;
-        reader.read_to_end(&mut buffer).await.map_err(|err| {
-            error::Error::Anyhow(anyhow::Error::msg(format!("Failed to read file: {}", err)))
-        })?;
+    async fn remove<const S: usize>(&self, cid: &cid::CidGeneric<S>) -> blockstore::Result<()> {
+        let cid = CID::parse(&cid.to_string());
+        let promise = self.idb.lock().delete(&cid.to_string());
+        wasm_bindgen_futures::JsFuture::from(promise)
+            .await
+            .map_err(|_| blockstore::Error::StoredDataError("Error deleting block".to_string()))?;
 
-        Ok(buffer)
+        Ok(())
+    }
+
+    async fn close(self) -> blockstore::Result<()> {
+        todo!()
     }
 }
 

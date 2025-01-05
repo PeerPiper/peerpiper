@@ -13,9 +13,9 @@ const RAW: u64 = 0x55;
 
 #[wasm_bindgen_test]
 fn test_traits() {
-    use peerpiper_browser::SystemCommandHandler;
+    use peerpiper_browser::Blockstore;
 
-    fn is_system_command_handler<T: SystemCommandHandler>() {}
+    fn is_system_command_handler<T: Blockstore>() {}
 
     is_system_command_handler::<OPFSBlockstore>();
 }
@@ -202,37 +202,37 @@ async fn test_opfs_blockstore() {
     assert_eq!(data, bytes);
 }
 
-#[wasm_bindgen_test]
-async fn test_wnfs_impl_opfs() {
-    use bytes::Bytes;
-    use wnfs::common::blockstore::BlockStore as WNFSBlockStore;
-    use wnfs::common::CODEC_RAW;
-
-    let blockstore = peerpiper_browser::opfs::OPFSBlockstore::new()
-        .await
-        .unwrap();
-
-    let bytes = vec![42; 1024 * 256]; // 256 ok, 286 nope.
-    let bytes: Bytes = bytes.into();
-    let cid = blockstore
-        .put_block(bytes.clone(), CODEC_RAW)
-        .await
-        .expect("test should be able to put a block");
-
-    let has_block = blockstore
-        .has_block(&cid)
-        .await
-        .expect("test should be able to check for block");
-
-    assert_eq!(has_block, true);
-
-    let block = blockstore
-        .get_block(&cid.into())
-        .await
-        .expect("test should be able to get a block");
-
-    assert_eq!(block, bytes);
-}
+//#[wasm_bindgen_test]
+//async fn test_wnfs_impl_opfs() {
+//    use bytes::Bytes;
+//    use wnfs::common::blockstore::BlockStore as WNFSBlockStore;
+//    use wnfs::common::CODEC_RAW;
+//
+//    let blockstore = peerpiper_browser::opfs::OPFSBlockstore::new()
+//        .await
+//        .unwrap();
+//
+//    let bytes = vec![42; 1024 * 256]; // 256 ok, 286 nope.
+//    let bytes: Bytes = bytes.into();
+//    let cid = blockstore
+//        .put_block(bytes.clone(), CODEC_RAW)
+//        .await
+//        .expect("test should be able to put a block");
+//
+//    let has_block = blockstore
+//        .has_block(&cid)
+//        .await
+//        .expect("test should be able to check for block");
+//
+//    assert_eq!(has_block, true);
+//
+//    let block = blockstore
+//        .get_block(&cid.into())
+//        .await
+//        .expect("test should be able to get a block");
+//
+//    assert_eq!(block, bytes);
+//}
 
 // test 512kb into OPFS using put/get
 // 2^18 is the max size for a single chunk
@@ -248,8 +248,10 @@ async fn test_opfs_put_get() {
 }
 
 #[wasm_bindgen_test]
-async fn test_opfs_system_command_handler() -> Result<(), JsValue> {
-    use peerpiper_core::SystemCommandHandler as _;
+async fn test_basic_opfs_blockstore() -> Result<(), JsValue> {
+    use multihash_codetable::{Code, MultihashDigest};
+    use peerpiper_core::Blockstore as _;
+    use peerpiper_core::{Block, RawBlakeBlock};
 
     let blockstore = OPFSBlockstore::new()
         .await
@@ -258,17 +260,26 @@ async fn test_opfs_system_command_handler() -> Result<(), JsValue> {
     let len = 1 << 19; // 512kb, 2^19
     let bytes = vec![42; len];
 
-    let root_cid = blockstore
-        .put(bytes.clone())
+    let block = RawBlakeBlock(bytes.clone());
+    let cid = block.cid().unwrap();
+
+    blockstore
+        .put(block)
         .await
         .map_err(|err| JsError::new(&format!("Failed to put bytes in the system: {:?}", err)))?;
 
     let data = blockstore
-        .get(root_cid.to_bytes())
+        .get(&cid)
         .await
         .map_err(|err| JsError::new(&format!("Failed to get bytes from the system: {:?}", err)))?;
 
-    assert_eq!(data, bytes);
+    assert_eq!(data.unwrap(), bytes);
+
+    // get non existent cid should return None
+    let h = Code::Sha2_256.digest(b"non-existent");
+    let cid = Cid::new_v1(RAW, h);
+    let data = blockstore.get(&cid).await.unwrap();
+    assert_eq!(data, None);
 
     Ok(())
 }
@@ -276,10 +287,8 @@ async fn test_opfs_system_command_handler() -> Result<(), JsValue> {
 // test creating a OPFSBlockstore in a wasm_bindgen_futures spawn_local
 #[wasm_bindgen_test]
 async fn test_spawn_local() {
-    use crossbeam_channel::{unbounded, Receiver, Sender};
-
     use futures::channel::oneshot;
-    use wasm_bindgen_futures::{spawn_local, JsFuture};
+    use wasm_bindgen_futures::spawn_local;
 
     let (sender, receiver) = oneshot::channel();
 
@@ -290,9 +299,9 @@ async fn test_spawn_local() {
 
     let blockstore = receiver.await.unwrap();
 
-    //let name = "hello.bin";
-    //let bytes = b"Hello World".to_vec();
-    //blockstore.put_opfs(name, bytes.clone()).await.unwrap();
-    //let data = blockstore.get_opfs(name).await.unwrap();
-    //assert_eq!(data, bytes);
+    let name = "hello.bin";
+    let bytes = b"Hello World".to_vec();
+    blockstore.put_opfs(name, bytes.clone()).await.unwrap();
+    let data = blockstore.get_opfs(name).await.unwrap();
+    assert_eq!(data, bytes);
 }

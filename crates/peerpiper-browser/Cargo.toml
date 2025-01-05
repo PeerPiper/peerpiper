@@ -35,7 +35,6 @@ serde-wasm-bindgen = "0.6.5"
 tracing-wasm = { version = "0.2.1", optional = true }
 console_error_panic_hook = { version = "0.1.7", optional = true }
 cid = { version = "0.11.1", features = ["serde"] }
-multihash-codetable = { version = "0.1.2", features = ["sha2"] }
 wnfs = "0.2"
 bytes = { workspace = true }
 parking_lot = "0.12.1"
@@ -50,7 +49,7 @@ instant = { version = "0.1.12", features = [
   "wasm-bindgen",
   "inaccurate",
 ] } # needed as a workaround for https://github.com/rustwasm/wasm-pack/issues/743 
-
+blockstore = "0.7.1"
 web-sys = { version = "0.3.70", features = [
   "Window",
   "Navigator",
@@ -73,7 +72,7 @@ getrandom = { version = "0.2", features = ["js"] }
 wasm-bindgen-test = "0.3"
 rand_chacha = "0.3.1"
 rand_core = "0.6.4"
-crossbeam-channel = "0.5.13"
+multihash-codetable = { version = "0.1.2", features = ["sha2"] }
 
 [features]
 # default = ["logging"]

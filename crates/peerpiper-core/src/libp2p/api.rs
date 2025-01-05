@@ -1,6 +1,7 @@
 use crate::events::{Events, Network, NetworkError, PublicEvent};
 use crate::libp2p::behaviour::{Behaviour, BehaviourEvent};
 use crate::libp2p::error::Error;
+use blockstore::Blockstore;
 use futures::stream::StreamExt;
 use futures::{
     channel::{
@@ -11,6 +12,8 @@ use futures::{
 };
 use libp2p::core::transport::ListenerId;
 use libp2p::kad::store::RecordStore;
+use libp2p::kad::PeerRecord;
+use libp2p::kad::{InboundRequest, Record};
 use libp2p::multiaddr::Protocol;
 use libp2p::request_response::{self, OutboundRequestId, ResponseChannel};
 use libp2p::swarm::{Swarm, SwarmEvent};
@@ -29,7 +32,9 @@ const TICK_INTERVAL: Duration = Duration::from_secs(15);
 ///
 /// - Network Client: Interact with the netowrk by sending
 /// - Network Event Loop: Start the network event loop
-pub async fn new(swarm: Swarm<Behaviour>) -> (Client, Receiver<Events>, EventLoop) {
+pub async fn new<B: Blockstore + 'static>(
+    swarm: Swarm<Behaviour<B>>,
+) -> (Client, Receiver<Events>, EventLoop<B>) {
     // These command senders/recvr are used to pass along parsed generic commands to the network event loop
     let (command_sender, command_receiver) = tokio::sync::mpsc::channel(32);
     let (event_sender, event_receiver) = mpsc::channel(32);
@@ -95,6 +100,17 @@ impl Client {
             .await?)
     }
 
+    /// Request bits via Bitswap
+    pub async fn get_bits(&self, cid: Vec<u8>) -> Result<Vec<u8>, Error> {
+        let (sender, receiver) = oneshot::channel();
+        self.command_sender
+            .send(NetworkCommand::BitswapQuery { cid, sender })
+            .await?;
+        tracing::info!("Awaiting bitswap query response");
+        // TODO: Add timeout
+        Ok(receiver.await?)
+    }
+
     /// Get a record from the DHT given the key
     pub(crate) async fn get_providers(&self, key: Vec<u8>) -> Result<HashSet<PeerId>, Error> {
         let (sender, receiver) = oneshot::channel();
@@ -104,6 +120,14 @@ impl Client {
         receiver.await.map_err(Error::OneshotCanceled)
     }
 
+    /// Gets a record from the DHT
+    pub(crate) async fn get_record(&self, key: Vec<u8>) -> Result<Vec<u8>, Error> {
+        let (sender, receiver) = oneshot::channel();
+        self.command_sender
+            .send(NetworkCommand::GetRecord { key, sender })
+            .await?;
+        receiver.await.map_err(Error::OneshotCanceled)
+    }
     /// Add a peer to the routing table
     pub async fn add_peer(&mut self, peer_id: PeerId) -> Result<(), Error> {
         Ok(self
@@ -140,10 +164,15 @@ impl Client {
         mut command_receiver: tokio::sync::mpsc::Receiver<NetworkCommand>,
         mut tx: mpsc::Sender<Events>,
     ) {
+        tracing::info!("🚀 Starting network client loop");
         loop {
             tokio::select! {
-                event = network_events.select_next_some() => {
-                    tracing::trace!("Network event: {:?}", event);
+                event = network_events.next() => {
+                    let Some(event) = event else {
+                        tracing::warn!("⛔ Network event channel closed, shutting down network event loop");
+                        break;
+                    };
+                    tracing::debug!("Network event: {:?}", event);
                     if let Err(network_event) = tx.send(event).await {
                         tracing::error!("Failed to send swarm event: {:?}", network_event);
                         // break;
@@ -151,13 +180,15 @@ impl Client {
                     }
                 },
                 command = command_receiver.recv() => {
-                    tracing::trace!("Received command");
+                    let Some(pp_cmd) = command else {
+                        tracing::warn!("⛔ Command channel closed, shutting down network event loop");
+                        break;
+                    };
+                    tracing::debug!("Received command: {:?}", pp_cmd);
                     // PeerPiperCommands cannot have channels in them, as they are not serializable
                     // So here we have to match on those with channels (.request_response), versus those without
-                    if let Some(pp_cmd) = command {
-                       if let Err(e) = self.command(pp_cmd).await {
-                            tracing::error!("Failed to run command: {:?}", e);
-                        }
+                   if let Err(e) = self.command(pp_cmd).await {
+                        tracing::error!("Failed to run command: {:?}", e);
                     }
                 }
             }
@@ -207,6 +238,11 @@ pub enum NetworkCommand {
         value: Vec<u8>,
     },
     /// Get a record from the DHT
+    GetRecord {
+        key: Vec<u8>,
+        sender: oneshot::Sender<Vec<u8>>,
+    },
+    /// Get a record from the DHT
     GetProviders {
         key: Vec<u8>,
         sender: oneshot::Sender<HashSet<PeerId>>,
@@ -214,6 +250,11 @@ pub enum NetworkCommand {
     /// Start providing a key on the DHT
     StartProviding {
         key: Vec<u8>,
+    },
+    /// Bitswap Query
+    BitswapQuery {
+        cid: Vec<u8>,
+        sender: oneshot::Sender<Vec<u8>>,
     },
 }
 
@@ -230,6 +271,8 @@ pub enum Libp2pEvent {
         key: Vec<u8>,
         channel: ResponseChannel<Vec<u8>>,
     },
+    /// An inbound request to Put a Record into the DHT from a source PeerId
+    PutRecordRequest { source: PeerId, record: Record },
 }
 
 /// Simple file exchange protocol
@@ -258,11 +301,11 @@ impl Deref for PeerResponse {
 
 /// The network event loop.
 /// Handles all the network logic for us.
-pub struct EventLoop {
+pub struct EventLoop<B: Blockstore + 'static> {
     /// A future that fires at a regular interval and drives the behaviour of the network.
     tick: delay::Delay,
     /// The libp2p Swarm that handles all the network logic for us.
-    swarm: Swarm<Behaviour>,
+    swarm: Swarm<Behaviour<B>>,
     /// Channel to send commands to the network event loop.
     command_receiver: tokio::sync::mpsc::Receiver<NetworkCommand>,
     /// Channel to send events from the network event loop to the user.
@@ -272,12 +315,18 @@ pub struct EventLoop {
 
     /// GetProviders tracking
     pending_get_providers: HashMap<kad::QueryId, oneshot::Sender<HashSet<PeerId>>>,
+
+    /// pending bitswap queries
+    pending_queries: HashMap<beetswap::QueryId, oneshot::Sender<Vec<u8>>>,
+
+    /// Pending Get Records from DHT
+    pending_get_records: HashMap<kad::QueryId, oneshot::Sender<Vec<u8>>>,
 }
 
-impl EventLoop {
+impl<B: Blockstore> EventLoop<B> {
     /// Creates a new network event loop.
     fn new(
-        swarm: Swarm<Behaviour>,
+        swarm: Swarm<Behaviour<B>>,
         command_receiver: tokio::sync::mpsc::Receiver<NetworkCommand>,
         event_sender: mpsc::Sender<Events>,
     ) -> Self {
@@ -288,6 +337,8 @@ impl EventLoop {
             event_sender,
             pending_requests: HashMap::new(),
             pending_get_providers: Default::default(),
+            pending_queries: Default::default(),
+            pending_get_records: Default::default(),
         }
     }
 
@@ -350,7 +401,7 @@ impl EventLoop {
     }
 
     /// Handles a network event according to the matched Event type
-    async fn handle_event(&mut self, event: SwarmEvent<BehaviourEvent>) -> Result<(), Error> {
+    async fn handle_event(&mut self, event: SwarmEvent<BehaviourEvent<B>>) -> Result<(), Error> {
         match event {
             SwarmEvent::NewListenAddr { address, .. } => {
                 tracing::info!("🌐  New address: {address}");
@@ -680,25 +731,95 @@ impl EventLoop {
                     }
                 }
             }
+
             SwarmEvent::Behaviour(BehaviourEvent::Kad(kad::Event::OutboundQueryProgressed {
                 id,
-                result:
+                result,
+                ..
+            })) => {
+                match result {
                     kad::QueryResult::GetProviders(Ok(kad::GetProvidersOk::FoundProviders {
                         providers,
                         ..
-                    })),
+                    })) => {
+                        if let Some(sender) = self.pending_get_providers.remove(&id) {
+                            sender.send(providers).expect("Receiver not to be dropped");
+
+                            // Finish the query. We are only interested in the first result.
+                            self.swarm
+                                .behaviour_mut()
+                                .kad
+                                .query_mut(&id)
+                                .unwrap()
+                                .finish();
+                        }
+                    }
+                    kad::QueryResult::GetRecord(Ok(kad::GetRecordOk::FoundRecord(
+                        PeerRecord { record, .. },
+                    ))) => {
+                        if let Some(sender) = self.pending_get_records.remove(&id) {
+                            sender
+                                .send(record.value)
+                                .expect("Receiver not to be dropped");
+
+                            // Finish the query. We are only interested in the first result.
+                            // TODO: Handle comparing and choosing the best record
+                            self.swarm
+                                .behaviour_mut()
+                                .kad
+                                .query_mut(&id)
+                                .unwrap()
+                                .finish();
+                        }
+                    }
+                    _ => {
+                        tracing::warn!("Received unknown Kad QueryResult: {:?}", result);
+                    }
+                }
+            }
+            SwarmEvent::Behaviour(BehaviourEvent::Kad(kad::Event::InboundRequest {
+                request,
                 ..
             })) => {
-                if let Some(sender) = self.pending_get_providers.remove(&id) {
-                    sender.send(providers).expect("Receiver not to be dropped");
-
-                    // Finish the query. We are only interested in the first result.
-                    self.swarm
-                        .behaviour_mut()
-                        .kad
-                        .query_mut(&id)
-                        .unwrap()
-                        .finish();
+                tracing::debug!("Kademlia Inbound Request: {:?}", request);
+                match request {
+                    InboundRequest::PutRecord {
+                        record: Some(record),
+                        source,
+                        ..
+                    } => {
+                        tracing::info!("Received PutRecordRequest from: {:?}", source);
+                        // send evt to external handler plugins to decide whether to include record or not:
+                        if let Err(e) = self
+                            .event_sender
+                            .send(Events::Inner(Libp2pEvent::PutRecordRequest {
+                                source,
+                                record,
+                            }))
+                            .await
+                        {
+                            tracing::error!("Failed to send PutRecordRequest event: {e}");
+                        }
+                    }
+                    InboundRequest::AddProvider {
+                        record: Some(provider_rec),
+                    } => {
+                        tracing::info!("Received AddProviderRequest: {:?}", provider_rec);
+                        // TODO: Filter Providers based on criteria?
+                        // for now, add the provider to the DHT as is
+                        if let Err(e) = self
+                            .swarm
+                            .behaviour_mut()
+                            .kad
+                            .store_mut()
+                            .add_provider(provider_rec)
+                        {
+                            tracing::error!("Failed to add provider to DHT: {e}");
+                        }
+                    }
+                    _ => {
+                        tracing::warn!("Received unknown InboundRequest: {:?}", request);
+                    }
                 }
             }
             SwarmEvent::Behaviour(BehaviourEvent::Kad(evt)) => {
@@ -723,6 +844,43 @@ impl EventLoop {
             SwarmEvent::NewExternalAddrCandidate { address } => {
                 tracing::debug!("New external address candidate: {address}");
             }
+            SwarmEvent::Behaviour(BehaviourEvent::Bitswap(bitswap)) => match bitswap {
+                beetswap::Event::GetQueryResponse { query_id, data } => {
+                    tracing::info!("Bitswap: received response for {query_id:?}: {data:?}");
+                    match self.pending_queries.get(&query_id) {
+                        Some(sendr) => {
+                            tracing::info!("received response for {sendr:?}: {data:?}");
+                            self.pending_queries
+                                .remove(&query_id)
+                                .ok_or(Error::StaticStr("Remove failed"))?
+                                .send(data)
+                                .map_err(|_| {
+                                    tracing::error!("Failed to send response for Bitswap result");
+                                    Error::StaticStr("Failed to send response")
+                                })?;
+                        }
+                        None => {
+                            tracing::info!("received response for unknown cid");
+                        }
+                    }
+                }
+                beetswap::Event::GetQueryError { query_id, error } => {
+                    tracing::info!("Bitswap: received error for {query_id:?}: {error}");
+                    match self.pending_queries.get(&query_id) {
+                        Some(cid) => {
+                            tracing::info!("received error for {cid:?}: {error}");
+                            let sendr = self
+                                .pending_queries
+                                .remove(&query_id)
+                                .ok_or(Error::StaticStr("Remove failed"))?;
+                            drop(sendr);
+                        }
+                        None => {
+                            tracing::info!("received error for unknown cid: {error}");
+                        }
+                    }
+                }
+            },
             event => {
                 tracing::debug!("Other type of event: {:?}", event);
             }
@@ -791,13 +949,13 @@ impl EventLoop {
                 tracing::info!("API: Successfully Subscribed to {topic}");
             }
             NetworkCommand::Unsubscribe { topic } => {
-                if !self
+                if let Err(e) = self
                     .swarm
                     .behaviour_mut()
                     .gossipsub
                     .unsubscribe(&libp2p::gossipsub::IdentTopic::new(&topic))
                 {
-                    tracing::error!("Failed to unsubscribe from topic: {topic}");
+                    tracing::error!("Failed to unsubscribe from topic: {topic} {e}");
                     let _ = self
                         .event_sender
                         .send(Events::Outer(PublicEvent::Error {
@@ -848,6 +1006,18 @@ impl EventLoop {
                     .send_request(&peer, PeerRequest(request));
                 self.pending_requests.insert(response_id, sender);
             }
+            // NetworkCommand for Bitwap: TODO here.
+            NetworkCommand::BitswapQuery { cid, sender } => {
+                tracing::info!("API: Handling BitswapQuery command");
+                let Ok(cid) = cid::Cid::try_from(cid) else {
+                    tracing::error!("Failed to parse CID");
+                    return;
+                };
+                let query_id = self.swarm.behaviour_mut().bitswap.get(&cid);
+                tracing::info!("Bitswap query id: {query_id:?}");
+                self.pending_queries.insert(query_id, sender);
+                tracing::info!("API: BitswapQuery command sent");
+            }
             NetworkCommand::RespondJeeves {
                 bytes: file,
                 channel,
@@ -868,6 +1038,11 @@ impl EventLoop {
                     .behaviour_mut()
                     .kad
                     .put_record(record, kad::Quorum::One);
+            }
+            NetworkCommand::GetRecord { key, sender } => {
+                tracing::info!("API: Handling GetRecord command");
+                let query_id = self.swarm.behaviour_mut().kad.get_record(key.into());
+                self.pending_get_records.insert(query_id, sender);
             }
             NetworkCommand::GetProviders { key, sender } => {
                 let query_id = self.swarm.behaviour_mut().kad.get_providers(key.into());

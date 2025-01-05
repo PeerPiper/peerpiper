@@ -89,9 +89,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     load_plugins(&wasms).await;
 
-    pluggable.run(command_receiver).await.unwrap_or_else(|e| {
-        tracing::error!("Failed to run PluggablePiper: {:?}", e);
-    });
+    let blockstore = {
+        let lock = pluggable_client.commander.lock().await;
+        let Some(commander) = lock.as_ref() else {
+            return Err(
+                "Commander, thus blockstore, not initialized. Need a Blockstore for bitswap."
+                    .into(),
+            );
+        };
+        commander.blockstore.clone()
+    };
+
+    pluggable
+        .run(command_receiver, blockstore)
+        .await
+        .unwrap_or_else(|e| {
+            tracing::error!("Failed to run PluggablePiper: {:?}", e);
+        });
 
     tracing::info!("Shutting down...");
 

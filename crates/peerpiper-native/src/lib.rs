@@ -1,7 +1,7 @@
-mod blockstore;
 mod error;
+mod native_blockstore;
 
-pub use blockstore::{NativeBlockstore, NativeBlockstoreBuilder};
+pub use native_blockstore::{NativeBlockstore, NativeBlockstoreBuilder};
 
 pub use error::NativeError;
 use futures::channel::{mpsc, oneshot};
@@ -13,8 +13,10 @@ use peerpiper_core::{
     events::Events,
     libp2p::{
         api::{self, Client},
-        behaviour, swarm,
+        behaviour::BehaviourBuilder,
+        swarm,
     },
+    Blockstore,
 };
 
 // const BOOTNODES: [&str; 4] = [
@@ -24,16 +26,19 @@ use peerpiper_core::{
 //     "QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
 // ];
 
-pub async fn start(
+pub async fn start<B: Blockstore + 'static>(
     tx: mpsc::Sender<Events>,
     command_receiver: tokio::sync::mpsc::Receiver<api::NetworkCommand>,
     tx_client: oneshot::Sender<Client>,
     // TODO: This native node can dial other native nodes, like BOOTNODES
     _libp2p_endpoints: Vec<String>,
+    blockstore: B,
 ) -> Result<(), NativeError> {
-    let mut swarm = swarm::create(behaviour::build)
-        .await
-        .map_err(CoreError::CreateSwarm)?;
+    let behaviour_builder = BehaviourBuilder::new(blockstore);
+    let mut swarm =
+        swarm::create(|key, relay_behaviour| behaviour_builder.build(key, relay_behaviour))
+            .await
+            .map_err(CoreError::CreateSwarm)?;
 
     swarm
         .behaviour_mut()

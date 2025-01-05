@@ -1,6 +1,6 @@
 [package]
 name = "peerpiper-core"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -12,10 +12,20 @@ rand = "0.8"
 thiserror = "1"
 tracing = "0.1.37"
 serde = { version = "1.0", features = ["derive"] }
-wnfs-common = "0.2.0"
 multibase = { version = "0.9", default-features = false }
 zeroize = "1.8.1"
 tokio = { version = "1.0", features = ["sync", "macros"] }
+beetswap = "0.4.0"
+blockstore = { workspace = true }
+cid = { workspace = true }
+# beetswap hashers need these features
+multihash-codetable = { version = "0.1.4", features = [
+  "sha2",
+  "sha3",
+  "blake3",
+] }
+multihash = "0.19.3"
+sha3 = "0.10"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 libp2p = { workspace = true, features = [
@@ -34,7 +44,10 @@ libp2p = { workspace = true, features = [
   "websocket-websys",
   "dcutr",
 ] }
-libp2p-webrtc-websys = { version = "0.4.0-alpha.2", git = "https://github.com/libp2p/rust-libp2p.git" }
+# until 0.4.0-alpha.2 patch get released on crates.io, see: https://github.com/libp2p/rust-libp2p/pull/5569#issuecomment-2552317044 
+libp2p-webrtc-websys = { git = "https://github.com/DougAnderson444/rust-libp2p", branch = "webrtc-websys-deps" }
+gloo-timers = { version = "0.3.0", features = ["futures"] }
+wasm-bindgen-futures = "0.4.38"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 libp2p = { workspace = true, features = [
@@ -57,9 +70,9 @@ libp2p = { workspace = true, features = [
   "tcp",
   "rsa",
 ] }
-libp2p-webrtc = { version = "0.8.0-alpha", git = "https://github.com/libp2p/rust-libp2p.git", features = [
-  "tokio",
-  "pem",
-] }
+libp2p-webrtc = { version = "0.8.0-alpha", features = ["tokio", "pem"] }
 serde_json = "1.0"
 base64 = "0.20"
+
+[patch.crates-io]
+beetswap = { path = "../../../../clones/beetswap" }

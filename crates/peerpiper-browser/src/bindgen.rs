@@ -89,10 +89,18 @@ impl PeerPiper {
         // so we will need to wrap it in a Mutex or something to make it thread safe.
         let (command_sender, command_receiver) = tokio::sync::mpsc::channel(8);
 
+        let blockstore = { self.commander.borrow().blockstore.clone() };
+
         spawn_local(async move {
-            crate::start(tx_evts, command_receiver, tx_client, libp2p_endpoints)
-                .await
-                .expect("never end")
+            crate::start(
+                tx_evts,
+                command_receiver,
+                tx_client,
+                libp2p_endpoints,
+                blockstore,
+            )
+            .await
+            .expect("never end")
         });
 
         // wait on rx_client to get the client handle

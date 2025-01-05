@@ -3,7 +3,63 @@
 pub(crate) mod bindgen {
     // Use the WIT world named ipns-pubsub at ./wit
     wasmtime::component::bindgen!({
-        async: true
+        async: true,
+        inline: r#"
+        package component:extension@0.1.0;
+
+        interface types {
+            record message {
+                topic: string,
+                peer: string,
+                data: list<u8>
+            }
+
+            variant error {
+                /// This plugin does not support the given message data type 
+                unsupported-message-type,
+
+                /// An error that occurred handling a message
+                handler-error(string),
+
+                /// An input output error 
+                io-error(string)
+            }
+        }
+
+        interface handlers {
+            use types.{message, error};
+            /// Handle a message from the world. Returns a string response or error
+            handle-message: func(msg: message) -> result<string, error>;
+
+            /// Handles inbound requests with the given bytes 
+            /// Responds with a list of bytes or an error
+            handle-request: func(data: list<u8>) -> result<list<u8>, error>;
+        }
+
+        interface peer-piper-commands {
+
+            /// Tells the DHT to start providing the given key (bytes)
+            start-providing: func(key: list<u8>);
+        }
+
+        interface logging {
+            /// Log a message 
+            log: func(message: string);
+        }
+
+        /// An example world for the component to target.
+        world extension-world {
+
+            /// Import PeerPiperCommand interface
+            import peer-piper-commands;
+
+            /// Import the logging interface 
+            import logging;
+
+            /// Export the handlers for the extension
+            export handlers;
+        }
+        "#
     });
 }
 

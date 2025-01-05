@@ -1,4 +1,5 @@
 use anyhow::Result;
+use blockstore::Blockstore;
 use futures::channel::{mpsc, oneshot};
 use futures::SinkExt as _;
 use futures::StreamExt as _;
@@ -116,9 +117,10 @@ impl PluggablePiper {
     }
 
     /// Runs the peerpiper service on the given plugin manager
-    pub async fn run(
+    pub async fn run<B: Blockstore + 'static>(
         &mut self,
         command_receiver: tokio::sync::mpsc::Receiver<NetworkCommand>,
+        blockstore: B,
     ) -> Result<(), Box<dyn std::error::Error>> {
         tracing::debug!("Running");
 
@@ -128,9 +130,15 @@ impl PluggablePiper {
         let libp2p_endpoints = vec![];
 
         tokio::spawn(async move {
-            peerpiper::start(tx_events, command_receiver, tx_client, libp2p_endpoints)
-                .await
-                .unwrap();
+            peerpiper::start(
+                tx_events,
+                command_receiver,
+                tx_client,
+                libp2p_endpoints,
+                blockstore,
+            )
+            .await
+            .unwrap();
         });
 
         // await on rx_client to get the client handle

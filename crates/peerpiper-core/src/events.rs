@@ -115,6 +115,10 @@ pub enum AllCommands {
         /// The Record value bytes (ie. the CID)
         value: Vec<u8>,
     },
+    /// Get a Record from the DHT
+    GetRecord {
+        key: Vec<u8>,
+    },
     /// Gets the Providers of a Record on the DHT
     GetProviders {
         key: Vec<u8>,
@@ -129,34 +133,33 @@ pub enum AllCommands {
 /// the system to do something, like save bytes to a file.
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub enum SystemCommand {
+    /// Put bytes in local blockstore
     Put { bytes: Vec<u8> },
+    /// Put keyed bytes in local blockstore
+    PutKeyed { key: Vec<u8>, bytes: Vec<u8> },
+    /// Will first try to get bytes from local blockstore, then will try network via bitswap
     Get { key: Vec<u8> },
 }
 
 pub mod test_helpers {
-    use super::AllCommands;
-    use futures::channel::mpsc;
-    use futures::SinkExt;
+    use crate::{
+        events::{AllCommands, SystemCommand},
+        Commander,
+    };
+    use blockstore::Blockstore;
+    use cid::Cid;
 
-    pub async fn test_all_commands(command_sender: &mut mpsc::Sender<AllCommands>) {
-        command_sender
-            .send(AllCommands::Subscribe {
+    pub async fn test_all_commands<B: Blockstore + 'static>(commander: Commander<B>, cid: String) {
+        commander
+            .order(AllCommands::Subscribe {
                 topic: "test publish".to_string(),
             })
             .await
             .expect("Failed to send subscribe command");
 
-        // tracing::info!("Sending unsubscribe command");
-        // command_sender
-        //     .send(PeerPiperCommand::Unsubscribe {
-        //         topic: "test".to_string(),
-        //     })
-        //     .await
-        //     .expect("Failed to send unsubscribe command");
-
-        let data = vec![42; 690];
-        match command_sender
-            .send(AllCommands::Publish {
+        let data = vec![42; 42];
+        match commander
+            .order(AllCommands::Publish {
                 topic: "test publish".to_string(),
                 data,
             })
@@ -164,6 +167,44 @@ pub mod test_helpers {
         {
             Ok(_) => tracing::info!("Published data"),
             Err(e) => tracing::error!("Failed to publish data: {:?}", e),
+        }
+
+        tracing::info!("Sending BITSWAP / BEETSWAP system put command");
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            wasm_bindgen_futures::spawn_local(async move {
+                // bitswap test
+                //let (sender, receiver) = oneshot::channel();
+
+                let cid = Cid::try_from(cid).expect("Failed to parse CID");
+
+                let res = commander
+                    .order(AllCommands::System(SystemCommand::Get {
+                        key: cid.to_bytes(),
+                    }))
+                    .await
+                    .expect("Failed to send bitswap query");
+
+                tracing::info!("bitswap response {:?}", res);
+
+                //// let's add a timeout whilst awaiting receiver.await
+                //// In the browser, we can use tokio::select! and gloo_timers to create a timeout future
+                //
+                //let millis = 5000;
+                //tracing::info!("Waiting for bitswap response with timeout of {}ms", millis);
+                //let timeout = gloo_timers::future::TimeoutFuture::new(millis);
+                //tokio::pin!(timeout);
+                //
+                //tokio::select! {
+                //    _ = timeout.as_mut() => {
+                //        tracing::error!("Timeout waiting for bitswap response");
+                //    }
+                //    response = receiver => {
+                //        tracing::info!("Received bitswap response: {:?}", response);
+                //    }
+                //}
+            });
         }
     }
 }
