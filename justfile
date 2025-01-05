@@ -74,3 +74,7 @@ dev-ipfs: build-wits
 publish:
   # right now browser is the only thing that is set up to be published
   @just peerpiper-browser publish
+
+# calls crates/interop-tests justfile for just serve-interop 
+interop-tests:
+  @just -f crates/interop-tests/justfile serve-interop

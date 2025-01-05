@@ -1,3 +1,4 @@
+#[cfg(not(target_arch = "wasm32"))]
 use anyhow::Result;
 use axum::extract::{Path, State};
 use axum::http::header::CONTENT_TYPE;
@@ -8,8 +9,9 @@ use axum::{http::Method, routing::get};
 // use axum::{Json};
 use axum::Router;
 use futures::channel::{mpsc, oneshot};
-use futures::{SinkExt, StreamExt};
+use futures::StreamExt;
 use libp2p::multiaddr::{Multiaddr, Protocol};
+use peerpiper::core::{Block, Cid, Commander, RawBlakeBlock, ReturnValues};
 use std::net::Ipv4Addr;
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
@@ -19,7 +21,7 @@ use tower_http::cors::{Any, CorsLayer};
 // use tokio::io::{AsyncBufReadExt, BufReader};
 // use tokio::process::Child;
 
-use peerpiper::core::events::{AllCommands, Events, PublicEvent};
+use peerpiper::core::events::{AllCommands, Events, PublicEvent, SystemCommand};
 
 const MAX_CHANNELS: usize = 16;
 
@@ -27,7 +29,7 @@ const MAX_CHANNELS: usize = 16;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(
-            "interop_tests_native=debug,peerpiper_native=debug,peerpiper_core=debug,libp2p_webrtc=info,libp2p_ping=debug",
+            "interop_tests_native=debug,peerpiper_native=debug,peerpiper_core=debug,libp2p_webrtc=info,libp2p_ping=debug,beetswap=trace",
         )
         .try_init();
 
@@ -37,9 +39,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (command_sender, command_receiver) = tokio::sync::mpsc::channel(8);
     let tx_net_evt_clone = tx_net_evt.clone();
 
-    let (tx_client, _rx_client) = oneshot::channel();
+    let (tx_client, rx_client) = oneshot::channel();
 
     let libp2p_endpoints = vec![];
+    let blockstore = peerpiper_native::NativeBlockstoreBuilder::default()
+        .open()
+        .await
+        .unwrap();
+
+    let blockstore_clone = blockstore.clone();
 
     tokio::spawn(async move {
         peerpiper::start(
@@ -47,6 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             command_receiver,
             tx_client,
             libp2p_endpoints,
+            blockstore_clone,
         )
         .await
         .unwrap();
@@ -63,23 +72,62 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+    let client_handle = rx_client.await?;
+
+    let mut commander = Commander::new(blockstore);
+    commander
+        .with_network(command_sender.clone())
+        .with_client(client_handle);
+
+    // Create a block with some data for bitswap test and put it in the blockstore
+    let block = RawBlakeBlock(vec![43, 42, 42, 42, 42, 42]);
+    let cid = block.cid().unwrap();
+
+    commander
+        .order(AllCommands::System(SystemCommand::PutKeyed {
+            key: cid.to_bytes(),
+            bytes: block.0.clone(),
+        }))
+        .await?;
+
     // Serve .wasm, .js and server multiaddress over HTTP on this address.
-    tokio::spawn(serve(address.clone()));
+    tokio::spawn(serve(address.clone(), cid));
 
     loop {
         tokio::select! {
-            Some(msg) = rx_net_evt.next() => {
+            msg = rx_net_evt.select_next_some() => {
                 tracing::info!("Received msg: {:?}", msg);
                 match msg {
                     Events::Outer(PublicEvent::NewConnection { peer }) => {
                        // Once connection establish, subscribe to "test" topic
                         tracing::info!("New connection from {}, subscribing to test topic", peer);
-                        command_sender
-                            .send(AllCommands::Subscribe {
-                                topic: "test publish".to_string(),
-                            }.into())
-                            .await
-                            .expect("Failed to send subscribe command");
+
+                        //command_sender
+                        //    .send(AllCommands::Subscribe {
+                        //        topic: "test publish".to_string(),
+                        //    }.into())
+                        //    .await
+                        //    .expect("Failed to send subscribe command");
+                        //
+                        //tracing::info!("Send Bitswap request for CID: {:?}", cid);
+                        //// also use Bitswap to get cid from browser, should be vec![69, 69, 69, 69, 69]
+                        //let bitswap_cid = Cid::try_from("bafkr4iahcgbbgcbzj7w5uwzyp3bqjdnfd33d7wlxh5fqmnrtk3jpi2h5cm").unwrap();
+                        //match commander
+                        //    .order(AllCommands::System(SystemCommand::Get {
+                        //        key: bitswap_cid.to_bytes(),
+                        //    }))
+                        //    .await {
+                        //    Ok(ReturnValues::Data(data)) => {
+                        //        tracing::info!("Received data from system: {:?}", data);
+                        //        assert_eq!(data, vec![69, 69, 69, 69, 69]);
+                        //    }
+                        //    Ok(val) => {
+                        //        tracing::info!("Received val from system: {:?}", val);
+                        //    }
+                        //    Err(err) => {
+                        //        tracing::error!("Failed to get data from system: {:?}", err);
+                        //    }
+                        //}
                     }
                     Events::Outer(PublicEvent::Message { peer, topic, data }) => {
                         tracing::info!("Received message from {} on topic {}: {:?}", peer, topic, data);
@@ -105,7 +153,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 struct StaticFiles;
 
 /// Serve the Multiaddr we are listening on and the host files.
-pub(crate) async fn serve(libp2p_transport: Multiaddr) {
+pub(crate) async fn serve(libp2p_transport: Multiaddr, cid: Cid) {
     let Some(Protocol::Ip6(_listen_addr)) = libp2p_transport.iter().next() else {
         panic!("Expected 1st protocol to be IP6")
     };
@@ -118,7 +166,10 @@ pub(crate) async fn serve(libp2p_transport: Multiaddr) {
         .route("/:path", get(get_static_file))
         // Report tests status
         // .route("/results", post(post_results))
-        .with_state(Libp2pEndpoint(libp2p_transport))
+        .with_state(Libp2pState {
+            endpoint: libp2p_transport.clone(),
+            cid,
+        })
         .layer(
             // allow cors
             CorsLayer::new()
@@ -148,14 +199,20 @@ pub(crate) async fn serve(libp2p_transport: Multiaddr) {
 }
 
 #[derive(Clone)]
-struct Libp2pEndpoint(Multiaddr);
+struct Libp2pState {
+    endpoint: Multiaddr,
+    cid: Cid,
+}
 
 /// Serves the index.html file for our client.
 ///
 /// Our server listens on a random UDP port for the WebRTC transport.
 /// To allow the client to connect, we replace the `__LIBP2P_ENDPOINT__` placeholder with the actual address.
 async fn get_index(
-    State(Libp2pEndpoint(libp2p_endpoint)): State<Libp2pEndpoint>,
+    State(Libp2pState {
+        endpoint: libp2p_endpoint,
+        cid,
+    }): State<Libp2pState>,
 ) -> Result<Html<String>, StatusCode> {
     let content = StaticFiles::get("index.html")
         .ok_or(StatusCode::NOT_FOUND)?
@@ -163,7 +220,8 @@ async fn get_index(
 
     let html = std::str::from_utf8(&content)
         .expect("index.html to be valid utf8")
-        .replace("__LIBP2P_ENDPOINT__", &libp2p_endpoint.to_string());
+        .replace("__LIBP2P_ENDPOINT__", &libp2p_endpoint.to_string())
+        .replace("__BITSWAP_CID__", &cid.to_string());
 
     Ok(Html(html))
 }
@@ -242,3 +300,31 @@ pub struct Report {
 //
 //     Ok((chrome, driver))
 // }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use peerpiper::core::RawBlakeBlock;
+
+    #[test]
+    fn test_cid() {
+        let block = RawBlakeBlock(b"12345".into());
+        let cid = block.cid().unwrap();
+
+        assert_eq!(
+            cid.to_string(),
+            "bafkr4ieg6lmavpu4h55uugsxvdirgd5i3qemqfqeqm6ocijnya43aegz4q"
+        );
+    }
+
+    #[test]
+    fn test_cid_69() {
+        let block = RawBlakeBlock(vec![69, 69, 69, 69, 69]);
+        let cid = block.cid().unwrap();
+
+        assert_eq!(
+            cid.to_string(),
+            "bafkr4iahcgbbgcbzj7w5uwzyp3bqjdnfd33d7wlxh5fqmnrtk3jpi2h5cm"
+        );
+    }
+}

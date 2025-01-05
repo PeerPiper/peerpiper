@@ -21,21 +21,34 @@ peerpiper = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 axum = "0.6.19"
-libp2p = { workspace = true, features = [ "ed25519", "macros", "ping", "tokio"] }
-rust-embed = { version = "8.0.0", features = ["include-exclude", "interpolate-folder-path"] }
+libp2p = { workspace = true, features = ["ed25519", "macros", "ping", "tokio"] }
+rust-embed = { version = "8.0.0", features = [
+  "include-exclude",
+  "interpolate-folder-path",
+] }
 tokio = { version = "1.34", features = ["macros", "net", "rt", "signal"] }
 tokio-util = { version = "0.7", features = ["compat"] }
 tower = "0.4"
 tower-http = { version = "0.4.0", features = ["cors"] }
 mime_guess = "2.0.4"
 thirtyfour = "=0.32.0-rc.8" # https://github.com/stevepryde/thirtyfour/issues/169
+peerpiper-native = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = "0.3.66"
 tracing-wasm = "0.2.1"
 wasm-bindgen = "0.2.89"
 wasm-bindgen-futures = "0.4.38"
-web-sys = { version = "0.3", features = ['Document', 'Element', 'HtmlElement', 'Node', 'Response', 'Window'] }
+web-sys = { version = "0.3", features = [
+  'Document',
+  'Element',
+  'HtmlElement',
+  'Node',
+  'Response',
+  'Window',
+] }
+peerpiper-browser = { workspace = true }
+tokio = { version = "1.34", features = ["sync"] }
 
 [target.wasm32-unknown-unknown.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
