@@ -32,8 +32,8 @@ jobs:
           toolchain: nightly-x86_64-unknown-linux-gnu
           components: rust-src, rustfmt
 
-      - name: Install cargo component v0.13.2
-        run: echo yes | cargo binstall cargo-component@0.13.2
+      - name: Install cargo component
+        run: echo yes | cargo binstall cargo-component
 
       - name: Run binstall just, wasm-tools
         run: |
