@@ -1,5 +1,3 @@
-#![feature(trivial_bounds)]
-
 pub mod error;
 pub mod events;
 pub mod libp2p;
