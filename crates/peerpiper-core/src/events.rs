@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+#![allow(unused_imports)]
 use crate::libp2p::api::Libp2pEvent;
 use libp2p::Multiaddr;
 use serde::{Deserialize, Serialize};
@@ -142,10 +144,8 @@ pub enum SystemCommand {
 }
 
 pub mod test_helpers {
-    use crate::{
-        events::{AllCommands, SystemCommand},
-        Commander,
-    };
+    use super::*;
+    use crate::Commander;
     use blockstore::Blockstore;
     use cid::Cid;
 
@@ -170,15 +170,12 @@ pub mod test_helpers {
         }
 
         tracing::info!("Sending BITSWAP / BEETSWAP system put command");
+        #[allow(unused_variables)]
+        let cid = Cid::try_from(cid).expect("Failed to parse CID");
 
         #[cfg(target_arch = "wasm32")]
         {
             wasm_bindgen_futures::spawn_local(async move {
-                // bitswap test
-                //let (sender, receiver) = oneshot::channel();
-
-                let cid = Cid::try_from(cid).expect("Failed to parse CID");
-
                 let res = commander
                     .order(AllCommands::System(SystemCommand::Get {
                         key: cid.to_bytes(),
@@ -187,23 +184,6 @@ pub mod test_helpers {
                     .expect("Failed to send bitswap query");
 
                 tracing::info!("bitswap response {:?}", res);
-
-                //// let's add a timeout whilst awaiting receiver.await
-                //// In the browser, we can use tokio::select! and gloo_timers to create a timeout future
-                //
-                //let millis = 5000;
-                //tracing::info!("Waiting for bitswap response with timeout of {}ms", millis);
-                //let timeout = gloo_timers::future::TimeoutFuture::new(millis);
-                //tokio::pin!(timeout);
-                //
-                //tokio::select! {
-                //    _ = timeout.as_mut() => {
-                //        tracing::error!("Timeout waiting for bitswap response");
-                //    }
-                //    response = receiver => {
-                //        tracing::info!("Received bitswap response: {:?}", response);
-                //    }
-                //}
             });
         }
     }
