@@ -84,7 +84,7 @@ pub enum ReturnValues {
 impl<H: Blockstore> Commander<H> {
     /// Sends the command using system, and optionally network if it's Some
     pub async fn order(&self, command: events::AllCommands) -> Result<ReturnValues, error::Error> {
-        tracing::info!("Commander received command: {:?}", command);
+        tracing::trace!("Commander received command: {:?}", command);
         match command {
             AllCommands::System(SystemCommand::PutKeyed { key, bytes }) => {
                 let cid = Cid::try_from(key).map_err(|err| {
@@ -105,7 +105,7 @@ impl<H: Blockstore> Commander<H> {
                 Ok(ReturnValues::ID(cid))
             }
             AllCommands::System(SystemCommand::Get { key }) => {
-                tracing::info!("Commander received Get command: {:?}", key);
+                tracing::trace!("Commander received Get command: {:?}", key);
                 let cid = Cid::try_from(key.clone()).map_err(|err| {
                     error::Error::String(format!("Failed to create Cid from bytes: {}", err))
                 })?;
