@@ -1,3 +1,4 @@
+use crate::Error;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
@@ -6,6 +7,8 @@ use web_sys::{
 };
 
 use peerpiper_core::Blockstore;
+use send_wrapper::SendWrapper;
+use std::ops::Deref;
 
 /// Uses Origin Privacy File System (OPFS) to store blocks
 #[derive(Debug, Clone)]
@@ -99,71 +102,46 @@ impl Blockstore for OPFSBlockstore {
     }
 }
 
-//impl WnfsBlockstore for OPFSBlockstore {
-//    async fn get_block(&self, cid: &Cid) -> Result<Bytes, BlockStoreError> {
-//        let js_uint8array = self
-//            .get_opfs(cid.to_string().as_str())
-//            .await
-//            .map_err(|_| BlockStoreError::CIDNotFound(*cid))?;
-//        let bytes: Bytes = js_uint8array.into();
-//        Ok(bytes)
-//    }
-//
-//    async fn put_block_keyed(
-//        &self,
-//        cid: Cid,
-//        bytes: impl Into<Bytes> + CondSend,
-//    ) -> Result<(), BlockStoreError> {
-//        let bytes: Bytes = bytes.into();
-//
-//        self.put_opfs(cid.to_string().as_str(), bytes.to_vec())
-//            .await
-//            .map_err(|_| BlockStoreError::CIDNotFound(cid))?;
-//
-//        Ok(())
-//    }
-//
-//    async fn has_block(&self, cid: &Cid) -> Result<bool, BlockStoreError> {
-//        Ok(self.get_opfs(cid.to_string().as_str()).await.is_ok())
-//    }
-//}
+/// A Wrapper sturct around OPFSBlockstore so that we can make it [Send]
+#[derive(Debug, Clone)]
+pub struct OPFSWrapped {
+    inner: SendWrapper<OPFSBlockstore>,
+}
 
-//impl SystemCommandHandler for OPFSBlockstore {
-//    type Error = crate::error::Error;
-//
-//    async fn put(&self, data: Vec<u8>) -> Result<Cid, Self::Error> {
-//        let root_cid = put_chunks(self, data).await.map_err(|err| {
-//            crate::error::Error::String(format!("Failed to put bytes in the system: {}", err))
-//        })?;
-//
-//        Ok(root_cid)
-//    }
-//
-//    async fn get(&self, key: Vec<u8>) -> Result<Vec<u8>, Self::Error> {
-//        // TODO: should be chunked to interop with other file systems?
-//        let cid = Cid::try_from(key)?;
-//        // because we chunked the data going in, we need to read it coming out
-//        let file = UnixFsFile::load(&cid, &self).await?;
-//
-//        let mut buffer = Vec::new();
-//        let mut reader = file.into_content_reader(&self, None)?;
-//        reader.read_to_end(&mut buffer).await?;
-//
-//        Ok(buffer)
-//    }
-//}
+impl OPFSWrapped {
+    pub async fn new() -> Result<Self, Error> {
+        let handler = OPFSBlockstore::new()
+            .await
+            .map_err(|e| Error::OPFSBlockstore(e.as_string().unwrap_or_default()))?;
+        Ok(Self {
+            inner: SendWrapper::new(handler),
+        })
+    }
+}
 
-///// A Chunker that takes bytes and chunks them
-//pub async fn put_chunks<B: WnfsBlockstore + Clone>(
-//    blockstore: B,
-//    data: Vec<u8>,
-//) -> Result<Cid, Error> {
-//    let root_cid = FileBuilder::new()
-//        .content_bytes(data.clone())
-//        .fixed_chunker(256 * 1024)
-//        .build()?
-//        .store(&blockstore)
-//        .await?;
-//
-//    Ok(root_cid)
-//}
+impl Blockstore for OPFSWrapped {
+    async fn get<const S: usize>(
+        &self,
+        cid: &cid::CidGeneric<S>,
+    ) -> blockstore::Result<Option<Vec<u8>>> {
+        tracing::debug!("Getting block from OPFS for CID: {:?}", cid);
+        self.inner.deref().get(cid).await
+    }
+
+    async fn put_keyed<const S: usize>(
+        &self,
+        cid: &cid::CidGeneric<S>,
+        data: &[u8],
+    ) -> blockstore::Result<()> {
+        self.inner.deref().put_keyed(cid, data).await
+    }
+
+    async fn remove<const S: usize>(&self, _cid: &cid::CidGeneric<S>) -> blockstore::Result<()> {
+        //todo!();
+        Ok(())
+    }
+
+    async fn close(self) -> blockstore::Result<()> {
+        Ok(())
+    }
+}

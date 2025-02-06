@@ -12,6 +12,9 @@ test:
 publish: build 
   npm publish ./pkg --access public
 
+check32:
+  cargo check --target wasm32-unknown-unknown
+
 # Update ChromeDriver
 update-chromedriver:
     #!/usr/bin/env bash

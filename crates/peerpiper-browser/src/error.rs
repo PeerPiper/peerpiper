@@ -33,4 +33,8 @@ pub enum Error {
     /// From<std::io::Error>
     #[error("IO error {0}")]
     Io(#[from] std::io::Error),
+
+    /// Error creatign OPFS Blockstore
+    #[error("OPFS Blockstore Error: {0}")]
+    OPFSBlockstore(String),
 }
