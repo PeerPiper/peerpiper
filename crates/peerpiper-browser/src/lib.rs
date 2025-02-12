@@ -16,6 +16,7 @@ pub mod opfs;
 mod error;
 
 pub use crate::error::Error;
+use libp2p::StreamProtocol;
 use peerpiper_core::events::Events;
 use peerpiper_core::libp2p::api::{self, Client, NetworkCommand};
 use peerpiper_core::libp2p::behaviour::BehaviourBuilder;
@@ -34,6 +35,8 @@ pub async fn start<B: Blockstore + 'static>(
     tx_client: oneshot::Sender<Client>,
     libp2p_endpoints: Vec<String>,
     blockstore: B,
+    // optional list of stream protocols to accept
+    protocols: Vec<StreamProtocol>,
 ) -> Result<(), Error> {
     tracing::info!("Spawning swarm. Using multiaddr {:?}", libp2p_endpoints);
 
@@ -74,6 +77,16 @@ pub async fn start<B: Blockstore + 'static>(
             tracing::info!("Added remote peer_id as explicit peer: {:?}", rpid);
         }
     }
+
+    // This will automatically accept all incoming streams.
+    // The trouble with this is, it seems like native nodes automatically
+    // open streams for new connections, but we don't have a handle to this stream???
+    //
+    //for p in protocols {
+    //    if let Err(e) = network_client.accept_stream(p).await {
+    //        tracing::error!("Failed to accept stream: {:?}", e);
+    //    }
+    //}
 
     tracing::info!("Sending network client to user");
 

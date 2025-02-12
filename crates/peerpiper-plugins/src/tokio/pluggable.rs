@@ -128,6 +128,7 @@ impl PluggablePiper {
         let (tx_events, mut rx_events) = mpsc::channel(16);
 
         let libp2p_endpoints = vec![];
+        let protocols = Default::default();
 
         tokio::spawn(async move {
             peerpiper::start(
@@ -136,6 +137,7 @@ impl PluggablePiper {
                 tx_client,
                 libp2p_endpoints,
                 blockstore,
+                protocols,
             )
             .await
             .unwrap();

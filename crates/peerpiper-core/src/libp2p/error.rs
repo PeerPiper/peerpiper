@@ -39,4 +39,8 @@ pub enum Error {
     NetworkCommandSendError(
         #[from] tokio::sync::mpsc::error::SendError<super::api::NetworkCommand>,
     ),
+
+    /// From AlreadyRegistered
+    #[error("AlreadyRegistered: {0}")]
+    AlreadyRegistered(#[from] libp2p_stream::AlreadyRegistered),
 }

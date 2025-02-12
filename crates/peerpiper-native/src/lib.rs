@@ -5,7 +5,10 @@ pub use native_blockstore::{NativeBlockstore, NativeBlockstoreBuilder};
 
 pub use error::NativeError;
 use futures::channel::{mpsc, oneshot};
-use libp2p::multiaddr::{Multiaddr, Protocol};
+use libp2p::{
+    multiaddr::{Multiaddr, Protocol},
+    StreamProtocol,
+};
 use std::net::{Ipv4Addr, Ipv6Addr};
 
 use peerpiper_core::{
@@ -26,6 +29,8 @@ use peerpiper_core::{
 //     "QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
 // ];
 
+/// Create the swarm, and get handles to control it.
+/// Any protocols that are passed will be updated with the incoming streams.
 pub async fn start<B: Blockstore + 'static>(
     tx: mpsc::Sender<Events>,
     command_receiver: tokio::sync::mpsc::Receiver<api::NetworkCommand>,
@@ -33,6 +38,8 @@ pub async fn start<B: Blockstore + 'static>(
     // TODO: This native node can dial other native nodes, like BOOTNODES
     _libp2p_endpoints: Vec<String>,
     blockstore: B,
+    // optional list of stream protocols to accept
+    protocols: Vec<StreamProtocol>,
 ) -> Result<(), NativeError> {
     let behaviour_builder = BehaviourBuilder::new(blockstore);
     let mut swarm =
@@ -68,6 +75,12 @@ pub async fn start<B: Blockstore + 'static>(
     ] {
         tracing::info!("Listening on {:?}", addr.clone());
         network_client.start_listening(addr).await?;
+    }
+
+    for p in protocols {
+        if let Err(e) = network_client.accept_stream(p).await {
+            tracing::error!("Failed to accept stream: {:?}", e);
+        }
     }
 
     // for peer in &BOOTNODES {

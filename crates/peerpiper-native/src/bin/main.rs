@@ -20,6 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (tx_client, _rx_client) = oneshot::channel();
     let libp2p_endpoints = vec![];
     let blockstore = NativeBlockstoreBuilder::default().open().await.unwrap();
+    let protocols = Default::default();
 
     peerpiper_native::start(
         tx,
@@ -27,6 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tx_client,
         libp2p_endpoints,
         blockstore,
+        protocols,
     )
     .await?;
 

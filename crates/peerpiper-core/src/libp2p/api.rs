@@ -1,3 +1,5 @@
+pub use libp2p::Multiaddr;
+
 use crate::events::{Events, Network, NetworkError, PublicEvent};
 use crate::libp2p::behaviour::{Behaviour, BehaviourEvent};
 use crate::libp2p::error::Error;
@@ -14,10 +16,11 @@ use libp2p::core::transport::ListenerId;
 use libp2p::kad::store::RecordStore;
 use libp2p::kad::PeerRecord;
 use libp2p::kad::{InboundRequest, Record};
-use libp2p::multiaddr::Protocol;
+pub use libp2p::multiaddr::Protocol;
 use libp2p::request_response::{self, OutboundRequestId, ResponseChannel};
 use libp2p::swarm::{Swarm, SwarmEvent};
-use libp2p::{identify, kad, ping, Multiaddr, PeerId};
+use libp2p::{identify, kad, ping, PeerId, StreamProtocol};
+pub use libp2p_stream::IncomingStreams;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::net::Ipv4Addr;
@@ -128,6 +131,27 @@ impl Client {
             .await?;
         receiver.await.map_err(Error::OneshotCanceled)
     }
+
+    /// Opens a new stream to this peer on the given protocol
+    pub async fn open_stream(
+        &self,
+        peer_id: PeerId,
+        protocol: StreamProtocol,
+    ) -> Result<(), Error> {
+        Ok(self
+            .command_sender
+            .send(NetworkCommand::OpenStream { peer_id, protocol })
+            .await?)
+    }
+
+    /// Accept a stream protocol
+    pub async fn accept_stream(&mut self, stream_protocol: StreamProtocol) -> Result<(), Error> {
+        Ok(self
+            .command_sender
+            .send(NetworkCommand::Accept { stream_protocol })
+            .await?)
+    }
+
     /// Add a peer to the routing table
     pub async fn add_peer(&mut self, peer_id: PeerId) -> Result<(), Error> {
         Ok(self
@@ -150,6 +174,7 @@ impl Client {
             .send(NetworkCommand::Subscribe { topic })
             .await?)
     }
+
     /// General command PeerPiperCommand parsed into Command then called
     pub async fn command(&mut self, command: NetworkCommand) -> Result<(), Error> {
         Ok(self.command_sender.send(command).await?)
@@ -256,10 +281,18 @@ pub enum NetworkCommand {
         cid: Vec<u8>,
         sender: oneshot::Sender<Vec<u8>>,
     },
+    /// Opens a new stream to this peer on the given protocol
+    OpenStream {
+        peer_id: PeerId,
+        protocol: StreamProtocol,
+    },
+    /// Accept a [StreamProtocol]
+    Accept {
+        stream_protocol: StreamProtocol,
+    },
 }
 
 /// Libp2p Events
-#[derive(Debug)]
 pub enum Libp2pEvent {
     /// The unique Event to this api file that never leaves; all other events propagate out
     InboundRequest {
@@ -273,6 +306,55 @@ pub enum Libp2pEvent {
     },
     /// An inbound request to Put a Record into the DHT from a source PeerId
     PutRecordRequest { source: PeerId, record: Record },
+    /// A Stream is available for a protocol
+    StreamAvailable {
+        stream_protocol: StreamProtocol,
+        incoming_stream: IncomingStreams,
+    },
+    /// A Stream we wanted opened is now open
+    StreamOpened {
+        stream_protocol: StreamProtocol,
+        stream: libp2p::Stream,
+        peer_id: PeerId,
+    },
+}
+
+impl std::fmt::Debug for Libp2pEvent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Libp2pEvent::InboundRequest { request, channel } => f
+                .debug_struct("InboundRequest")
+                .field("request", request)
+                .field("channel", channel)
+                .finish(),
+            Libp2pEvent::DhtProviderRequest { key, channel } => f
+                .debug_struct("DhtProviderRequest")
+                .field("key", key)
+                .field("channel", channel)
+                .finish(),
+            Libp2pEvent::PutRecordRequest { source, record } => f
+                .debug_struct("PutRecordRequest")
+                .field("source", source)
+                .field("record", record)
+                .finish(),
+            Libp2pEvent::StreamAvailable {
+                stream_protocol: protocol,
+                ..
+            } => f
+                .debug_struct("StreamAvailable")
+                .field("protocol", protocol)
+                .finish(),
+            Libp2pEvent::StreamOpened {
+                stream_protocol,
+                peer_id,
+                ..
+            } => f
+                .debug_struct("StreamOpened")
+                .field("protocol", stream_protocol)
+                .field("peer_id", peer_id)
+                .finish(),
+        }
+    }
 }
 
 /// Simple file exchange protocol
@@ -1052,6 +1134,62 @@ impl<B: Blockstore> EventLoop<B> {
                 tracing::info!("API: Handling StartProviding command");
                 if let Err(e) = self.swarm.behaviour_mut().kad.start_providing(key.into()) {
                     tracing::error!("Failed to start providing: {e}");
+                }
+            }
+            NetworkCommand::OpenStream { peer_id, protocol } => {
+                tracing::info!("API: Handling OpenStream command");
+                match self
+                    .swarm
+                    .behaviour_mut()
+                    .streamer
+                    .new_control()
+                    .open_stream(peer_id, protocol.clone())
+                    .await
+                {
+                    Ok(stream) => {
+                        tracing::info!(
+                            "API: Successfully Opened Stream to {peer_id} on {protocol}"
+                        );
+                        match self
+                            .event_sender
+                            .send(Events::Inner(Libp2pEvent::StreamOpened {
+                                stream_protocol: protocol.clone(),
+                                stream,
+                                peer_id,
+                            }))
+                            .await
+                        {
+                            Ok(_) => {
+                                tracing::info!(
+                                    "API: Successfully Sent Opened Stream to {peer_id} on {protocol}"
+                                );
+                            }
+                            Err(e) => {
+                                tracing::error!("API: Failed to send stream opened event: {e}");
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        tracing::error!("API: Failed to open stream: {e}");
+                    }
+                }
+            }
+            NetworkCommand::Accept { stream_protocol } => {
+                tracing::info!("API: Handling Accept StreamProtocol command");
+                let res = self
+                    .swarm
+                    .behaviour_mut()
+                    .streamer
+                    .new_control()
+                    .accept(stream_protocol.clone());
+                if let Ok(stream) = res {
+                    self.event_sender
+                        .send(Events::Inner(Libp2pEvent::StreamAvailable {
+                            stream_protocol,
+                            incoming_stream: stream,
+                        }))
+                        .await
+                        .expect("Event sender to be open");
                 }
             }
         }

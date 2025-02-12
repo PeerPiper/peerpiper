@@ -3421,6 +3421,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "libp2p-stream"
+version = "0.2.0-alpha"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d454f6647bc9054e7fede2dc86e625786c4d1304bff7afc995285f53ef9091f0"
+dependencies = [
+ "futures",
+ "libp2p-core 0.42.0",
+ "libp2p-identity",
+ "libp2p-swarm",
+ "rand",
+ "tracing",
+ "void",
+]
+
+[[package]]
 name = "libp2p-swarm"
 version = "0.45.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4411,7 +4426,9 @@ dependencies = [
  "peerpiper-native",
  "rand",
  "thiserror 1.0.69",
+ "tokio",
  "tracing",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]
@@ -4464,6 +4481,7 @@ dependencies = [
  "futures-timer",
  "gloo-timers 0.3.0",
  "libp2p",
+ "libp2p-stream",
  "libp2p-webrtc",
  "libp2p-webrtc-websys",
  "multibase",
@@ -4521,6 +4539,7 @@ dependencies = [
  "dirs 5.0.1",
  "futures",
  "libp2p",
+ "libp2p-stream",
  "peerpiper-core",
  "rand",
  "tempfile",
@@ -7520,9 +7539,9 @@ dependencies = [
 
 [[package]]
 name = "webrtc-ice"
-version = "0.10.1"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1bbd6b3dea22cc6e961e22b012e843d8869e2ac8e76b96e54d4a25e311857ad"
+checksum = "66eb4b85646f1c52225779db3e1e7e873dede6db68cc9be080b648f1713083a3"
 dependencies = [
  "arc-swap",
  "async-trait",

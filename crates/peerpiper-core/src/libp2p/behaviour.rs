@@ -41,6 +41,8 @@ pub struct Behaviour<B: Blockstore + 'static> {
     dcutr: dcutr::Behaviour,
     /// Bitswap
     pub(crate) bitswap: beetswap::Behaviour<MAX_MULTIHASH_LENGTH, B>,
+    /// Stream arbitrary PROTOCOL
+    pub streamer: libp2p_stream::Behaviour,
 }
 
 /// BehaviousBuilder lets us set the bitswap [Blockstore] first,
@@ -110,6 +112,7 @@ impl<B: Blockstore + 'static> BehaviourBuilder<B> {
             relay_client: relay_behaviour,
             dcutr: dcutr::Behaviour::new(key.public().to_peer_id()),
             bitswap,
+            streamer: libp2p_stream::Behaviour::new(),
         }
     }
 }

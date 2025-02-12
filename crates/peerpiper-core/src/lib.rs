@@ -2,14 +2,15 @@ pub mod error;
 pub mod events;
 pub mod libp2p;
 
+pub use crate::libp2p::api::{Client, IncomingStreams, Protocol};
+pub use ::libp2p::swarm::{Stream, StreamProtocol};
+use ::libp2p::PeerId;
 pub use blockstore::block::{Block, CidError};
 pub use blockstore::Blockstore;
-use libp2p::api::NetworkCommand;
-
-use crate::libp2p::api::Client;
-use ::libp2p::PeerId;
 pub use cid::Cid;
 use events::{AllCommands, SystemCommand};
+use libp2p::api::NetworkCommand;
+pub use libp2p_stream;
 use multihash_codetable::{Code, MultihashDigest};
 use std::collections::HashSet;
 use std::str::FromStr;
@@ -175,6 +176,27 @@ impl<H: Blockstore> Commander<H> {
                 Some(client) => {
                     let bytes = client.get_record(key).await?;
                     Ok(ReturnValues::Data(bytes))
+                }
+                None => Err(error::Error::String(
+                    "Tried to send a network command, but network is not initialized".to_string(),
+                )),
+            },
+            AllCommands::OpenStream { peer_id, protocol } => match &self.client {
+                Some(client) => {
+                    let peer_id = PeerId::from_str(&peer_id).map_err(|err| {
+                        error::Error::String(format!("Failed to create PeerId: {}", err))
+                    })?;
+
+                    let stream_protocol =
+                        StreamProtocol::try_from_owned(protocol).map_err(|err| {
+                            error::Error::String(format!(
+                                "Failed to create StreamProtocol: {}",
+                                err
+                            ))
+                        })?;
+
+                    client.open_stream(peer_id, stream_protocol).await?;
+                    Ok(ReturnValues::None)
                 }
                 None => Err(error::Error::String(
                     "Tried to send a network command, but network is not initialized".to_string(),

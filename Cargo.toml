@@ -18,6 +18,7 @@ thiserror = "1"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 libp2p = { version = "0.54.1" }
+libp2p-stream = { version = "0.2.0-alpha" }
 wit-bindgen-rt = { version = "0.36.0", features = ["bitflags"] }
 # for submodules
 bls12_381_plus = { version = "0.8.16", features = ["expose-fields", "alloc"] }
