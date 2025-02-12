@@ -48,6 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
 
     let blockstore_clone = blockstore.clone();
+    let protocols = Default::default();
 
     tokio::spawn(async move {
         peerpiper::start(
@@ -56,6 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             tx_client,
             libp2p_endpoints,
             blockstore_clone,
+            protocols,
         )
         .await
         .unwrap();
