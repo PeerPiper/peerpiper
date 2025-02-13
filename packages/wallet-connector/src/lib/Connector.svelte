@@ -3,6 +3,7 @@
 	import { connect } from '@peerpiper/wallet-connector';
 
 	let remote;
+	let walletUrl = 'http://localhost:4175/integrity-wallet';
 
 	onMount(async () => {
 		let method = 'sign';
@@ -39,11 +40,20 @@
 			<slot {handleSign} />
 		{:else}
 			<div class="bg-red-100 my-4 p-2 rounded w-full text-red-500">Not Connected!</div>
-			<a href="http://localhost:4175/integrity-wallet?{params}" target="_blank" class="">
-				<p class="rounded bg-sky-500 px-4 py-2 w-fit shadow text-white font-semibold">
-					Click to Connect
-				</p>
-			</a>
+			<div class="flex flex-row">
+				<input
+					type="text"
+					bind:value={walletUrl}
+					class="flex-1 px-2 border border-gray-300 rounded w-full mr-4"
+				/>
+				<a
+					href="http://localhost:4175/integrity-wallet?{params}"
+					target="_blank"
+					class="flex-initial"
+				>
+					<p class="rounded bg-sky-500 px-4 py-2 shadow text-white font-semibold">Connect</p>
+				</a>
+			</div>
 		{/if}
 	</div>
 </main>
