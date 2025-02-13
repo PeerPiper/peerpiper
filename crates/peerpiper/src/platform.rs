@@ -15,10 +15,10 @@ pub use peerpiper_browser::opfs::OPFSWrapped as Blockstore;
 pub use peerpiper_native::NativeBlockstore as Blockstore;
 
 #[cfg(target_arch = "wasm32")]
-pub use peerpiper_browser::start;
+pub use peerpiper_browser::{start, StartConfig};
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use peerpiper_native::start;
+pub use peerpiper_native::{start, StartConfig};
 
 /// Spawn for tokio
 #[cfg(not(target_arch = "wasm32"))]

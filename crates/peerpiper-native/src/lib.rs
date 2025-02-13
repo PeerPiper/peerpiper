@@ -29,23 +29,40 @@ use peerpiper_core::{
 //     "QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
 // ];
 
+/// Config for starting PeerPiper.
+/// - libp2p_endpoints: List of libp2p endpoints to connect to.
+/// - protocols: List of [StreamProtocol] to use.
+/// - base_path: Path to the base directory for the blockstore and other data.
+pub struct StartConfig {
+    // TODO: This native node can dial other native nodes, like BOOTNODES
+    pub libp2p_endpoints: Vec<String>,
+    pub protocols: Vec<StreamProtocol>,
+    pub base_path: Option<std::path::PathBuf>,
+}
+
 /// Create the swarm, and get handles to control it.
 /// Any protocols that are passed will be updated with the incoming streams.
 pub async fn start<B: Blockstore + 'static>(
     tx: mpsc::Sender<Events>,
     command_receiver: tokio::sync::mpsc::Receiver<api::NetworkCommand>,
     tx_client: oneshot::Sender<Client>,
-    // TODO: This native node can dial other native nodes, like BOOTNODES
-    _libp2p_endpoints: Vec<String>,
     blockstore: B,
-    // optional list of stream protocols to accept
-    protocols: Vec<StreamProtocol>,
+    config: StartConfig,
 ) -> Result<(), NativeError> {
+    let StartConfig {
+        libp2p_endpoints: _,
+        protocols,
+        base_path,
+    } = config;
+
     let behaviour_builder = BehaviourBuilder::new(blockstore);
-    let mut swarm =
-        swarm::create(|key, relay_behaviour| behaviour_builder.build(key, relay_behaviour))
-            .await
-            .map_err(CoreError::CreateSwarm)?;
+
+    let mut swarm = swarm::create(
+        |key, relay_behaviour| behaviour_builder.build(key, relay_behaviour),
+        base_path,
+    )
+    .await
+    .map_err(CoreError::CreateSwarm)?;
 
     swarm
         .behaviour_mut()

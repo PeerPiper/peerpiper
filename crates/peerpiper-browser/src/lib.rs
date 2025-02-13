@@ -28,28 +28,46 @@ use libp2p::core::multiaddr::Protocol;
 use libp2p::core::Multiaddr;
 use wasm_bindgen_futures::spawn_local;
 
+/// Config for starting PeerPiper.
+/// - libp2p_endpoints: List of libp2p endpoints to connect to.
+/// - protocols: List of [StreamProtocol] to use with libp2p-stream
+/// - base_path: Path to the base directory for the blockstore and other data.
+pub struct StartConfig {
+    // TODO: This native node can dial other native nodes, like BOOTNODES
+    pub libp2p_endpoints: Vec<String>,
+    pub protocols: Vec<StreamProtocol>,
+    pub base_path: Option<std::path::PathBuf>,
+}
+
 /// Call start in order to start the network and the event loop.
 pub async fn start<B: Blockstore + 'static>(
     tx: mpsc::Sender<Events>,
     network_cmd_rx: tokio::sync::mpsc::Receiver<NetworkCommand>,
     tx_client: oneshot::Sender<Client>,
-    libp2p_endpoints: Vec<String>,
     blockstore: B,
-    // optional list of stream protocols to accept
-    protocols: Vec<StreamProtocol>,
+    config: StartConfig,
 ) -> Result<(), Error> {
+    let StartConfig {
+        libp2p_endpoints,
+        protocols: _,
+        base_path,
+    } = config;
+
     tracing::info!("Spawning swarm. Using multiaddr {:?}", libp2p_endpoints);
 
     let behaviour_builder = BehaviourBuilder::new(blockstore);
 
-    let swarm = swarm::create(|key, relay_behaviour| behaviour_builder.build(key, relay_behaviour))
-        .await
-        .map_err(|err| {
-            tracing::error!("Failed to create swarm: {}", err);
-            Error::Core(peerpiper_core::error::Error::CreateSwarm(
-                "Failed to create swarm".to_string(),
-            ))
-        })?;
+    let swarm = swarm::create(
+        |key, relay_behaviour| behaviour_builder.build(key, relay_behaviour),
+        base_path,
+    )
+    .await
+    .map_err(|err| {
+        tracing::error!("Failed to create swarm: {}", err);
+        Error::Core(peerpiper_core::error::Error::CreateSwarm(
+            "Failed to create swarm".to_string(),
+        ))
+    })?;
 
     let _peer_id = *swarm.local_peer_id();
 

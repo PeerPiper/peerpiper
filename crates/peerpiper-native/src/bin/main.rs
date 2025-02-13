@@ -26,9 +26,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tx,
         command_receiver,
         tx_client,
-        libp2p_endpoints,
         blockstore,
-        protocols,
+        peerpiper_native::StartConfig {
+            libp2p_endpoints,
+            protocols,
+            base_path: None,
+        },
     )
     .await?;
 

@@ -46,8 +46,7 @@ impl PeerPiper {
     /// Send the `on_event` callback to the Commander to be called when an event is received.
     pub async fn connect(
         &mut self,
-        libp2p_endpoints: Vec<String>,
-        protocols: Vec<StreamProtocol>,
+        config: platform::StartConfig,
     ) -> Result<impl FnOnce(Sender<Events>), Error> {
         // 16 is arbitrary, but should be enough for now
         let (tx_evts, mut rx_evts) = mpsc::channel(16);
@@ -62,16 +61,9 @@ impl PeerPiper {
         let bstore = self.commander.blockstore.clone();
 
         platform::spawn(async move {
-            start(
-                tx_evts,
-                network_command_receiver,
-                tx_client,
-                libp2p_endpoints,
-                bstore,
-                protocols,
-            )
-            .await
-            .expect("never end")
+            start(tx_evts, network_command_receiver, tx_client, bstore, config)
+                .await
+                .expect("never end")
         });
 
         // wait on rx_client to get the client handle

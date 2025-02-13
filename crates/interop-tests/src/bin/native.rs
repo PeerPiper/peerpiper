@@ -55,9 +55,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             tx_net_evt_clone,
             command_receiver,
             tx_client,
-            libp2p_endpoints,
             blockstore_clone,
-            protocols,
+            peerpiper::StartConfig {
+                libp2p_endpoints,
+                protocols,
+                base_path: None,
+            },
         )
         .await
         .unwrap();

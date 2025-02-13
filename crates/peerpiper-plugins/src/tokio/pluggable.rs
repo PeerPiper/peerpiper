@@ -135,9 +135,12 @@ impl PluggablePiper {
                 tx_events,
                 command_receiver,
                 tx_client,
-                libp2p_endpoints,
                 blockstore,
-                protocols,
+                peerpiper::StartConfig {
+                    libp2p_endpoints,
+                    protocols,
+                    base_path: None,
+                },
             )
             .await
             .unwrap();

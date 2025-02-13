@@ -9,7 +9,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-pub const LOCAL_KEY_PATH: &str = "./local_keypair";
+pub const LOCAL_KEY_PATH: &str = "local_keypair";
 
 /// The configuration of the libp2p node.
 #[derive(Clone, Deserialize, Serialize, Default)]
@@ -40,14 +40,15 @@ impl Config {
         Ok(serde_json::from_str(&std::fs::read_to_string(path)?)?)
     }
 
-    pub fn load() -> Result<(Keypair, Certificate), Box<dyn Error>> {
+    pub fn load(base_path: Option<PathBuf>) -> Result<(Keypair, Certificate), Box<dyn Error>> {
         let existing_keyfile = match Config::from_file(Path::new(LOCAL_KEY_PATH)) {
             Ok(config) => Some(config),
             Err(_) => None,
         };
         let key_path = PathBuf::from(LOCAL_KEY_PATH);
+        let key_path = base_path.unwrap_or_default().join(key_path);
 
-        tracing::info!("Key path: {:?}", key_path);
+        tracing::info!("Loading Using Key path: {:?}", key_path);
 
         match existing_keyfile {
             Some(keyfile) => {
@@ -89,7 +90,23 @@ impl Config {
 
                 match serde_json::to_string_pretty(&config) {
                     Ok(config) => {
-                        fs::write(key_path, config)?;
+                        // write config to key_path,
+                        // ensure the file and/or directory exists
+                        // before writing to it.
+                        tracing::info!("💾 Creating Key path: {:?}", key_path.parent().unwrap());
+                        fs::create_dir_all(key_path.parent().unwrap())?;
+
+                        //tracing::info!("💾 Creating Key path: {:?}", key_path);
+                        //if let Err(e) = fs::create_dir_all(key_path.clone()) {
+                        //    tracing::error!("⭕ Error creating key path: {:?}", e);
+                        //}
+
+                        tracing::info!("💾 Saving to Key path: {:?}", key_path);
+                        if let Err(e) = fs::write(&key_path, config) {
+                            tracing::error!("⭕ Error writing key path: {:?}", e);
+                        }
+
+                        tracing::info!("LOADED.");
                         Ok((keypair, cert))
                     }
                     Err(e) => Err(e.into()),
@@ -99,7 +116,11 @@ impl Config {
     }
 
     /// Saves the keypair and certificate to the local filesystem.
-    pub fn save(keypair: &Keypair, cert: &Certificate) -> Result<(), Box<dyn Error>> {
+    pub fn save(
+        keypair: &Keypair,
+        cert: &Certificate,
+        base_path: Option<PathBuf>,
+    ) -> Result<(), Box<dyn Error>> {
         let config = Config {
             identity: Identity {
                 peer_id: keypair.public().to_peer_id().to_string(),
@@ -114,8 +135,11 @@ impl Config {
         };
 
         let key_path = PathBuf::from(LOCAL_KEY_PATH);
+        let joind = base_path.unwrap_or_default().join(key_path);
 
-        fs::write(key_path, serde_json::to_string_pretty(&config)?)?;
+        tracing::info!("💾 Saving to Key path: {:?}", joind);
+
+        fs::write(joind, serde_json::to_string_pretty(&config)?)?;
 
         Ok(())
     }
@@ -138,9 +162,9 @@ mod tests {
 
         let _ = fs::remove_file(&key_path);
 
-        Config::save(&keypair, &cert).unwrap();
+        Config::save(&keypair, &cert, None).unwrap();
 
-        let (keypair2, cert2) = Config::load().unwrap();
+        let (keypair2, cert2) = Config::load(None).unwrap();
 
         assert_eq!(
             keypair.to_protobuf_encoding().unwrap(),
