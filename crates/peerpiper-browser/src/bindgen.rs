@@ -2,6 +2,7 @@
 //! This API should be the same as the WIT interface that imports it when used with a WIT UI (such
 //! as Wurbo).
 //! That wat the WIT interface can simply import the same API and use it to communicate with the
+use crate::StartConfig;
 
 use futures::{
     channel::{mpsc, oneshot},
@@ -91,16 +92,17 @@ impl PeerPiper {
 
         let blockstore = { self.commander.borrow().blockstore.clone() };
 
+        // TODO: Expose stream protocols in public API
+        let config = StartConfig {
+            libp2p_endpoints,
+            protocols: vec![],
+            base_path: None,
+        };
+
         spawn_local(async move {
-            crate::start(
-                tx_evts,
-                command_receiver,
-                tx_client,
-                libp2p_endpoints,
-                blockstore,
-            )
-            .await
-            .expect("never end")
+            crate::start(tx_evts, command_receiver, tx_client, blockstore, config)
+                .await
+                .expect("never end")
         });
 
         // wait on rx_client to get the client handle
