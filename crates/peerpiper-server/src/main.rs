@@ -1,8 +1,8 @@
 #![feature(async_closure)]
 #![allow(clippy::needless_return)]
 
-#[cfg(feature = "cloudflare")]
-mod cloudflare;
+//#[cfg(feature = "cloudflare")]
+//mod cloudflare;
 mod web_server;
 
 use anyhow::Result;
@@ -33,10 +33,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 tracing::debug!("Received Node Address: {:?}", addr);
                 // Serve .wasm, .js and server multiaddress over HTTP on this address.
                 tokio::spawn(web_server::serve(addr.clone()));
-                #[cfg(feature = "cloudflare")]
-                if let Err(e) = cloudflare::add_address(&addr).await {
-                    tracing::error!("Could not add address to cloudflare DNS record: {e}");
-                }
+                //#[cfg(feature = "cloudflare")]
+                //if let Err(e) = cloudflare::add_address(&addr).await {
+                //    tracing::error!("Could not add address to cloudflare DNS record: {e}");
+                //}
             }
         }
     });
@@ -50,19 +50,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         for wasm in wasms.iter() {
             let path = path.join(wasm);
             tracing::info!("Loading wasm file: {:?}", path);
-            let wasm_bytes = std::fs::read(&path).unwrap();
-            if let Err(e) = pluggable_client
-                .load_plugin(
-                    path.file_stem()
-                        .unwrap_or_default()
-                        .to_str()
-                        .unwrap_or_default()
-                        .to_string(),
-                    &wasm_bytes,
-                )
-                .await
-            {
-                tracing::error!("Error loading plugin: {:?}", e);
+            if let Ok(wasm_bytes) = std::fs::read(&path) {
+                if let Err(e) = pluggable_client
+                    .load_plugin(
+                        path.file_stem()
+                            .unwrap_or_default()
+                            .to_str()
+                            .unwrap_or_default()
+                            .to_string(),
+                        &wasm_bytes,
+                    )
+                    .await
+                {
+                    tracing::error!("Error loading plugin: {:?}", e);
+                }
+            } else {
+                tracing::error!("Error reading wasm file: {:?}", path);
             }
         }
     };

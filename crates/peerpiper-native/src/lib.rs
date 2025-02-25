@@ -33,6 +33,7 @@ use peerpiper_core::{
 /// - libp2p_endpoints: List of libp2p endpoints to connect to.
 /// - protocols: List of [StreamProtocol] to use.
 /// - base_path: Path to the base directory for the blockstore and other data.
+#[derive(Clone, Default)]
 pub struct StartConfig {
     // TODO: This native node can dial other native nodes, like BOOTNODES
     pub libp2p_endpoints: Vec<String>,
