@@ -1,4 +1,4 @@
-//#![cfg(target_arch = "wasm32")] // <== So that peerpiper_browser::bindgen references are valid
+#![cfg(target_arch = "wasm32")] // <== So that peerpiper_browser::bindgen references are valid
 
 use cid::Cid;
 use peerpiper_browser::opfs::OPFSBlockstore;
