@@ -6,7 +6,7 @@ serve:
 
 # Secure Copy Protocol (SCP) command to copy files to a remote server
 scp:
-  scp -i ~/.ssh/id_ed25519 ../../target/release/peerpiper-server opc@$IP_ADDRESS:~
+  scp -i ~/.ssh/oracle_cloud ../../target/release/peerpiper-server ubuntu@$IP_ADDRESS:~
 
 connect:
-  ssh -i ~/.ssh/id_ed25519 opc@$IP_ADDRESS
+  ssh -i ~/.ssh/oracle_cloud ubuntu@$IP_ADDRESS
