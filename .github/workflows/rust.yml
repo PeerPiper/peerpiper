@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive  # This will fetch all submodules recursively
 
       - uses: extractions/setup-just@v2
 
@@ -41,7 +43,7 @@ jobs:
     needs: pre-build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive  # This will fetch all submodules recursively
 
