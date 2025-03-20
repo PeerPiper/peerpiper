@@ -7,7 +7,7 @@ use std::net::{Ipv4Addr, SocketAddr};
 use tower_http::cors::{Any, CorsLayer};
 
 /// Serve the Multiaddr we are listening on and the host files.
-pub(crate) async fn serve(libp2p_transport: Multiaddr) {
+pub async fn serve(libp2p_transport: Multiaddr) {
     // let Some(Protocol::Ip6(_listen_addr)) = libp2p_transport.iter().next() else {
     //     panic!("Expected 1st protocol to be IP6")
     // };
@@ -25,7 +25,7 @@ pub(crate) async fn serve(libp2p_transport: Multiaddr) {
         );
 
     // let addr = SocketAddr::new(listen_addr.into(), 8080);
-    let addr = SocketAddr::new(std::net::IpAddr::V4(Ipv4Addr::LOCALHOST), 8080);
+    let addr = SocketAddr::new(std::net::IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 8080);
 
     tracing::info!(url=%format!("http://{addr}"), "Serving client files at url");
 

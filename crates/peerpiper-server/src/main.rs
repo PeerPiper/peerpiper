@@ -3,7 +3,7 @@
 
 //#[cfg(feature = "cloudflare")]
 //mod cloudflare;
-mod web_server;
+use peerpiper_server::web_server;
 
 use anyhow::Result;
 use peerpiper_plugins::tokio::{ExternalEvents, PluggablePiper};
