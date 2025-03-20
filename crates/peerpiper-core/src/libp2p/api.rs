@@ -26,6 +26,7 @@ use std::collections::{HashMap, HashSet};
 use std::net::Ipv4Addr;
 use std::ops::Deref;
 use std::time::Duration;
+use web_time::Instant;
 
 use super::delay;
 
@@ -65,7 +66,7 @@ impl Client {
         receiver.await?
     }
     /// Dial the given addresses
-    pub async fn dial(&mut self, addr: Multiaddr) -> Result<(), Error> {
+    pub async fn dial(&self, addr: Multiaddr) -> Result<(), Error> {
         let (sender, receiver) = oneshot::channel();
         self.command_sender
             .send(NetworkCommand::Dial { addr, sender })
@@ -292,7 +293,7 @@ pub enum NetworkCommand {
     },
 }
 
-/// Libp2p Events
+/// Inner Libp2p Events which cannot be serialized
 pub enum Libp2pEvent {
     /// The unique Event to this api file that never leaves; all other events propagate out
     InboundRequest {
@@ -458,6 +459,34 @@ impl<B: Blockstore> EventLoop<B> {
                 record.value
             );
         });
+
+        // clone the records
+        let records = self
+            .swarm
+            .behaviour_mut()
+            .kad
+            .store_mut()
+            .records()
+            .map(|mut r| r.to_mut().clone())
+            .collect::<Vec<_>>();
+
+        for record in records {
+            let quorum = kad::Quorum::One;
+
+            if let Some(expires) = record.expires {
+                if expires < Instant::now() + Duration::from_secs(60) {
+                    let expires = Some(Instant::now() + Duration::from_secs(22 * 60 * 60));
+                    if let Err(e) = self
+                        .swarm
+                        .behaviour_mut()
+                        .kad
+                        .put_record(Record { expires, ..record }, quorum)
+                    {
+                        tracing::error!("Failed to put record: {e}");
+                    }
+                }
+            }
+        }
 
         // if let Some(Err(e)) = self
         //     .swarm
@@ -841,8 +870,12 @@ impl<B: Blockstore> EventLoop<B> {
                     ))) => {
                         if let Some(sender) = self.pending_get_records.remove(&id) {
                             sender
-                                .send(record.value)
+                                .send(record.value.clone())
                                 .expect("Receiver not to be dropped");
+
+                            // emit a GotRecord event
+                            // so that DHT Records can be retrieved
+                            // by users without an async environment
 
                             // Finish the query. We are only interested in the first result.
                             // TODO: Handle comparing and choosing the best record
@@ -871,6 +904,19 @@ impl<B: Blockstore> EventLoop<B> {
                         ..
                     } => {
                         tracing::info!("Received PutRecordRequest from: {:?}", source);
+
+                        // TODO: Filter Providers based on criteria?
+                        // for now, add the provider to the DHT as is
+                        if let Err(e) = self
+                            .swarm
+                            .behaviour_mut()
+                            .kad
+                            .store_mut()
+                            .put(record.clone())
+                        {
+                            tracing::error!("Failed to add provider to DHT: {e}");
+                        }
+
                         // send evt to external handler plugins to decide whether to include record or not:
                         if let Err(e) = self
                             .event_sender

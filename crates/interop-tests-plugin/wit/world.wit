@@ -1,4 +1,4 @@
-package component:extension@0.1.0;
+package component:plugin;
 
 interface types {
     record message {
@@ -19,8 +19,26 @@ interface types {
     }
 }
 
-interface handlers {
+interface run {
     use types.{message, error};
+
+    /// The Component 
+    resource plugin {
+      /// The constructor for the component.
+      /// Initializes the state of the component. 
+      /// Provides a structure to keep internal state.
+      constructor();
+
+      /// Gets a Record from the DHT 
+      run-tests: func() -> string;
+
+      put-record: func(key: list<u8>, value: list<u8>);
+
+      get-record: func(key: list<u8>);
+
+      tick: func() -> list<list<u8>>;
+    }
+
     /// Handle a message from the world. Returns a string response or error
     handle-message: func(msg: message) -> result<string, error>;
 
@@ -35,9 +53,16 @@ interface peer-piper-commands {
     start-providing: func(key: list<u8>);
 }
 
-interface logging {
-    /// Log a message 
-    log: func(message: string);
+interface host {
+  /// log a message.
+  log: func(msg: string);
+
+  /// get a random byte
+  random-byte: func() -> u8;
+
+  /// Now 
+  now: func() -> u64;
+
 }
 
 /// An example world for the component to target.
@@ -46,9 +71,12 @@ world extension-world {
     /// Import PeerPiperCommand interface
     import peer-piper-commands;
 
-    /// Import the logging interface 
-    import logging;
+    /// Core functions
+    import peerpiper:pluggable/commands;
+
+    /// Utilities
+    import peerpiper:pluggable/utils;
 
     /// Export the handlers for the extension
-    export handlers;
+    export run;
 }

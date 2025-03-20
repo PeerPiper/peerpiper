@@ -1,4 +1,5 @@
-#[cfg(not(target_arch = "wasm32"))]
+#![cfg(not(target_arch = "wasm32"))]
+
 use anyhow::Result;
 use axum::extract::{Path, State};
 use axum::http::header::CONTENT_TYPE;
@@ -11,7 +12,9 @@ use axum::Router;
 use futures::channel::{mpsc, oneshot};
 use futures::StreamExt;
 use libp2p::multiaddr::{Multiaddr, Protocol};
-use peerpiper::core::{Block, Cid, Commander, RawBlakeBlock, ReturnValues};
+use peerpiper::core::{Block, Cid, RawBlakeBlock};
+use peerpiper::StartConfig;
+use peerpiper_native::NativeBlockstoreBuilder;
 use std::net::Ipv4Addr;
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
@@ -21,7 +24,9 @@ use tower_http::cors::{Any, CorsLayer};
 // use tokio::io::{AsyncBufReadExt, BufReader};
 // use tokio::process::Child;
 
-use peerpiper::core::events::{AllCommands, Events, PublicEvent, SystemCommand};
+use peerpiper::core::events::{AllCommands, PublicEvent, SystemCommand};
+use peerpiper_plugins::layer::PluggablePeerPiper;
+use tempfile::tempdir;
 
 const MAX_CHANNELS: usize = 16;
 
@@ -29,66 +34,53 @@ const MAX_CHANNELS: usize = 16;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(
-            "interop_tests_native=debug,peerpiper_native=debug,peerpiper_core=debug,libp2p_webrtc=info,libp2p_ping=debug,beetswap=trace",
+            "interop_tests_native=debug,peerpiper_native=debug,peerpiper_core=debug,libp2p_webrtc=info,libp2p_ping=debug,beetswap=trace,peerpiper_plugins=debug",
         )
         .try_init();
 
     tracing::info!("Starting peerpiper-native TESTS");
 
+    let name = "extension_echo.wasm";
+    let bytes =
+        include_bytes!("../../../../target/wasm32-unknown-unknown/release/extension_echo.wasm");
+
     let (tx_net_evt, mut rx_net_evt) = mpsc::channel(MAX_CHANNELS);
-    let (command_sender, command_receiver) = tokio::sync::mpsc::channel(8);
-    let tx_net_evt_clone = tx_net_evt.clone();
 
-    let (tx_client, rx_client) = oneshot::channel();
+    let tempdir = tempdir().unwrap().path().to_path_buf();
+    let blockstore = NativeBlockstoreBuilder::new(tempdir).open().await.unwrap();
 
-    let libp2p_endpoints = vec![];
-    let blockstore = peerpiper_native::NativeBlockstoreBuilder::default()
-        .open()
-        .await
-        .unwrap();
+    // Our plugins will handle internal libp2p events,
+    // Public events will be bubbled up to the user
+    let (mut pluggable_piper, pluggable_client) = PluggablePeerPiper::new(blockstore, tx_net_evt);
+    pluggable_piper.load(name, bytes);
 
-    let blockstore_clone = blockstore.clone();
-    let protocols = Default::default();
+    assert_eq!(pluggable_piper.plugins.len(), 1);
+
+    let commander = pluggable_piper.peerpiper.commander.clone();
+    let (tx, rx) = oneshot::channel();
 
     tokio::spawn(async move {
-        peerpiper::start(
-            tx_net_evt_clone,
-            command_receiver,
-            tx_client,
-            blockstore_clone,
-            peerpiper::StartConfig {
-                libp2p_endpoints,
-                protocols,
-                base_path: None,
-            },
-        )
-        .await
-        .unwrap();
+        pluggable_piper.run(tx).await.unwrap();
     });
+
+    let _ = rx.await;
 
     tracing::info!("Started.");
 
     let address = loop {
-        if let Events::Outer(PublicEvent::ListenAddr { address, .. }) =
-            rx_net_evt.next().await.unwrap()
-        {
+        if let PublicEvent::ListenAddr { address, .. } = rx_net_evt.next().await.unwrap() {
             tracing::info!(%address, "RXD Address");
             break address;
         }
     };
-
-    let client_handle = rx_client.await?;
-
-    let mut commander = Commander::new(blockstore);
-    commander
-        .with_network(command_sender.clone())
-        .with_client(client_handle);
 
     // Create a block with some data for bitswap test and put it in the blockstore
     let block = RawBlakeBlock(vec![43, 42, 42, 42, 42, 42]);
     let cid = block.cid().unwrap();
 
     commander
+        .lock()
+        .await
         .order(AllCommands::System(SystemCommand::PutKeyed {
             key: cid.to_bytes(),
             bytes: block.0.clone(),
@@ -103,7 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             msg = rx_net_evt.select_next_some() => {
                 tracing::info!("Received msg: {:?}", msg);
                 match msg {
-                    Events::Outer(PublicEvent::NewConnection { peer }) => {
+                    PublicEvent::NewConnection { peer } => {
                        // Once connection establish, subscribe to "test" topic
                         tracing::info!("New connection from {}, subscribing to test topic", peer);
 
@@ -134,10 +126,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         //    }
                         //}
                     }
-                    Events::Outer(PublicEvent::Message { peer, topic, data }) => {
+                    PublicEvent::Message { peer, topic, data } => {
                         tracing::info!("Received message from {} on topic {}: {:?}", peer, topic, data);
                     }
-                    Events::Outer(PublicEvent::Pong { peer, rtt }) => {
+                    PublicEvent::Pong { peer, rtt } => {
                         tracing::info!("Received pong from {} with rtt: {}", peer, rtt);
                     }
                     _ => {}

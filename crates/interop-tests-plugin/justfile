@@ -1,0 +1,13 @@
+build:
+  cargo component build --target wasm32-unknown-unknown
+  cargo component build --target wasm32-unknown-unknown --release
+
+release: build
+  cargo component build --release --target wasm32-unknown-unknown
+
+# use wasm-tools to display the wit interface 
+interface:
+  wasm-tools component wit ../../target/wasm32-unknown-unknown/debug/extension_echo.wasm
+
+test: release
+  RUST_LOG=debug RUST_BACKTRACE=1 cargo test -- --nocapture

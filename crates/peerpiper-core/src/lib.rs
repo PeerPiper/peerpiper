@@ -2,7 +2,7 @@ pub mod error;
 pub mod events;
 pub mod libp2p;
 
-pub use crate::libp2p::api::{Client, IncomingStreams, Protocol};
+pub use crate::libp2p::api::{Client, IncomingStreams, Multiaddr, Protocol};
 pub use ::libp2p::swarm::{Stream, StreamProtocol};
 use ::libp2p::PeerId;
 pub use blockstore::block::{Block, CidError};
@@ -14,7 +14,9 @@ pub use libp2p_stream;
 use multihash_codetable::{Code, MultihashDigest};
 use std::collections::HashSet;
 use std::str::FromStr;
+use std::sync::Arc;
 use tokio::sync::mpsc::Sender;
+use tokio::sync::Mutex as AsyncMutex;
 
 const RAW_CODEC: u64 = 0x55;
 
@@ -38,20 +40,20 @@ impl Block<64> for RawBlakeBlock {
 /// It is made by connecting the systme IO to the Network client and commander. Together, they give
 /// users a unified interface to interact with the network and the system from one place.
 #[derive(Debug, Clone)]
-pub struct Commander<H: Blockstore> {
-    swarm_sendr: Option<Sender<NetworkCommand>>,
+pub struct Commander<H: Blockstore + Clone> {
+    pub(crate) swarm_sendr: Option<Sender<NetworkCommand>>,
     pub blockstore: H,
-    client: Option<Client>,
+    pub client: Arc<AsyncMutex<Option<Client>>>,
 }
 
-impl<H: Blockstore> Commander<H> {
+impl<H: Blockstore + Clone> Commander<H> {
     /// Create a new Commander with the given system command handler.
     ///
     /// Optionally, you can set the network sender and client using the `with_network` and `with_client` methods.
     pub fn new(blockstore: H) -> Self {
         Self {
-            swarm_sendr: None,
-            client: None,
+            swarm_sendr: Default::default(),
+            client: Default::default(),
             blockstore,
         }
     }
@@ -67,7 +69,7 @@ impl<H: Blockstore> Commander<H> {
 
     /// Set the [Client] which accesses the `api` module for the network
     pub fn with_client(&mut self, client: Client) -> &mut Self {
-        self.client = Some(client);
+        self.client = Arc::new(AsyncMutex::new(Some(client)));
         self
     }
 }
@@ -82,7 +84,7 @@ pub enum ReturnValues {
     None,
 }
 
-impl<H: Blockstore> Commander<H> {
+impl<H: Blockstore + Clone> Commander<H> {
     /// Sends the command using system, and optionally network if it's Some
     pub async fn order(&self, command: events::AllCommands) -> Result<ReturnValues, error::Error> {
         tracing::trace!("Commander received command: {:?}", command);
@@ -119,7 +121,7 @@ impl<H: Blockstore> Commander<H> {
                     Ok(None) => {
                         tracing::info!("No bytes in the local blockstore, try Bitswap.");
                         // try the network,if available
-                        match &self.client {
+                        match &self.client.lock().await.as_ref() {
                             Some(client) => {
                                 let res = client.get_bits(key).await?;
                                 tracing::info!("Got bytes from bitswap: {:?}", res.len());
@@ -142,7 +144,12 @@ impl<H: Blockstore> Commander<H> {
                 };
                 Ok(ReturnValues::Data(bytes))
             }
-            AllCommands::PeerRequest { request, peer_id } => match &self.client {
+            AllCommands::PeerRequest { request, peer_id } => match &self
+                .client
+                .lock()
+                .await
+                .as_ref()
+            {
                 Some(client) => {
                     let peer_id = PeerId::from_str(&peer_id).map_err(|err| {
                         error::Error::String(format!("Failed to create PeerId: {}", err))
@@ -163,7 +170,7 @@ impl<H: Blockstore> Commander<H> {
                         .to_string(),
                 )),
             },
-            AllCommands::GetProviders { key } => match &self.client {
+            AllCommands::GetProviders { key } => match &self.client.lock().await.as_ref() {
                 Some(client) => {
                     let providers = client.get_providers(key).await?;
                     Ok(ReturnValues::Providers(providers))
@@ -172,34 +179,46 @@ impl<H: Blockstore> Commander<H> {
                     "Tried to send a network command, but network is not initialized".to_string(),
                 )),
             },
-            AllCommands::GetRecord { key } => match &self.client {
+            AllCommands::GetRecord { key } => match &self.client.lock().await.as_ref() {
                 Some(client) => {
                     let bytes = client.get_record(key).await?;
                     Ok(ReturnValues::Data(bytes))
                 }
                 None => Err(error::Error::String(
-                    "Tried to send a network command, but network is not initialized".to_string(),
+                    "Tried to GetRecord, but network client is not initialized".to_string(),
                 )),
             },
-            AllCommands::OpenStream { peer_id, protocol } => match &self.client {
-                Some(client) => {
-                    let peer_id = PeerId::from_str(&peer_id).map_err(|err| {
-                        error::Error::String(format!("Failed to create PeerId: {}", err))
-                    })?;
-
-                    let stream_protocol =
-                        StreamProtocol::try_from_owned(protocol).map_err(|err| {
-                            error::Error::String(format!(
-                                "Failed to create StreamProtocol: {}",
-                                err
-                            ))
+            AllCommands::OpenStream { peer_id, protocol } => {
+                match &self.client.lock().await.as_ref() {
+                    Some(client) => {
+                        let peer_id = PeerId::from_str(&peer_id).map_err(|err| {
+                            error::Error::String(format!("Failed to create PeerId: {}", err))
                         })?;
 
-                    client.open_stream(peer_id, stream_protocol).await?;
+                        let stream_protocol =
+                            StreamProtocol::try_from_owned(protocol).map_err(|err| {
+                                error::Error::String(format!(
+                                    "Failed to create StreamProtocol: {}",
+                                    err
+                                ))
+                            })?;
+
+                        client.open_stream(peer_id, stream_protocol).await?;
+                        Ok(ReturnValues::None)
+                    }
+                    None => Err(error::Error::String(
+                        "Tried to send a network command, but network is not initialized"
+                            .to_string(),
+                    )),
+                }
+            }
+            AllCommands::Dial(maddr) => match &self.client.lock().await.as_ref() {
+                Some(client) => {
+                    client.dial(maddr).await?;
                     Ok(ReturnValues::None)
                 }
                 None => Err(error::Error::String(
-                    "Tried to send a network command, but network is not initialized".to_string(),
+                    "Tried to dial a multiaddr via network command, but network client is not initialized".to_string(),
                 )),
             },
             // The follow commands get sent over the network and do not expect a direct response
@@ -212,7 +231,7 @@ impl<H: Blockstore> Commander<H> {
                     Some(swarm_sendr) => swarm_sendr.send(command.into()).await?,
                     None => {
                         return Err(error::Error::String(
-                            "Tried to send a network command, but network is not initialized"
+                            "Tried to send a network command with swarm sender, but network is not initialized"
                                 .to_string(),
                         ));
                     }

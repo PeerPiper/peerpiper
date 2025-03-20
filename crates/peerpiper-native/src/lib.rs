@@ -31,7 +31,7 @@ use peerpiper_core::{
 
 /// Config for starting PeerPiper.
 /// - libp2p_endpoints: List of libp2p endpoints to connect to.
-/// - protocols: List of [StreamProtocol] to use.
+/// - protocols: List of [StreamProtocol] to accept.
 /// - base_path: Path to the base directory for the blockstore and other data.
 #[derive(Clone, Default)]
 pub struct StartConfig {

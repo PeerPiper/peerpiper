@@ -12,7 +12,9 @@ use std::future::Future;
 pub use peerpiper_browser::opfs::OPFSWrapped as Blockstore;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use peerpiper_native::NativeBlockstore as Blockstore;
+pub use peerpiper_native::{
+    NativeBlockstore as Blockstore, NativeBlockstoreBuilder as BlockstoreBuilder,
+};
 
 #[cfg(target_arch = "wasm32")]
 pub use peerpiper_browser::{start, StartConfig};

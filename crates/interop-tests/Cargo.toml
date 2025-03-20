@@ -18,6 +18,7 @@ serde = { version = "1", features = ["derive"] }
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 peerpiper = { workspace = true }
+peerpiper-plugins = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 axum = "0.6.19"
@@ -33,6 +34,7 @@ tower-http = { version = "0.4.0", features = ["cors"] }
 mime_guess = "2.0.4"
 thirtyfour = "=0.32.0-rc.8" # https://github.com/stevepryde/thirtyfour/issues/169
 peerpiper-native = { workspace = true }
+tempfile = "3.17"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = "0.3.66"
@@ -52,3 +54,5 @@ tokio = { version = "1.34", features = ["sync"] }
 
 [target.wasm32-unknown-unknown.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
+
+[dev-dependencies]

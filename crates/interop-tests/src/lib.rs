@@ -3,21 +3,34 @@ use futures::{
     channel::{mpsc, oneshot},
     StreamExt,
 };
-use peerpiper::core::events::{Events, PublicEvent};
-use peerpiper::core::{Block, Commander, RawBlakeBlock};
+use peerpiper::core::{Block, Commander, Multiaddr, RawBlakeBlock};
+use peerpiper::{
+    core::events::{Events, PublicEvent},
+    Protocol, StartConfig,
+};
 use peerpiper_browser::opfs::OPFSBlockstore;
 use peerpiper_browser::Blockstore;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::spawn_local;
 
 #[wasm_bindgen]
-pub async fn run_test_wasm(libp2p_endpoint: String, cid: String) -> Result<(), JsError> {
+pub async fn run_test_wasm(libp2p_endpoint: String, cid: String) -> Result<(), JsValue> {
     tracing_wasm::set_as_global_default();
-    tracing::info!("Running wasm test");
+    tracing::info!(
+        "Running wasm test with libp2p endpoint: {}",
+        libp2p_endpoint
+    );
 
     let (tx, mut rx) = mpsc::channel(16);
     let (command_sender, command_receiver) = tokio::sync::mpsc::channel(8);
     let (tx_client, rx_client) = oneshot::channel();
+
+    let mut remote_maddr =
+        Multiaddr::try_from(libp2p_endpoint.clone()).expect("Failed to parse Multiaddr");
+
+    let Some(Protocol::P2p(remote_peer_id)) = remote_maddr.pop() else {
+        return Err(JsError::new("Failed to parse Multiaddr").into());
+    };
 
     let libp2p_endpoints = vec![libp2p_endpoint.clone()];
     let blockstore = OPFSBlockstore::new().await.unwrap();
@@ -44,14 +57,18 @@ pub async fn run_test_wasm(libp2p_endpoint: String, cid: String) -> Result<(), J
             tx,
             command_receiver,
             tx_client,
-            libp2p_endpoints,
             blockstore,
+            StartConfig {
+                libp2p_endpoints,
+                base_path: None,
+                protocols: vec![],
+            },
         )
         .await
         .expect("never end")
     });
 
-    let client_handle = rx_client.await?;
+    let client_handle = rx_client.await.unwrap();
 
     commander
         .with_network(command_sender.clone())
@@ -64,7 +81,12 @@ pub async fn run_test_wasm(libp2p_endpoint: String, cid: String) -> Result<(), J
             tracing::info!("Connected to {:?}", peer);
             // Test functions that require the connection, like pubsub and unsubscribe
             spawn_local(async move {
-                peerpiper::core::events::test_helpers::test_all_commands(commander, cid).await;
+                peerpiper::core::events::test_helpers::test_all_commands(
+                    commander,
+                    cid,
+                    remote_peer_id,
+                )
+                .await;
             });
 
             break;

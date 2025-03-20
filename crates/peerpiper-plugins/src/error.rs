@@ -11,13 +11,12 @@ pub enum Error {
     Io(#[from] std::io::Error),
 
     /// Tokio Error from crate::tokio::error::Error as TokioError;
+    #[cfg(not(target_arch = "wasm32"))]
     #[error("Tokio Plugin Component Error: {0}")]
     Tokio(#[from] crate::tokio::error::Error),
 
-    ///// sync module errors
-    //#[error("Plugin Component Error: {0}")]
-    //Sync(#[from] crate::sync::bindgen::component::extension::types::Error),
     /// From JoinError
+    #[cfg(not(target_arch = "wasm32"))]
     #[error("JoinError: {0}")]
     JoinError(#[from] tokio::task::JoinError),
 
@@ -28,4 +27,8 @@ pub enum Error {
     /// Peerpiper error
     #[error("PeerPiper Error: {0}")]
     PeerPiper(#[from] peerpiper::core::error::Error),
+
+    /// From<futures::futures_channel::mpsc::SendError>
+    #[error("SendError: {0}")]
+    SendError(#[from] futures::channel::mpsc::SendError),
 }

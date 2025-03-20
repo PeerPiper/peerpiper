@@ -83,7 +83,9 @@ impl<B: Blockstore + 'static> BehaviourBuilder<B> {
 
         let mut kad_config = kad::Config::new(StreamProtocol::new(PROTOCOL_NAME));
         // allows us to validate records before inserting them into the store
-        kad_config.set_record_filtering(kad::StoreInserts::FilterBoth);
+        // when enabled, we will see the kad event InboundRequest(PutRecord) where we would then
+        // validate the record and act on the record
+        //kad_config.set_record_filtering(kad::StoreInserts::FilterBoth);
 
         let kad = kad::Behaviour::with_config(
             key.public().to_peer_id(),

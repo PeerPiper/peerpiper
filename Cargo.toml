@@ -12,10 +12,11 @@ peerpiper = { path = "crates/peerpiper" }
 peerpiper-core = { path = "crates/peerpiper-core" }
 peerpiper-native = { path = "crates/peerpiper-native" }
 peerpiper-browser = { path = "crates/peerpiper-browser" }
+peerpiper-plugins = { path = "crates/peerpiper-plugins" }
 futures = "0.3.29"
 rand = "0.8"
 thiserror = "1"
-tracing = "0.1.37"
+tracing = { version = "0.1.37", features = ["log"] }
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 libp2p = { version = "0.54.1" }
 libp2p-stream = { version = "0.2.0-alpha" }
@@ -39,3 +40,8 @@ debug-assertions = false
 overflow-checks = false
 incremental = false
 rpath = false
+
+# until lands: https://github.com/libp2p/rust-libp2p/issues/5877
+[patch.crates-io]
+libp2p = { git = "https://github.com/DougAnderson444/rust-libp2p.git", branch = "core-v0.42-webrtc-utils-0.3.0" }
+libp2p-webrtc-utils = { git = "https://github.com/DougAnderson444/rust-libp2p.git", branch = "core-v0.42-webrtc-utils-0.3.0" }

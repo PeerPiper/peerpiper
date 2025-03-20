@@ -1,0 +1,106 @@
+//! Command types that each plugin has access to.
+package peerpiper:pluggable;
+
+interface commands {
+  
+  /// Order PeerPiper to do something.
+  order: func(order: all-commands) -> pollable; // ready/take -> return-values;
+
+  resource pollable {
+    /// Check if the pollable is ready
+    ready: func() -> bool;
+    /// Take the value from the pollable
+    take: func() -> return-values;
+  }
+  
+  /// Publsih data to a topic 
+  record publish {
+    /// The topic
+    topic: string,
+    /// The data
+    data: list<u8>
+  }
+
+  record put-keyed {
+    /// The key
+    key: list<u8>,
+    /// The value
+    value: list<u8>,
+  }
+
+  variant system-command {
+    /// Put bytes on the local disk 
+    put(list<u8>),
+    /// Puts Keyed bytes into the local disk 
+    put-keyed(put-keyed),
+    /// Get bytes from the local disk
+    get(list<u8>),
+  }
+
+  /// Make a Rwquest from a Peer
+  /// The request is encoded as a list of bytes 
+  record peer-request {
+    /// The request
+    request: list<u8>,
+    /// The peer id
+    peer-id: string
+  }
+
+  /// Put bytes in the DHT 
+  record put-record {
+    /// The key
+    key: list<u8>,
+    /// The value
+    value: list<u8>
+  }
+
+  variant all-commands {
+    /// Publish data to a topic 
+    publish(publish),
+    /// Subscribe to a topic
+    subscribe(string),
+    /// Unsubscribe from a topic
+    unsubscribe(string),
+    /// System commands are a subset of [AllCommands] that do not go to the network, but come
+    /// from componets to direct the system to do something, like save bytes to a file.
+    system(system-command),
+    /// Please peer, do something with this data and give me a response
+    peer-request(peer-request),
+    /// Puts a Record on the DHT, and optionally provides the data for Pinning 
+    put-record(put-record),
+    /// Gets a Record from the DHT 
+    get-record(list<u8>),
+    /// Gets the Providers of a Record on the DHT
+    get-providers(list<u8>),
+    /// Start Providing a Record on the DHT
+    start-providing(list<u8>),
+  }
+
+  variant return-values {
+    /// The data
+    data(list<u8>),
+    /// The id
+    id(string),
+    /// The providers
+    providers(list<string>),
+    /// No value
+    none,
+  }
+}
+
+interface utils {
+  /// log a message.
+  log: func(msg: string);
+
+  /// get a random byte
+  random-byte: func() -> u8;
+
+  /// Now 
+  now: func() -> u64;
+
+}
+
+world plugins {
+  export commands;
+  export utils;
+}

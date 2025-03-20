@@ -1,0 +1,35 @@
+[package]
+name = "interop-tests-plugin"
+edition = "2021"
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+
+[dependencies]
+wit-bindgen-rt = { workspace = true, features = ["bitflags"] }
+
+[dev-dependencies]
+wasmtime = { version = "25" }
+wasmtime-wasi = "25"
+thiserror = "1.0"
+peerpiper-plugins = { path = "../peerpiper-plugins" }
+peerpiper-native = { workspace = true }
+peerpiper = { path = "../peerpiper" }
+tempfile = "3.17"
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-test = "0.2.5"
+wasm_component_layer = "0.1.18"
+
+[lib]
+crate-type = ["cdylib"]
+
+[package.metadata.component]
+package = "component:extension"
+
+[package.metadata.component.target.dependencies]
+"peerpiper:pluggable" = { path = "wit/deps" }
+
+[package.metadata.component.dependencies]

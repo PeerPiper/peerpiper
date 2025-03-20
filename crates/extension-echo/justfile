@@ -1,5 +1,0 @@
-build:
-  cargo component build 
-
-release: build
-  cargo component build --release

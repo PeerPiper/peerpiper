@@ -8,20 +8,30 @@ license.workspace = true
 [dependencies]
 peerpiper = { workspace = true }
 
+thiserror = "1.0"
+anyhow = "1.0"
+tracing = { workspace = true }
+futures = "0.3.31"
+blockstore = { workspace = true }
+rand = "0.8.5"
+tokio = { version = "1", features = ["sync"] }
+wasm_component_layer = "0.1.18"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+peerpiper-native = { workspace = true }
+dirs = "5.0"
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1.83"
+libp2p = { workspace = true, features = ["ed25519", "macros", "ping", "tokio"] }
+wasmi_runtime_layer = "0.40.0"
 wasmtime = { version = "25" }
 wasmtime-wasi = { version = "25" }
 wasi-common = { version = "25.0.1", features = ["tokio"] }
-thiserror = "1.0"
-anyhow = "1.0"
-lazy_static = "1.5.0"
-tokio = { version = "1", features = ["full"] }
-tracing = { workspace = true }
-libp2p = { workspace = true, features = ["ed25519", "macros", "ping", "tokio"] }
-futures = "0.3.31"
-async-trait = "0.1.83"
-dirs = "5.0"
-peerpiper-native = { workspace = true }
-blockstore = { workspace = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+web-time = "1.1.0"
+js_wasm_runtime_layer = "0.4"
 
 [dev-dependencies]
 tokio-test = "0.4.4"
+tempfile = "3"
