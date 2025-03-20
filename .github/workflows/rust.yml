@@ -35,7 +35,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wasm-files-target 
-          path: target/wasm32-unknown-unknown/**/*.wasm
+          path: target/wasm32-wasip1/**/*.wasm
           overwrite: true
 
   test:
@@ -49,9 +49,8 @@ jobs:
 
       - name: Create directories
         run: |
-          mkdir -p target/wasm32-unknown-unknown/release
-          mkdir -p target/wasm32-unknown-unknown/debug
-          mkdir -p assets
+          mkdir -p target/wasm32-wasip1/release
+          mkdir -p target/wasm32-wasip1/debug
 
       - uses: actions/download-artifact@v4
         with:
