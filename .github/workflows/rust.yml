@@ -23,10 +23,16 @@ jobs:
           override: true
       
       - name: Install Just
-        uses: extractions/setup-just@v1
-        with:
-          just-version: 1.13.0  # You can specify a version or use 'latest'
-      
+        uses: extractions/setup-just@v2
+
+      # binstall is faster than cargo install
+      - name: Install binstall
+        uses: taiki-e/install-action@cargo-binstall
+        
+      # We'll need cargo-component to build WIT Components in the Just commands
+      - name: Install cargo-component
+        run: echo yes | cargo binstall cargo-component     
+
       - name: Cache dependencies
         uses: actions/cache@v3
         with:
@@ -36,7 +42,7 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
-      
+
       - name: Run tests
         run: just test
 
