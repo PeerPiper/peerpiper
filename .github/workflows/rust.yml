@@ -41,6 +41,12 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
+      - name: Ensure targets are installed
+        run: rustup target add wasm32-unknown-unknown wasm32-wasip1
+
+      - name: Verify targets
+        run: rustup target list --installed
+
       - name: Run tests
         run: just test
 
