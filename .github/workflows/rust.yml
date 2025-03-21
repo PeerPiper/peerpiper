@@ -7,37 +7,6 @@ on:
       branches: [ master ]
 
 jobs:
-  # pre-build:
-  #   name: Pre-Build wasm binaries
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #       with:
-  #         submodules: recursive  # This will fetch all submodules recursively
-  #
-  #     - uses: extractions/setup-just@v2
-  #
-  #     # binstall is faster than cargo install
-  #     - name: Install binstall
-  #       uses: taiki-e/install-action@cargo-binstall
-  #
-  #     - name: Install cargo-component
-  #       run: echo yes | cargo binstall cargo-component
-  #
-  #     - name: install Rust  
-  #       uses: dtolnay/rust-toolchain@stable
-  #       with:
-  #         targets: wasm32-unknown-unknown
-  #
-  #     - run: just update-build
-  #
-  #     - name: upload artifacts to target
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: wasm-files-target 
-  #         path: target/wasm32-wasip1/**/*.wasm
-  #         overwrite: true
-
   test:
     name: Build and Test
     needs: pre-build
