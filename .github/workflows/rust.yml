@@ -18,7 +18,7 @@ jobs:
       - name: install Rust  
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: wasm32-unknown-unknown
+            targets: wasm32-unknown-unknown, wasm32-wasip1
       
       - name: Install Just
         uses: extractions/setup-just@v2
