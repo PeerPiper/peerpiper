@@ -40,9 +40,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing::info!("Starting peerpiper-native TESTS");
 
-    let name = "extension_echo.wasm";
-    let bytes =
-        include_bytes!("../../../../target/wasm32-unknown-unknown/release/extension_echo.wasm");
+    let name = "interop_tests_plugin.wasm";
+    let bytes = include_bytes!(
+        "../../../../target/wasm32-unknown-unknown/release/interop_tests_plugin.wasm"
+    );
 
     let (tx_net_evt, mut rx_net_evt) = mpsc::channel(MAX_CHANNELS);
 
