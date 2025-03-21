@@ -846,8 +846,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_plugin() {
-        const WASM: &[u8] =
-            include_bytes!("../../../../target/wasm32-unknown-unknown/release/extension_echo.wasm");
+        const WASM: &[u8] = include_bytes!(
+            "../../../../target/wasm32-unknown-unknown/release/interop_tests_plugin.wasm"
+        );
 
         // should be able to call handle-request on the plugin
         let tempdir = tempdir().unwrap().path().to_path_buf(); // testing only, feel free to use your own path, or the default

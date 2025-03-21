@@ -54,6 +54,24 @@ interface commands {
     value: list<u8>
   }
 
+  record hash {
+    /// The code
+    code: u64,
+    /// The size
+    size: u8,
+    /// The digest
+    digest: list<u8>
+  }
+
+  record cid {
+    /// The version
+    version: u64,
+    /// The codec
+    codec: u64,
+    /// The hash
+    hash: hash
+  }
+
   variant all-commands {
     /// Publish data to a topic 
     publish(publish),
@@ -75,17 +93,16 @@ interface commands {
     /// Start Providing a Record on the DHT
     start-providing(list<u8>),
   }
-
-  variant return-values {
-    /// The data
-    data(list<u8>),
-    /// The id
-    id(string),
-    /// The providers
-    providers(list<string>),
-    /// No value
-    none,
-  }
+    variant return-values {
+      /// The data
+      data(list<u8>),
+      /// The CID with version, codec and hash components
+      id(cid),
+      /// The providers
+      providers(list<string>),
+      /// No value
+      none,
+    }
 }
 
 interface utils {
