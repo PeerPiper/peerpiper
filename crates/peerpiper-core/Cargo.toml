@@ -15,7 +15,7 @@ serde = { version = "1.0", features = ["derive"] }
 multibase = { version = "0.9", default-features = false }
 zeroize = "1.8.1"
 tokio = { version = "1.0", features = ["sync", "macros"] }
-beetswap = "0.4.0"
+beetswap = "0.4.1"
 blockstore = { workspace = true }
 cid = { workspace = true }
 # beetswap hashers need these features
