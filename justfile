@@ -22,6 +22,8 @@ build-wits:
      cargo component build --manifest-path=$dir/Cargo.toml --release; \
    fi \
  done
+ # also call just build in crates/interop-tests-plugin 
+ @just -f crates/interop-tests-plugin/justfile build
 
 build-examples:
  # cargo component build --manifest-path=examples/form/Cargo.toml
@@ -44,7 +46,7 @@ serve:
 all: update-build preview
 
 test: update-build
-  cargo test --exclude peerpiper-browser --exclude contact-book --exclude extension-echo --exclude peerpiper-wallet --exclude peerpiper-wasm-bindgen --workspace
+  RUST_BACKTRACE=1 cargo test --exclude peerpiper-browser --exclude contact-book --exclude peerpiper-wallet --exclude peerpiper-wasm-bindgen --workspace
   @just peerpiper-browser test
 
 # The just command from crates/peerpiper-browser to build 
