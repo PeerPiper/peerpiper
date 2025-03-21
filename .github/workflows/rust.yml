@@ -9,7 +9,6 @@ on:
 jobs:
   test:
     name: Build and Test
-    needs: pre-build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
