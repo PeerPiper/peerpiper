@@ -8,12 +8,9 @@ pub use peerpiper_core as core;
 use peerpiper_core::Multiaddr;
 pub use platform::*;
 
-use futures::{
-    channel::{
-        mpsc::{self},
-        oneshot,
-    },
-    StreamExt,
+use futures::channel::{
+    mpsc::{self},
+    oneshot,
 };
 
 pub use peerpiper_core::{

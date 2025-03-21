@@ -18,8 +18,16 @@ jobs:
       - name: install Rust  
         uses: dtolnay/rust-toolchain@stable
         with:
+            toolchain: 1.83.0
             targets: wasm32-unknown-unknown, wasm32-wasip1
-      
+              
+      - name: Verify Rust targets
+        run: rustup target list --installed
+
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: wasm-pack@0.12.0
+
       - name: Install Just
         uses: extractions/setup-just@v2
 
