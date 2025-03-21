@@ -246,6 +246,48 @@ pub mod peerpiper {
                 }
             }
             #[derive(Clone)]
+            pub struct Hash {
+                /// The code
+                pub code: u64,
+                /// The size
+                pub size: u8,
+                /// The digest
+                pub digest: _rt::Vec<u8>,
+            }
+            impl ::core::fmt::Debug for Hash {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    f.debug_struct("Hash")
+                        .field("code", &self.code)
+                        .field("size", &self.size)
+                        .field("digest", &self.digest)
+                        .finish()
+                }
+            }
+            #[derive(Clone)]
+            pub struct Cid {
+                /// The version
+                pub version: u64,
+                /// The codec
+                pub codec: u64,
+                /// The hash
+                pub hash: Hash,
+            }
+            impl ::core::fmt::Debug for Cid {
+                fn fmt(
+                    &self,
+                    f: &mut ::core::fmt::Formatter<'_>,
+                ) -> ::core::fmt::Result {
+                    f.debug_struct("Cid")
+                        .field("version", &self.version)
+                        .field("codec", &self.codec)
+                        .field("hash", &self.hash)
+                        .finish()
+                }
+            }
+            #[derive(Clone)]
             pub enum AllCommands {
                 /// Publish data to a topic
                 Publish(Publish),
@@ -309,8 +351,8 @@ pub mod peerpiper {
             pub enum ReturnValues {
                 /// The data
                 Data(_rt::Vec<u8>),
-                /// The id
-                Id(_rt::String),
+                /// The CID with version, codec and hash components
+                Id(Cid),
                 /// The providers
                 Providers(_rt::Vec<_rt::String>),
                 /// No value
@@ -578,10 +620,10 @@ pub mod peerpiper {
                 /// Take the value from the pollable
                 pub fn take(&self) -> ReturnValues {
                     unsafe {
-                        #[repr(align(4))]
-                        struct RetArea([::core::mem::MaybeUninit<u8>; 12]);
+                        #[repr(align(8))]
+                        struct RetArea([::core::mem::MaybeUninit<u8>; 48]);
                         let mut ret_area = RetArea(
-                            [::core::mem::MaybeUninit::uninit(); 12],
+                            [::core::mem::MaybeUninit::uninit(); 48],
                         );
                         let ptr0 = ret_area.0.as_mut_ptr().cast::<u8>();
                         #[cfg(target_arch = "wasm32")]
@@ -596,63 +638,70 @@ pub mod peerpiper {
                         }
                         wit_import((self).handle() as i32, ptr0);
                         let l1 = i32::from(*ptr0.add(0).cast::<u8>());
-                        let v14 = match l1 {
+                        let v18 = match l1 {
                             0 => {
-                                let e14 = {
-                                    let l2 = *ptr0.add(4).cast::<*mut u8>();
-                                    let l3 = *ptr0.add(8).cast::<usize>();
+                                let e18 = {
+                                    let l2 = *ptr0.add(8).cast::<*mut u8>();
+                                    let l3 = *ptr0.add(12).cast::<usize>();
                                     let len4 = l3;
                                     _rt::Vec::from_raw_parts(l2.cast(), len4, len4)
                                 };
-                                ReturnValues::Data(e14)
+                                ReturnValues::Data(e18)
                             }
                             1 => {
-                                let e14 = {
-                                    let l5 = *ptr0.add(4).cast::<*mut u8>();
-                                    let l6 = *ptr0.add(8).cast::<usize>();
-                                    let len7 = l6;
-                                    let bytes7 = _rt::Vec::from_raw_parts(
-                                        l5.cast(),
-                                        len7,
-                                        len7,
-                                    );
-                                    _rt::string_lift(bytes7)
+                                let e18 = {
+                                    let l5 = *ptr0.add(8).cast::<i64>();
+                                    let l6 = *ptr0.add(16).cast::<i64>();
+                                    let l7 = *ptr0.add(24).cast::<i64>();
+                                    let l8 = i32::from(*ptr0.add(32).cast::<u8>());
+                                    let l9 = *ptr0.add(36).cast::<*mut u8>();
+                                    let l10 = *ptr0.add(40).cast::<usize>();
+                                    let len11 = l10;
+                                    Cid {
+                                        version: l5 as u64,
+                                        codec: l6 as u64,
+                                        hash: Hash {
+                                            code: l7 as u64,
+                                            size: l8 as u8,
+                                            digest: _rt::Vec::from_raw_parts(l9.cast(), len11, len11),
+                                        },
+                                    }
                                 };
-                                ReturnValues::Id(e14)
+                                ReturnValues::Id(e18)
                             }
                             2 => {
-                                let e14 = {
-                                    let l8 = *ptr0.add(4).cast::<*mut u8>();
-                                    let l9 = *ptr0.add(8).cast::<usize>();
-                                    let base13 = l8;
-                                    let len13 = l9;
-                                    let mut result13 = _rt::Vec::with_capacity(len13);
-                                    for i in 0..len13 {
-                                        let base = base13.add(i * 8);
-                                        let e13 = {
-                                            let l10 = *base.add(0).cast::<*mut u8>();
-                                            let l11 = *base.add(4).cast::<usize>();
-                                            let len12 = l11;
-                                            let bytes12 = _rt::Vec::from_raw_parts(
-                                                l10.cast(),
-                                                len12,
-                                                len12,
+                                let e18 = {
+                                    let l12 = *ptr0.add(8).cast::<*mut u8>();
+                                    let l13 = *ptr0.add(12).cast::<usize>();
+                                    let base17 = l12;
+                                    let len17 = l13;
+                                    let mut result17 = _rt::Vec::with_capacity(len17);
+                                    for i in 0..len17 {
+                                        let base = base17.add(i * 8);
+                                        let e17 = {
+                                            let l14 = *base.add(0).cast::<*mut u8>();
+                                            let l15 = *base.add(4).cast::<usize>();
+                                            let len16 = l15;
+                                            let bytes16 = _rt::Vec::from_raw_parts(
+                                                l14.cast(),
+                                                len16,
+                                                len16,
                                             );
-                                            _rt::string_lift(bytes12)
+                                            _rt::string_lift(bytes16)
                                         };
-                                        result13.push(e13);
+                                        result17.push(e17);
                                     }
-                                    _rt::cabi_dealloc(base13, len13 * 8, 4);
-                                    result13
+                                    _rt::cabi_dealloc(base17, len17 * 8, 4);
+                                    result17
                                 };
-                                ReturnValues::Providers(e14)
+                                ReturnValues::Providers(e18)
                             }
                             n => {
                                 debug_assert_eq!(n, 3, "invalid enum discriminant");
                                 ReturnValues::None
                             }
                         };
-                        v14
+                        v18
                     }
                 }
             }
@@ -1427,39 +1476,41 @@ pub(crate) use __export_extension_world_impl as export;
 #[cfg(target_arch = "wasm32")]
 #[link_section = "component-type:wit-bindgen:0.36.0:component:plugin:extension-world:encoded world"]
 #[doc(hidden)]
-pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1401] = *b"\
-\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xf3\x09\x01A\x02\x01\
+pub static __WIT_BINDGEN_COMPONENT_TYPE: [u8; 1468] = *b"\
+\0asm\x0d\0\x01\0\0\x19\x16wit-component-encoding\x04\0\x07\xb6\x0a\x01A\x02\x01\
 A\x0c\x01B\x03\x01p}\x01@\x01\x03key\0\x01\0\x04\0\x0fstart-providing\x01\x01\x03\
-\0$component:plugin/peer-piper-commands\x05\0\x01B\x19\x04\0\x08pollable\x03\x01\
+\0$component:plugin/peer-piper-commands\x05\0\x01B\x1d\x04\0\x08pollable\x03\x01\
 \x01p}\x01r\x02\x05topics\x04data\x01\x04\0\x07publish\x03\0\x02\x01r\x02\x03key\
 \x01\x05value\x01\x04\0\x09put-keyed\x03\0\x04\x01q\x03\x03put\x01\x01\0\x09put-\
 keyed\x01\x05\0\x03get\x01\x01\0\x04\0\x0esystem-command\x03\0\x06\x01r\x02\x07r\
 equest\x01\x07peer-ids\x04\0\x0cpeer-request\x03\0\x08\x01r\x02\x03key\x01\x05va\
-lue\x01\x04\0\x0aput-record\x03\0\x0a\x01q\x09\x07publish\x01\x03\0\x09subscribe\
-\x01s\0\x0bunsubscribe\x01s\0\x06system\x01\x07\0\x0cpeer-request\x01\x09\0\x0ap\
-ut-record\x01\x0b\0\x0aget-record\x01\x01\0\x0dget-providers\x01\x01\0\x0fstart-\
-providing\x01\x01\0\x04\0\x0call-commands\x03\0\x0c\x01ps\x01q\x04\x04data\x01\x01\
-\0\x02id\x01s\0\x09providers\x01\x0e\0\x04none\0\0\x04\0\x0dreturn-values\x03\0\x0f\
-\x01h\0\x01@\x01\x04self\x11\0\x7f\x04\0\x16[method]pollable.ready\x01\x12\x01@\x01\
-\x04self\x11\0\x10\x04\0\x15[method]pollable.take\x01\x13\x01i\0\x01@\x01\x05ord\
-er\x0d\0\x14\x04\0\x05order\x01\x15\x03\0\x1cpeerpiper:pluggable/commands\x05\x01\
-\x01B\x06\x01@\x01\x03msgs\x01\0\x04\0\x03log\x01\0\x01@\0\0}\x04\0\x0brandom-by\
-te\x01\x01\x01@\0\0w\x04\0\x03now\x01\x02\x03\0\x19peerpiper:pluggable/utils\x05\
-\x02\x01B\x05\x01p}\x01r\x03\x05topics\x04peers\x04data\0\x04\0\x07message\x03\0\
-\x01\x01q\x03\x18unsupported-message-type\0\0\x0dhandler-error\x01s\0\x08io-erro\
-r\x01s\0\x04\0\x05error\x03\0\x03\x03\0\x16component:plugin/types\x05\x03\x02\x03\
-\0\x03\x07message\x02\x03\0\x03\x05error\x01B\x19\x02\x03\x02\x01\x04\x04\0\x07m\
-essage\x03\0\0\x02\x03\x02\x01\x05\x04\0\x05error\x03\0\x02\x04\0\x06plugin\x03\x01\
-\x01i\x04\x01@\0\0\x05\x04\0\x13[constructor]plugin\x01\x06\x01h\x04\x01@\x01\x04\
-self\x07\0s\x04\0\x18[method]plugin.run-tests\x01\x08\x01p}\x01@\x03\x04self\x07\
-\x03key\x09\x05value\x09\x01\0\x04\0\x19[method]plugin.put-record\x01\x0a\x01@\x02\
-\x04self\x07\x03key\x09\x01\0\x04\0\x19[method]plugin.get-record\x01\x0b\x01p\x09\
-\x01@\x01\x04self\x07\0\x0c\x04\0\x13[method]plugin.tick\x01\x0d\x01j\x01s\x01\x03\
-\x01@\x01\x03msg\x01\0\x0e\x04\0\x0ehandle-message\x01\x0f\x01j\x01\x09\x01\x03\x01\
-@\x01\x04data\x09\0\x10\x04\0\x0ehandle-request\x01\x11\x04\0\x14component:plugi\
-n/run\x05\x06\x04\0\x20component:plugin/extension-world\x04\0\x0b\x15\x01\0\x0fe\
-xtension-world\x03\0\0\0G\x09producers\x01\x0cprocessed-by\x02\x0dwit-component\x07\
-0.220.0\x10wit-bindgen-rust\x060.36.0";
+lue\x01\x04\0\x0aput-record\x03\0\x0a\x01r\x03\x04codew\x04size}\x06digest\x01\x04\
+\0\x04hash\x03\0\x0c\x01r\x03\x07versionw\x05codecw\x04hash\x0d\x04\0\x03cid\x03\
+\0\x0e\x01q\x09\x07publish\x01\x03\0\x09subscribe\x01s\0\x0bunsubscribe\x01s\0\x06\
+system\x01\x07\0\x0cpeer-request\x01\x09\0\x0aput-record\x01\x0b\0\x0aget-record\
+\x01\x01\0\x0dget-providers\x01\x01\0\x0fstart-providing\x01\x01\0\x04\0\x0call-\
+commands\x03\0\x10\x01ps\x01q\x04\x04data\x01\x01\0\x02id\x01\x0f\0\x09providers\
+\x01\x12\0\x04none\0\0\x04\0\x0dreturn-values\x03\0\x13\x01h\0\x01@\x01\x04self\x15\
+\0\x7f\x04\0\x16[method]pollable.ready\x01\x16\x01@\x01\x04self\x15\0\x14\x04\0\x15\
+[method]pollable.take\x01\x17\x01i\0\x01@\x01\x05order\x11\0\x18\x04\0\x05order\x01\
+\x19\x03\0\x1cpeerpiper:pluggable/commands\x05\x01\x01B\x06\x01@\x01\x03msgs\x01\
+\0\x04\0\x03log\x01\0\x01@\0\0}\x04\0\x0brandom-byte\x01\x01\x01@\0\0w\x04\0\x03\
+now\x01\x02\x03\0\x19peerpiper:pluggable/utils\x05\x02\x01B\x05\x01p}\x01r\x03\x05\
+topics\x04peers\x04data\0\x04\0\x07message\x03\0\x01\x01q\x03\x18unsupported-mes\
+sage-type\0\0\x0dhandler-error\x01s\0\x08io-error\x01s\0\x04\0\x05error\x03\0\x03\
+\x03\0\x16component:plugin/types\x05\x03\x02\x03\0\x03\x07message\x02\x03\0\x03\x05\
+error\x01B\x19\x02\x03\x02\x01\x04\x04\0\x07message\x03\0\0\x02\x03\x02\x01\x05\x04\
+\0\x05error\x03\0\x02\x04\0\x06plugin\x03\x01\x01i\x04\x01@\0\0\x05\x04\0\x13[co\
+nstructor]plugin\x01\x06\x01h\x04\x01@\x01\x04self\x07\0s\x04\0\x18[method]plugi\
+n.run-tests\x01\x08\x01p}\x01@\x03\x04self\x07\x03key\x09\x05value\x09\x01\0\x04\
+\0\x19[method]plugin.put-record\x01\x0a\x01@\x02\x04self\x07\x03key\x09\x01\0\x04\
+\0\x19[method]plugin.get-record\x01\x0b\x01p\x09\x01@\x01\x04self\x07\0\x0c\x04\0\
+\x13[method]plugin.tick\x01\x0d\x01j\x01s\x01\x03\x01@\x01\x03msg\x01\0\x0e\x04\0\
+\x0ehandle-message\x01\x0f\x01j\x01\x09\x01\x03\x01@\x01\x04data\x09\0\x10\x04\0\
+\x0ehandle-request\x01\x11\x04\0\x14component:plugin/run\x05\x06\x04\0\x20compon\
+ent:plugin/extension-world\x04\0\x0b\x15\x01\0\x0fextension-world\x03\0\0\0G\x09\
+producers\x01\x0cprocessed-by\x02\x0dwit-component\x070.220.0\x10wit-bindgen-rus\
+t\x060.36.0";
 #[inline(never)]
 #[doc(hidden)]
 pub fn __link_custom_section_describing_imports() {
