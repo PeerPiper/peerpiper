@@ -540,9 +540,10 @@ impl<B: Blockstore> EventLoop<B> {
                     Some(Protocol::Ip6(ip6)) => {
                         // Only add our globally available IPv6 addresses to the external addresses list.
                         if !ip6.is_loopback()
-                            && !ip6.is_unspecified()
-                        // no fe80::/10 addresses, ie ip6.segments()[0] & 0xffc0) != 0xfe80 (!ip6.is_unicast_link_local() requires nightly)
-                        && (ip6.segments()[0] & 0xffc0) != 0xfe80
+                            && !ip6.is_unspecified() 
+                            && !ip6.is_multicast()
+                            && (ip6.segments()[0] & 0xffc0) != 0xfe80 // no fe80::/10 addresses, (!ip6.is_unicast_link_local() requires nightly)
+                            && (ip6.segments()[0] & 0xfe00) != 0xfc00 // Unique Local Addresses (ULAs, fd00::/8) are private IPv6 addresses and should not be advertised.
                         {
                             if let Err(e) = addr_handler() {
                                 tracing::error!("Failed to send listen address: {:?}", e);
@@ -551,7 +552,7 @@ impl<B: Blockstore> EventLoop<B> {
                         }
                     }
                     Some(Protocol::Ip4(ip4)) => {
-                        if !ip4.is_loopback() && !ip4.is_unspecified() && ip4 != Ipv4Addr::LOCALHOST
+                        if !(ip4.is_loopback() || ip4.is_unspecified() || ip4.is_private() || ip4.is_multicast() || ip4 == Ipv4Addr::LOCALHOST || ip4.octets()[0] & 240 == 240 && !ip4.is_broadcast())
                         {
                             if let Err(e) = addr_handler() {
                                 tracing::error!("Failed to send listen address: {:?}", e);
