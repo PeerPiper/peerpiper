@@ -61,6 +61,8 @@ mod tests {
         let tempdir = tempdir().unwrap().path().to_path_buf();
         let blockstore = NativeBlockstoreBuilder::new(tempdir).open().await.unwrap();
 
+        // Create a channel for graceful shutdown
+        let (shutdown_tx, shutdown_rx) = oneshot::channel();
         let (tx_net_evt, mut rx_net_evt) = mpsc::channel(16);
 
         let (mut pluggable_piper, client) = PluggablePeerPiper::new(blockstore, tx_net_evt);
@@ -73,15 +75,26 @@ mod tests {
 
         let (connected, is_connected) = oneshot::channel();
 
-        tokio::spawn(async move {
-            pluggable_piper.run(connected).await.unwrap();
+        let task_handle = tokio::spawn(async move {
+            // Run until either the task completes or shutdown signal is received
+            tokio::select! {
+                res = pluggable_piper.run(connected) => res.unwrap(),
+                _ = shutdown_rx => {
+                    tracing::info!("Received shutdown signal, terminating background task");
+                    return;
+                }
+            }
         });
 
-        let address = loop {
-            if let PublicEvent::ListenAddr { address, .. } = rx_net_evt.next().await.unwrap() {
+        let address = if let Some(evt) = rx_net_evt.next().await {
+            if let PublicEvent::ListenAddr { address, .. } = evt {
                 tracing::info!(%address, "RXD Address");
-                break address;
+                address
+            } else {
+                panic!("Expected a ListenAddr event");
             }
+        } else {
+            panic!("No network events received");
         };
 
         // Wait for the network to be connected
@@ -159,6 +172,14 @@ mod tests {
         };
 
         assert_eq!(data, value);
+
+        // Send shutdown signal to terminate the background task
+        shutdown_tx
+            .send(())
+            .expect("Failed to send shutdown signal");
+
+        // Allow a brief moment for cleanup to complete
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
 
         Ok(())
     }
